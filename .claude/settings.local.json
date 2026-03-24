@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git init:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git remote:*)",
+      "Bash(git push:*)",
+      "Bash(mkdir -p /Users/carnell.smithgotyto.com/Documents/blue-ledger/.claude/specs)",
+      "Bash(mkdir -p /Users/carnell.smithgotyto.com/Documents/blue-ledger/.claude/tasks)",
+      "Bash(git pull:*)",
+      "Bash(git stash:*)"
+    ]
+  }
+}
