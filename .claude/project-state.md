@@ -2,7 +2,7 @@
 
 meta:
   last_updated: 2026-03-24
-  last_updated_by: jarvis
+  last_updated_by: eitri
   project: The Blue Ledger
   version: 1.0.0
   project_stage: pre-production
@@ -80,7 +80,13 @@ meta:
 
 ## Database Schema (Target)
 
-Latest migration: `003_seed_badges_quests`
+Latest migration: `020_study_groups_and_milestones`
+Migration tool: golang-migrate
+Migration directory: blue-ledger-api/migrations/
+Total migrations: 20 (001–020), 40 files (up + down)
+Migration status: WRITTEN — not yet applied to a live database
+Last authored: 2026-03-24 by nebula
+Migration log: .claude/nebula/migration-log.md
 
 | Table | Tenant-Scoped | Key Columns | RLS |
 |-------|--------------|-------------|-----|
@@ -114,6 +120,15 @@ Latest migration: `003_seed_badges_quests`
 | `job_board` | Yes | id, chapter_id, company, job_title | Yes |
 | `point_economy` | Yes | id, chapter_id, activity, xp | Yes |
 | `audit_log` | No (platform-wide) | id, actor_id, chapter_id, action, metadata | No |
+| `message_threads` | Yes | id, chapter_id, participant_ids UUID[] | Yes |
+| `messages` | Yes | id, thread_id, chapter_id, sender_id, body, read_by UUID[] | Yes |
+| `fundraising_campaigns` | Yes | id, chapter_id, title, goal_cents, current_cents | Yes |
+| `committees` | Yes | id, chapter_id, name, chair_id, member_ids UUID[] | Yes |
+| `study_groups` | Yes | id, chapter_id, topic, host_id, date, member_ids UUID[] | Yes |
+| `milestones` | Yes | id, chapter_id, member_id, type, title, date | Yes |
+| `resources` | Yes | id, chapter_id, title, type, url, file_key, tags TEXT[] | Yes |
+| `chapter_config` | Yes | id, chapter_id, key, value | Yes |
+| `point_economy` | Yes | id, chapter_id, activity, xp, is_active | Yes |
 
 ---
 
@@ -266,9 +281,89 @@ See: .claude/vision/observability-report.md
 
 ---
 
+## Infrastructure Status (owned by Eitri)
+
+Last built: 2026-03-24
+
+### Containers
+
+| Service | Dockerfile | Base Image (build) | Base Image (runtime) | Health Check |
+|---------|-----------|-------------------|---------------------|--------------|
+| blue-ledger-api | blue-ledger-api/Dockerfile | golang:1.23-alpine | alpine:3.20 | GET /v1/healthz |
+
+### Orchestration
+
+| Tool | File | Services |
+|------|------|----------|
+| Docker Compose (local dev) | blue-ledger-api/docker-compose.yml | postgres:16-alpine, redis:7-alpine |
+| Fly.io (production) | blue-ledger-api/fly.toml | shared-cpu-1x, 256MB, region: iad |
+
+### Cloud Resources
+
+| Resource | Provider | Status |
+|----------|----------|--------|
+| Postgres | Fly.io Postgres | Config in fly.toml — not provisioned |
+| Redis | Fly.io Redis | Config in fly.toml — not provisioned |
+| Object storage | Cloudflare R2 | Client in pkg/storage/r2.go — bucket not created |
+| Email | Resend | Client in pkg/email/resend.go — API key required |
+| Stripe | Stripe Billing | Client in internal/dues/stripe.go — keys required |
+
+### Networking
+
+| Concern | Status |
+|---------|--------|
+| TLS | Fly.io force_https = true |
+| CORS | Configurable via ALLOWED_ORIGINS env var |
+| Rate limiting | Echo RateLimiter middleware, config via RATE_LIMIT_RPS/BURST |
+| Reverse proxy | Fly.io built-in (no nginx needed) |
+
+### Frontend
+
+| Concern | Status |
+|---------|--------|
+| Dev server | Vite on :3001, proxy /api → localhost:8080/v1 |
+| API client | Axios singleton + 401 refresh queue (src/api/client.ts) |
+| State | Zustand (auth + UI), TanStack Query (server state) |
+| Routes | 47 routes defined in src/App.tsx |
+| CSS | Full prototype CSS ported to src/styles/base.css |
+
+### Secrets
+
+| Secret | Dev | Staging/Prod |
+|--------|-----|-------------|
+| JWT RSA keypair | Generate locally → keys/ (gitignored) | Fly.io secrets |
+| DATABASE_URL | .env (local docker-compose) | Fly.io secrets |
+| REDIS_URL | .env (local docker-compose) | Fly.io secrets |
+| STRIPE_SECRET_KEY | .env | Fly.io secrets |
+| RESEND_API_KEY | .env | Fly.io secrets |
+| R2 credentials | .env | Fly.io secrets |
+
+### Health Checks
+
+| Service | Endpoint | Checks |
+|---------|----------|--------|
+| Go API | GET /v1/healthz | DB ping, Redis ping |
+| Postgres (compose) | pg_isready -U blue_ledger_app | — |
+| Redis (compose) | redis-cli ping | — |
+
+### Environment Parity
+
+See: .env.example (root), web/.env.example
+
+Key differences dev vs prod:
+- APP_ENV: development → production
+- DATABASE_URL: local docker → Fly.io Postgres URL
+- ALLOWED_ORIGINS: localhost:3001 → production frontend domain
+- JWT keys: local file paths → Fly.io secrets (base64 encoded)
+- MAGIC_LINK_BASE_URL: localhost:3001/magic → production URL
+
+---
+
 ## Drift Log
 
 | Date | Agent | Note |
 |------|-------|------|
 | 2026-03-24 | vision | Initial scan. No prior state file existed. All sections populated by Vision from direct codebase analysis. |
 | 2026-03-24 | jarvis | SaaS architecture spec generated. Target stack defined: Go + Echo + PostgreSQL (RLS) + React + Fly.io. 12 tasks specified across 6 phases. ~280-340 hrs estimated. See .claude/specs/saas-architecture.md |
+| 2026-03-24 | nebula | Full migration suite written: 20 migrations (001-020), 40 files. 31 tables. golang-migrate format. RLS enabled on all tenant tables. Roles: blue_ledger_app + blue_ledger_admin. seed_default_point_economy() function included. See .claude/nebula/migration-log.md |
+| 2026-03-24 | eitri | Full application scaffold built. Go API: all core packages (auth, members, xp, events, dues, notifications), migrations, Dockerfile, docker-compose, fly.toml. React SPA: 47 routes, 4 feature pages (dashboard, directory, member profile, leaderboard), auth flow, full CSS port from prototype, .env.example files. See .claude/eitri/build-report.md |

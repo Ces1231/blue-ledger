@@ -378,5 +378,5 @@ Attribution appreciated but not required.
 
 ---
 
-*The Blue Ledger · Phi Beta Sigma Fraternity, Inc. · Tau Tau Sigma Chapter*
+*The Blue Ledger · Phi Beta Sigma Fraternity, Inc. · Tau Sigma Sigma Chapter*
 *Built with Claude · Version 1.0.0 · 47 Screens · 15 Sheet Tabs*

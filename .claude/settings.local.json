@@ -9,7 +9,11 @@
       "Bash(mkdir -p /Users/carnell.smithgotyto.com/Documents/blue-ledger/.claude/specs)",
       "Bash(mkdir -p /Users/carnell.smithgotyto.com/Documents/blue-ledger/.claude/tasks)",
       "Bash(git pull:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "WebFetch(domain:www.zeffy.com)",
+      "WebSearch",
+      "WebFetch(domain:developer.zef.fi)",
+      "WebFetch(domain:docs.zeffy.com)"
     ]
   }
 }
