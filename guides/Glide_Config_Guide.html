@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>The Blue Ledger — Glide Configuration Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap');
+
+  :root {
+    --navy: #001A4D;
+    --navy-mid: #002680;
+    --gold: #C9A84C;
+    --gold-light: #F5E6C8;
+    --gold-pale: #FDF8EE;
+    --cream: #FAF8F3;
+    --ink: #0D0D0D;
+    --muted: #6B6B6B;
+    --border: #E2DDD4;
+    --border-dark: #C8C0B0;
+    --success: #1A6B3A;
+    --success-bg: #EAF5EE;
+    --warn: #7A4A00;
+    --warn-bg: #FFF3DC;
+    --info: #003087;
+    --info-bg: #EAF0FB;
+    --step-done: #1A6B3A;
+    --step-active: #001A4D;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Instrument Sans', sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    line-height: 1.6;
+  }
+
+  /* ── HEADER ── */
+  .site-header {
+    background: var(--navy);
+    padding: 2rem 2.5rem;
+    position: sticky; top: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 2px solid var(--gold);
+  }
+  .site-header-left { display: flex; flex-direction: column; gap: 2px; }
+  .site-logo { font-family: 'DM Serif Display', serif; font-size: 1.3rem; color: var(--gold); letter-spacing: 0.02em; }
+  .site-tagline { font-size: 0.7rem; color: rgba(255,255,255,0.5); letter-spacing: 0.12em; text-transform: uppercase; font-family: 'DM Mono', monospace; }
+  .header-badge { background: var(--gold); color: var(--navy); font-size: 0.68rem; font-weight: 600; padding: 4px 10px; border-radius: 4px; letter-spacing: 0.08em; text-transform: uppercase; font-family: 'DM Mono', monospace; }
+
+  /* ── LAYOUT ── */
+  .layout { display: flex; min-height: calc(100vh - 74px); }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 260px; flex-shrink: 0;
+    background: #fff;
+    border-right: 1px solid var(--border);
+    padding: 1.5rem 0;
+    position: sticky; top: 74px;
+    height: calc(100vh - 74px);
+    overflow-y: auto;
+  }
+  .sidebar-section-label {
+    font-size: 0.65rem; font-weight: 600; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--muted);
+    padding: 0 1.25rem; margin-bottom: 0.5rem; margin-top: 1.25rem;
+    font-family: 'DM Mono', monospace;
+  }
+  .sidebar-section-label:first-child { margin-top: 0; }
+  .nav-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 1.25rem; cursor: pointer;
+    font-size: 0.83rem; color: var(--muted);
+    border-left: 3px solid transparent;
+    transition: all 0.15s; text-decoration: none;
+  }
+  .nav-item:hover { background: var(--cream); color: var(--ink); }
+  .nav-item.active { background: var(--gold-pale); color: var(--navy); border-left-color: var(--gold); font-weight: 600; }
+  .nav-icon { font-size: 14px; width: 18px; text-align: center; }
+  .nav-badge {
+    margin-left: auto; font-size: 0.6rem; padding: 1px 6px; border-radius: 10px;
+    font-family: 'DM Mono', monospace; font-weight: 500;
+  }
+  .badge-all { background: var(--info-bg); color: var(--info); }
+  .badge-chair { background: #EDE7F6; color: #4A235A; }
+  .badge-admin { background: #FCE4EC; color: #880E4F; }
+  .badge-pia { background: var(--success-bg); color: var(--success); }
+
+  /* ── MAIN ── */
+  .main { flex: 1; padding: 2.5rem; max-width: 820px; }
+
+  /* ── INTRO ── */
+  .intro-card {
+    background: var(--navy); border-radius: 12px;
+    padding: 2rem 2.5rem; margin-bottom: 2.5rem;
+    display: flex; gap: 2rem; align-items: flex-start;
+  }
+  .intro-text h1 { font-family: 'DM Serif Display', serif; font-size: 1.8rem; color: var(--gold); margin-bottom: 0.5rem; }
+  .intro-text p { font-size: 0.88rem; color: rgba(255,255,255,0.75); line-height: 1.7; }
+  .intro-stats { display: flex; gap: 1.5rem; margin-top: 1.25rem; flex-wrap: wrap; }
+  .intro-stat { text-align: center; }
+  .intro-stat-num { font-family: 'DM Serif Display', serif; font-size: 1.6rem; color: var(--gold); display: block; }
+  .intro-stat-label { font-size: 0.7rem; color: rgba(255,255,255,0.5); letter-spacing: 0.08em; text-transform: uppercase; }
+
+  /* ── SETUP STEPS ── */
+  .setup-block { margin-bottom: 2.5rem; }
+  .setup-title { font-family: 'DM Serif Display', serif; font-size: 1.1rem; color: var(--navy); margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+  .step-list { display: flex; flex-direction: column; gap: 8px; }
+  .step-item {
+    display: flex; gap: 12px; align-items: flex-start;
+    background: #fff; border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px 14px;
+  }
+  .step-num {
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--navy); color: #fff;
+    font-size: 0.72rem; font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; font-family: 'DM Mono', monospace;
+  }
+  .step-body { flex: 1; }
+  .step-action { font-size: 0.88rem; font-weight: 600; color: var(--ink); margin-bottom: 2px; }
+  .step-detail { font-size: 0.8rem; color: var(--muted); line-height: 1.5; }
+  .step-code {
+    display: inline-block; background: #F0EDE7;
+    border: 1px solid var(--border-dark);
+    border-radius: 4px; padding: 1px 7px;
+    font-family: 'DM Mono', monospace; font-size: 0.78rem;
+    color: var(--navy); white-space: nowrap;
+  }
+
+  /* ── SCREEN CARD ── */
+  .screen-block {
+    background: #fff; border: 1px solid var(--border);
+    border-radius: 12px; margin-bottom: 2rem;
+    overflow: hidden; scroll-margin-top: 90px;
+  }
+  .screen-header {
+    background: var(--navy); padding: 1.25rem 1.5rem;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  }
+  .screen-header-left { display: flex; align-items: center; gap: 12px; }
+  .screen-emoji { font-size: 1.5rem; }
+  .screen-title { font-family: 'DM Serif Display', serif; font-size: 1.1rem; color: #fff; }
+  .screen-subtitle { font-size: 0.75rem; color: rgba(255,255,255,0.55); margin-top: 1px; }
+  .screen-role-badge {
+    font-size: 0.65rem; padding: 3px 9px; border-radius: 20px;
+    font-family: 'DM Mono', monospace; font-weight: 600;
+    letter-spacing: 0.06em; white-space: nowrap; flex-shrink: 0;
+  }
+  .role-all { background: rgba(201,168,76,0.25); color: var(--gold); }
+  .role-chair { background: rgba(147,51,234,0.2); color: #D8B4FE; }
+  .role-admin { background: rgba(239,68,68,0.2); color: #FCA5A5; }
+  .role-pia { background: rgba(34,197,94,0.2); color: #86EFAC; }
+
+  .screen-body { padding: 1.25rem 1.5rem; }
+
+  /* ── CONFIG ROW ── */
+  .config-meta {
+    display: flex; gap: 1.5rem; flex-wrap: wrap;
+    padding: 10px 14px; background: var(--cream);
+    border-radius: 7px; margin-bottom: 1.25rem;
+    border: 1px solid var(--border);
+  }
+  .config-meta-item { display: flex; flex-direction: column; gap: 2px; }
+  .config-meta-label { font-size: 0.65rem; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; font-family: 'DM Mono', monospace; }
+  .config-meta-value { font-size: 0.82rem; font-weight: 600; color: var(--navy); }
+
+  /* ── SECTION HEADING ── */
+  .section-h {
+    font-size: 0.7rem; font-weight: 700; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--muted);
+    margin: 1.25rem 0 0.6rem;
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* ── CONFIG TABLE ── */
+  .config-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  .config-table th {
+    background: var(--gold-pale); text-align: left;
+    padding: 7px 10px; border: 1px solid var(--border);
+    font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--warn); font-family: 'DM Mono', monospace; font-weight: 600;
+  }
+  .config-table td {
+    padding: 7px 10px; border: 1px solid var(--border);
+    vertical-align: top; color: var(--ink); line-height: 1.4;
+  }
+  .config-table tr:nth-child(even) td { background: var(--cream); }
+  .glide-label {
+    font-family: 'DM Mono', monospace; font-size: 0.75rem;
+    background: var(--info-bg); color: var(--info);
+    border: 1px solid #BDD0F5; border-radius: 4px;
+    padding: 1px 6px; white-space: nowrap; display: inline-block;
+  }
+  .formula-label {
+    font-family: 'DM Mono', monospace; font-size: 0.72rem;
+    background: var(--success-bg); color: var(--success);
+    border: 1px solid #A8D5BC; border-radius: 4px;
+    padding: 1px 6px; display: inline-block;
+  }
+
+  /* ── COMPONENT CHIPS ── */
+  .chip-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+  .chip {
+    font-size: 0.75rem; padding: 3px 10px; border-radius: 20px;
+    border: 1px solid var(--border); background: #fff; color: var(--ink);
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* ── CALLOUT BOXES ── */
+  .callout {
+    border-radius: 8px; padding: 10px 14px; font-size: 0.82rem;
+    line-height: 1.55; margin: 10px 0;
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+  .callout-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+  .callout-tip { background: var(--info-bg); border: 1px solid #BDD0F5; color: var(--info); }
+  .callout-warn { background: var(--warn-bg); border: 1px solid #F5D98A; color: var(--warn); }
+  .callout-success { background: var(--success-bg); border: 1px solid #A8D5BC; color: var(--success); }
+
+  /* ── ACTION STEPS ── */
+  .action-steps { display: flex; flex-direction: column; gap: 6px; }
+  .action-step {
+    display: flex; gap: 10px; align-items: flex-start;
+    font-size: 0.82rem; padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .action-step:last-child { border-bottom: none; }
+  .action-step-num {
+    min-width: 20px; height: 20px; border-radius: 50%;
+    background: var(--gold-light); color: var(--warn);
+    font-size: 0.68rem; font-weight: 700; display: flex; align-items: center; justify-content: center;
+    font-family: 'DM Mono', monospace; flex-shrink: 0; margin-top: 1px;
+  }
+
+  /* ── VISIBILITY RULES ── */
+  .vis-rule {
+    background: var(--cream); border: 1px solid var(--border);
+    border-radius: 6px; padding: 8px 12px;
+    font-family: 'DM Mono', monospace; font-size: 0.78rem;
+    color: var(--navy); margin: 4px 0; line-height: 1.5;
+  }
+
+  /* ── FORMULA BLOCK ── */
+  .formula-block {
+    background: #0D1117; border-radius: 7px;
+    padding: 12px 14px; margin: 8px 0;
+    font-family: 'DM Mono', monospace; font-size: 0.78rem;
+    color: #C9D1D9; line-height: 1.6; overflow-x: auto;
+  }
+  .formula-block .kw { color: #FF7B72; }
+  .formula-block .str { color: #A5D6FF; }
+  .formula-block .num { color: #79C0FF; }
+  .formula-block .fn { color: #D2A8FF; }
+
+  /* ── DIVIDER ── */
+  .divider { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+
+  /* ── PRINT / FOOTER ── */
+  .doc-footer {
+    margin-top: 3rem; padding-top: 1.5rem;
+    border-top: 2px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 0.75rem; color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  @media print {
+    .sidebar { display: none; }
+    .site-header { position: static; }
+    .main { max-width: 100%; padding: 1rem; }
+  }
+
+  @media (max-width: 700px) {
+    .sidebar { display: none; }
+    .intro-card { flex-direction: column; padding: 1.25rem; }
+    .main { padding: 1.25rem; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="site-header-left">
+    <div class="site-logo">The Blue Ledger</div>
+    <div class="site-tagline">Glide Screen Configuration Guide</div>
+  </div>
+  <div class="header-badge">12 Screens · 4 Roles</div>
+</header>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sidebar-section-label">Setup First</div>
+    <a href="#setup" class="nav-item active"><span class="nav-icon">⚙️</span> Glide Project Setup</a>
+    <a href="#data" class="nav-item"><span class="nav-icon">📊</span> Data Source Config</a>
+    <a href="#roles" class="nav-item"><span class="nav-icon">🔐</span> Roles & Security</a>
+
+    <div class="sidebar-section-label">All Members</div>
+    <a href="#screen-home" class="nav-item"><span class="nav-icon">🏠</span> Home Dashboard <span class="nav-badge badge-all">All</span></a>
+    <a href="#screen-id" class="nav-item"><span class="nav-icon">🪪</span> Digital ID Card <span class="nav-badge badge-all">All</span></a>
+    <a href="#screen-profile" class="nav-item"><span class="nav-icon">👤</span> My Profile <span class="nav-badge badge-all">All</span></a>
+    <a href="#screen-leaderboard" class="nav-item"><span class="nav-icon">🏆</span> Leaderboard <span class="nav-badge badge-all">All</span></a>
+    <a href="#screen-quests" class="nav-item"><span class="nav-icon">🎖️</span> My Quests <span class="nav-badge badge-all">All</span></a>
+    <a href="#screen-quiz" class="nav-item"><span class="nav-icon">📚</span> Side Quest Quiz <span class="nav-badge badge-all">All</span></a>
+    <a href="#screen-service" class="nav-item"><span class="nav-icon">🙌</span> Service Log <span class="nav-badge badge-all">All</span></a>
+    <a href="#screen-directory" class="nav-item"><span class="nav-icon">👥</span> Directory <span class="nav-badge badge-all">All</span></a>
+
+    <div class="sidebar-section-label">Restricted</div>
+    <a href="#screen-scanner" class="nav-item"><span class="nav-icon">📷</span> QR Scanner <span class="nav-badge badge-chair">Chair</span></a>
+    <a href="#screen-financials" class="nav-item"><span class="nav-icon">💰</span> Financials <span class="nav-badge badge-admin">Admin</span></a>
+    <a href="#screen-pia" class="nav-item"><span class="nav-icon">📈</span> PIA Builder <span class="nav-badge badge-pia">PIA</span></a>
+    <a href="#screen-admin" class="nav-item"><span class="nav-icon">⚙️</span> Admin Panel <span class="nav-badge badge-admin">Admin</span></a>
+
+    <div class="sidebar-section-label">Automations</div>
+    <a href="#automations" class="nav-item"><span class="nav-icon">⚡</span> Make.com Flows</a>
+    <a href="#computed" class="nav-item"><span class="nav-icon">🧮</span> Computed Columns</a>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- INTRO -->
+    <div class="intro-card">
+      <div class="intro-text">
+        <h1>Glide Build Guide</h1>
+        <p>Every screen in The Blue Ledger, configured step by step. Follow this document in order — Setup → Data → Roles → Screens. Each screen entry includes the Glide layout type, all components, visibility rules, and any formulas or automations required.</p>
+        <div class="intro-stats">
+          <div class="intro-stat"><span class="intro-stat-num">12</span><span class="intro-stat-label">Screens</span></div>
+          <div class="intro-stat"><span class="intro-stat-num">4</span><span class="intro-stat-label">Roles</span></div>
+          <div class="intro-stat"><span class="intro-stat-num">6</span><span class="intro-stat-label">Sheet Tabs</span></div>
+          <div class="intro-stat"><span class="intro-stat-num">5</span><span class="intro-stat-label">Automations</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════ -->
+    <!-- SETUP -->
+    <!-- ═══════════════════════════════ -->
+    <div id="setup" class="setup-block">
+      <div class="setup-title">⚙️ Step 1 — Glide Project Setup</div>
+      <div class="step-list">
+        <div class="step-item"><div class="step-num">1</div><div class="step-body"><div class="step-action">Create a new Glide App (not Pages)</div><div class="step-detail">Go to glideapps.com → New App → choose <span class="step-code">App</span> (not Pages — you need the mobile-first nav bar). Name it <span class="step-code">The Blue Ledger</span>.</div></div></div>
+        <div class="step-item"><div class="step-num">2</div><div class="step-body"><div class="step-action">Set the primary color</div><div class="step-detail">Settings → Theme → Primary color: <span class="step-code">#001F5B</span> (Navy). Accent color: <span class="step-code">#C9A84C</span> (Gold). This propagates to buttons and active states.</div></div></div>
+        <div class="step-item"><div class="step-num">3</div><div class="step-body"><div class="step-action">Set the app icon</div><div class="step-detail">Settings → App icon → Upload your chapter crest or use a shield emoji placeholder. This appears on the home screen and loading splash.</div></div></div>
+        <div class="step-item"><div class="step-num">4</div><div class="step-body"><div class="step-action">Enable User Profiles</div><div class="step-detail">Settings → User Profiles → Enable → map to <span class="step-code">👥 Users</span> tab → Email column: <span class="step-code">Email Address</span>. This is the foundation for row ownership and personalization.</div></div></div>
+        <div class="step-item"><div class="step-num">5</div><div class="step-body"><div class="step-action">Set Sign-In method</div><div class="step-detail">Settings → Sign In → Email (allowlist). Paste all member emails from the Users tab into the allowlist. Members sign in with their chapter email — Glide auto-matches to their profile row.</div></div></div>
+      </div>
+    </div>
+
+    <!-- DATA SOURCE -->
+    <div id="data" class="setup-block">
+      <div class="setup-title">📊 Step 2 — Connect Google Sheets</div>
+      <div class="step-list">
+        <div class="step-item"><div class="step-num">1</div><div class="step-body"><div class="step-action">Connect the Master Sheet</div><div class="step-detail">Data → Add Source → Google Sheets → select <span class="step-code">BlueLedger_MasterSheet.xlsx</span>. Glide will import all 6 tabs automatically.</div></div></div>
+        <div class="step-item"><div class="step-num">2</div><div class="step-body"><div class="step-action">Verify table names match exactly</div><div class="step-detail">Glide Data Editor should show: <span class="step-code">👥 Users</span>, <span class="step-code">⚡ Point Economy</span>, <span class="step-code">📋 Engagement Log</span>, <span class="step-code">🙌 Service Log</span>, <span class="step-code">🎖️ Quests & Badges</span>, <span class="step-code">📊 PIA Builder</span>.</div></div></div>
+        <div class="step-item"><div class="step-num">3</div><div class="step-body"><div class="step-action">Set column types in Data Editor</div><div class="step-detail">For each table, click each column and set the type: Email → <span class="step-code">Email</span>, Phone → <span class="step-code">Phone</span>, LinkedIn URL → <span class="step-code">URL</span>, Total XP → <span class="step-code">Number</span>, Life Member? → <span class="step-code">Boolean</span>, Date fields → <span class="step-code">Date</span>.</div></div></div>
+        <div class="step-item"><div class="step-num">4</div><div class="step-body"><div class="step-action">Add the Avatar Image URL column (computed)</div><div class="step-detail">In 👥 Users table → Add Column → <span class="step-code">If-Then-Else</span> → name it <span class="step-code">Avatar Image URL</span>. See Computed Columns section at the bottom of this guide for the full formula.</div></div></div>
+        <div class="step-item"><div class="step-num">5</div><div class="step-body"><div class="step-action">Enable Row Owners on Users table</div><div class="step-detail">👥 Users → Settings (gear icon) → Row Owners → select <span class="step-code">Email Address</span> column. This ensures each member only sees their own row. Admins bypass this via role.</div></div></div>
+      </div>
+    </div>
+
+    <!-- ROLES -->
+    <div id="roles" class="setup-block">
+      <div class="setup-title">🔐 Step 3 — Roles & Visibility Security</div>
+      <div class="step-list">
+        <div class="step-item"><div class="step-num">1</div><div class="step-body"><div class="step-action">Create 4 Roles in Glide</div><div class="step-detail">Settings → Roles → Add Role × 4: <span class="step-code">Admin</span>, <span class="step-code">Chair</span>, <span class="step-code">PIA</span>, <span class="step-code">Member</span>. Each maps to the <span class="step-code">Role</span> column in the Users tab.</div></div></div>
+        <div class="step-item"><div class="step-num">2</div><div class="step-body"><div class="step-action">Map Roles to the Role column</div><div class="step-detail">For each Role in Settings → assign condition: <span class="step-code">Role column = "Admin"</span> (repeat for Chair, PIA, Member). Glide auto-assigns on login based on the signed-in user's row.</div></div></div>
+        <div class="step-item"><div class="step-num">3</div><div class="step-body"><div class="step-action">Protect the Financials screen</div><div class="step-detail">On the Financials tab/screen → Visibility → Condition: <span class="step-code">Role is Admin</span>. This hides the entire tab from Chair, PIA, and Member roles.</div></div></div>
+        <div class="step-item"><div class="step-num">4</div><div class="step-body"><div class="step-action">Protect the Scanner screen</div><div class="step-detail">QR Scanner screen → Visibility → Condition: <span class="step-code">Role is Admin OR Role is Chair</span>. Chairs need scanning access; regular Members never see this.</div></div></div>
+        <div class="step-item"><div class="step-num">5</div><div class="step-body"><div class="step-action">Protect PIA Builder screen</div><div class="step-detail">PIA Builder screen → Visibility → Condition: <span class="step-code">Role is Admin OR Role is PIA</span>.</div></div></div>
+      </div>
+    </div>
+
+    <hr class="divider"/>
+    <h2 style="font-family:'DM Serif Display',serif; font-size:1.4rem; color:var(--navy); margin-bottom:1.5rem;">Screen Configurations</h2>
+
+    <!-- ═══════════════════════════════ -->
+    <!-- SCREEN 1 — HOME -->
+    <!-- ═══════════════════════════════ -->
+    <div id="screen-home" class="screen-block">
+      <div class="screen-header">
+        <div class="screen-header-left">
+          <span class="screen-emoji">🏠</span>
+          <div>
+            <div class="screen-title">Home Dashboard</div>
+            <div class="screen-subtitle">First screen on open — XP summary, avatar, quick actions</div>
+          </div>
+        </div>
+        <span class="screen-role-badge role-all">All Members</span>
+      </div>
+      <div class="screen-body">
+        <div class="config-meta">
+          <div class="config-meta-item"><div class="config-meta-label">Glide Layout</div><div class="config-meta-value">Details Screen</div></div>
+          <div class="config-meta-item"><div class="config-meta-label">Data Source</div><div class="config-meta-value">👥 Users (current user row)</div></div>
+          <div class="config-meta-item"><div class="config-meta-label">Nav Position</div><div class="config-meta-value">Tab 1 (far left)</div></div>
+          <div class="config-meta-item"><div class="config-meta-label">Tab Icon</div><div class="config-meta-value">House / Home</div></div>
+        </div>
+
+        <div class="section-h">Components (top → bottom)</div>
+        <table class="config-table">
+          <thead><tr><th>Component</th><th>Glide Type</th><th>Field / Value</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td>Avatar image</td><td><span class="glide-label">Image</span></td><td><span class="step-code">Avatar Image URL</span></td><td>Large, full-width. Shows current avatar PNG based on XP level</td></tr>
+            <tr><td>Member name</td><td><span class="glide-label">Title</span></td><td><span class="step-code">Full Name</span></td><td>H1 size, centered</td></tr>
+            <tr><td>Avatar level</td><td><span class="glide-label">Text</span></td><td><span class="step-code">Avatar Level</span></td><td>Small, below name — e.g. "Gold Legend"</td></tr>
+            <tr><td>XP display</td><td><span class="glide-label">Title</span></td><td><span class="step-code">Total XP</span></td><td>Large number, label: "Total XP Earned"</td></tr>
+            <tr><td>Separator</td><td><span class="glide-label">Separator</span></td><td>—</td><td>Visual break</td></tr>
+            <tr><td>Quick link: My ID</td><td><span class="glide-label">Button</span></td><td>→ Digital ID Card screen</td><td>Label: "Show My ID Card"</td></tr>
+            <tr><td>Quick link: Service</td><td><span class="glide-label">Button</span></td><td>→ Service Log screen</td><td>Label: "Log Service Hours"</td></tr>
+            <tr><td>Quick link: Quests</td><td><span class="glide-label">Button</span></td><td>→ My Quests screen</td><td>Label: "View My Quests"</td></tr>
+            <tr><td>Separator</td><td><span class="glide-label">Separator</span></td><td>—</td><td></td></tr>
+            <tr><td>Member number</td><td><span class="glide-label">Text</span></td><td><span class="step-code">Member #</span></td><td>Small, muted — e.g. "ΤΤΣ-001"</td></tr>
+            <tr><td>Induction year</td><td><span class="glide-label">Text</span></td><td><span class="step-code">Induction Year</span></td><td>Small — e.g. "Initiated: 2019"</td></tr>
+          </tbody>
+        </table>
+
+        <div class="callout callout-tip"><span class="callout-icon">💡</span>Set the data source to <strong>Current User's Row</strong> so each member sees their own data automatically. No filter needed — row ownership handles it.</div>
+      </div>
+    </div>
+
+    <!-- SCREEN 2 — DIGITAL ID -->
+    <div id="screen-id" class="screen-block">
+      <div class="screen-header">
+        <div class="screen-header-left">
+          <span class="screen-emoji">🪪</span>
+          <div>
+            <div class="screen-title">Digital ID Card</div>
+            <div class="screen-subtitle">Scannable QR code for event check-in</div>
+          </div>
+        </div>
+        <span class="screen-role-badge role-all">All Members</span>
+      </div>
+      <div class="screen-body">
+        <div class="config-meta">
+          <div class="config-meta-item"><div class="config-meta-label">Glide Layout</div><div class="config-meta-value">Details Screen</div></div>
+          <div class="config-meta-item"><div class="config-meta-label">Data Source</div><div class="config-meta-value">👥 Users (current user row)</div></div>
+          <div class="config-meta-item"><div class="config-meta-label">Nav Position</div><div class="config-meta-value">Tab 2</div></div>
+          <div class="config-meta-item"><div class="config-meta-label">Tab Icon</div><div class="config-meta-value">ID / Card</div></div>
+        </div>
+
+        <div class="section-h">QR Code Setup (critical step)</div>
+        <div class="action-steps">
+          <div class="action-step"><div class="action-step-num">1</div><div>In the 👥 Users Data Editor → Add Column → <span class="step-code">Template</span> column → name it <span class="step-code">QR Data</span></div></div>
+          <div class="action-step"><div class="action-step-num">2</div><div>Template value: <span class="step-code">MEMBER:{Member #}</span> — this becomes the text encoded in the QR. Example output: <span class="step-code">MEMBER:ΤΤΣ-001</span></div></div>
+          <div class="action-step"><div class="action-step-num">3</div><div>On the screen → Add Component → <span class="glide-label">QR Code</span> → map to the <span class="step-code">QR Data</span> column</div></div>
+          <div class="action-step"><div class="action-step-num">4</div><div>Size: Large. This is what the Chair's scanner will read at events.</div></div>
+        </div>
+
+        <div class="section-h">Components</div>
+        <table class="config-table">
+          <thead><tr><th>Component</th><th>Glide Type</th><th>Field / Value</th></tr></thead>
+          <tbody>
+            <tr><td>Chapter name header</td><td><span class="glide-label">Rich Text</span></td><td>Static text: "Tau Tau Sigma Chapter — Blue Ledger"</td></tr>
+            <tr><td>QR Code</td><td><span class="glide-label">QR Code</span></td><td><span class="step-code">QR Data</span> column (MEMBER:{Member #})</td></tr>
+            <tr><td>Full name</td><td><span class="glide-label">Title</span></td><td><span class="step-code">Full Name</span></td></tr>
+            <tr><td>Member number</td><td><span class="glide-label">Text</span></td><td><span class="step-code">Member #</span></td></tr>
+            <tr><td>Induction year</td><td><span class="glide-label">Text</span></td><td><span class="step-code">Induction Year</span></td></tr>
+            <tr><td>Life Member badge</td><td><span class="glide-label">Text (conditional)</span></td><td>Shown only if <span class="step-code">Life Member? = Yes</span></td></tr>
+            <tr><td>Avatar level</td><td><span class="glide-label">Text</span></td><td><span class="step-code">Avatar Level</span> — e.g. "Gold Legend"</td></tr>
+          </tbody>
+        </table>
+
+        <div class="callout callout-warn"><span class="callout-icon">⚠️</span>Glide's QR component generates the code client-side — no external service needed. The Scanner screen (Chair only) uses the built-in Barcode Scanner component to read this same format.</div>
+      </div>
+    </div>
+
+    <!-- SCREEN 3 — PROFILE -->
+    <div id="screen-profile" class="screen-block">
+      <div class="screen-header">
+        <div class="screen-header-left">
+          <span class="screen-emoji">👤</span>
+          <div>
+            <div class="screen-title">My Profile</div>
+            <div class="screen-subtitle">Editable member details — professional + social</div>
+          </div>
+        </div>
+        <span class="screen-role-badge role-all">All Members</span>
+      </div>
+      <div class="screen-body">
+        <div class="config-meta">
+          <div class="config-meta-item"><div class="config-meta-label">Glide Layout</div><div class="config-meta-value">Details + Edit Screen</div></div>
+          <div class="config-meta-item"><div class="config-meta-label">Data Source</div><div class="config-meta-value">👥 Users (current user)</div></div>
+          <div class="config-meta-item"><div class="config-meta-label">Nav Position</div><div class="config-meta-value">Tab 3</div></div>
+        </div>
+
+        <div class="section-h">Edit Form Fields</div>
+        <table class="config-table">
+          <thead><tr><th>Field Label</th><th>Column</th><th>Input Type</th><th>Required?</th></tr></thead>
+          <tbody>
+            <tr><td>Full Name</td><td><span class="step-code">Full Name</span></td><td>Text</td><td>Yes</td></tr>
+            <tr><td>Phone Number</td><td><span class="step-code">Phone</span></td><td>Phone</td><td>No</td></tr>
+            <tr><td>Employer</td><td><span class="step-code">Employer</span></td><td>Text</td><td>No</td></tr>
+            <tr><td>Job Title</td><td><span class="step-code">Job Title</span></td><td>Text</td><td>No</td></tr>
+            <tr><td>City / State</td><td><span class="step-code">City / State</span></td><td>Text</td><td>No</td></tr>
+            <tr><td>LinkedIn Profile URL</td><td><span class="step-code">LinkedIn URL</span></td><td>URL</td><td>No</td></tr>
+            <tr><td>Profile Photo</td><td><span class="step-code">Photo</span> (add this column)</td><td>Image Upload</td><td>No</td></tr>
+          </tbody>
+        </table>
+
+        <div class="callout callout-tip"><span class="callout-icon">💡</span>Lock <span class="step-code">Member #</span>, <span class="step-code">Induction Year</span>, <span class="step-code">Role</span>, and <span class="step-code">Total XP</span> as read-only display fields — members should never be able to edit these. Only show them as <span class="glide-label">Text</span> components, not edit fields.</div>
+
+        <div class="section-h">Profile Completion Trigger</div>
+        <div class="callout callout-success"><span class="callout-icon">✅</span>Add a computed column <span class="step-code">Profile Complete?</span> using If-Then-Else: IF all key fields (Name, Email, Employer, Job Title, City) are not empty → "Yes" → this fires the 100 XP "Architect" badge in your automation.</div>
+      </div>
+    </div>
+
+    <!-- SCREEN 4 — LEADERBOARD -->
+    <div id="screen-leaderboard" class="screen-block">
+      <div class="screen-header">
+        <div class="screen-header-left">
+          <span class="screen-emoji">🏆</span>
+          <div>
+            <div class="screen-title">Leaderboard</div>
+            <div class="screen-subtitle">Chapter-wide XP ranking</div>
+          </div>
+        </div>
+        <span class="screen-role-badge role-all">All Members</span>
+      </div>
+      <div class="screen-body">
+        <div class="config-meta">
+          <div class="config-meta-item"><div class="config-meta-label">Glide Layout</div><div class="config-meta-value">List Screen</div></div>
+          <div class="config-meta-item"><div class="config-meta-label">Data Source</div><div class="config-meta-value">👥 Users (all rows)</div></div>
+          <div class="config-meta-item"><div class="config-meta-label">Sort</div><div class="config-meta-value">Total XP — Descending</div></div>
+          <div class="config-meta-item"><div class="config-meta-label">Nav Position</div><div class="config-meta-value">Tab 4</div></div>
+        </div>
+
+        <div class="section-h">List Item Configuration</div>
+        <table class="config-table">
+          <thead><tr><th>Element</th><th>Field</th><th>Position</th></tr></thead>
+          <tbody>
+            <tr><td>Avatar image</td><td><span class="step-code">Avatar Image URL</span></td><td>Left image (square)</td></tr>
+            <tr><td>Title</td><td><span class="step-code">Full Name</span></td><td>Main text</td></tr>
+            <tr><td>Subtitle</td><td><span class="step-code">Avatar Level</span></td><td>Below name</td></tr>
+            <tr><td>Right value</td><td><span class="step-code">Total XP</span></td><td>Far right — bold</td></tr>
+          </tbody>
+        </table>
+
+        <div class="section-h">Important Settings</div>
+        <div class="action-steps">
+          <div class="action-step"><div class="action-step-num">1</div><div>Disable Row Owners filter for this screen — all members should see the full chapter ranking, not just themselves. In screen settings → "Show all rows" override.</div></div>
+          <div class="action-step"><div class="action-step-num">2</div><div>Sort: <span class="step-code">Total XP</span> → Descending. This creates the rank naturally — no rank number column needed.</div></div>
+          <div class="action-step"><div class="action-step-num">3</div><div>Filter: <span class="step-code">Status = "Active"</span> — hide inactive/alumni members from the live board.</div></div>
+          <div class="action-step"><div class="action-step-num">4</div><div>Tap target: Link each row to that member's public profile view (read-only version of Profile screen).</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREEN 5 — QUESTS -->
+    <div id="screen-quests" class="screen-block">
+      <div class="screen-header">
+        <div class="screen-header-left">
+          <span class="screen-emoji">🎖️</span>
+          <div>
+            <div class="screen-title">My Quests & Badges</div>
+            <div class="screen-subtitle">Active badges, progress trackers, achievement gallery</div>
+          </div>
+        </div>
+        <span class="screen-role-badge role-all">All Members</span>
+      </div>
+      <div class="screen-body">
+        <div class="config-meta">
+          <div class="config-meta-item"><div class="config-meta-label">Glide Layout</div><div class="config-meta-value">List + Details</div></div>
+          <div class="config-meta-item"><div class="config-meta-label">Data Source</div><div class="config-meta-value">🎖️ Quests & Badges tab</div></div>
+          <div class="config-meta-item"><div class="config-meta-label">Nav Position</div><div class="config-meta-value">Tab 5</div></div>
+        </div>
+
+        <div class="section-h">List Item Configuration</div>
+        <table class="config-table">
+          <thead><tr><th>Element</th><th>Field</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td>Badge image/icon</td><td><span class="step-code">Badge Icon URL</span></td><td>Add a URL column for badge PNG files</td></tr>
+            <tr><td>Badge name</td><td><span class="step-code">Badge Name</span></td><td>Main title</td></tr>
+            <tr><td>Category</td><td><span class="step-code">Category</span></td><td>Subtitle — e.g. "Service"</td></tr>
+            <tr><td>XP bonus</td><td><span class="step-code">XP Bonus</span></td><td>Right side value</td></tr>
+            <tr><td>Earned indicator</td><td>Computed: Earned?</td><td>Checkmark or lock icon via If-Then-Else</td></tr>
+          </tbody>
+        </table>
+
+        <div class="section-h">Badge Earned? Computed Column</div>
+        <div class="formula-block">
+          <span class="kw">IF</span>(<span class="str">Badge Name</span> <span class="kw">IN</span> [User's Earned Badges list])
+            → <span class="str">"✅ Earned"</span>
+          <span class="kw">ELSE</span>
+            → <span class="str">"🔒 Locked"</span>
+        </div>
+        <div class="callout callout-tip"><span class="callout-icon">💡</span>Add an <span class="step-code">Earned Badges</span> column to the Users tab as a text list (comma-separated badge names). When a badge is awarded, Make.com appends the badge name to this field. The computed column checks membership.</div>
+      </div>
+    </div>
+
+    <!-- SCREEN 6 — QUIZ -->
+    <div id="screen-quiz" class="screen-block">
+      <div class="screen-header">
+        <div class="screen-header-left">
+          <span class="screen-emoji">📚</span>
+          <div>
+            <div class="screen-title">Side Quest Quizzes</div>
+            <div class="screen-subtitle">Fraternity history & constitution — earn XP + badges</div>
+          </div>
+        </div>
+        <span class="screen-role-badge role-all">All Members</span>
+      </div>
+      <div class="screen-body">
+        <div class="config-meta">
+          <div class="config-meta-item"><div class="config-meta-label">Glide Layout</div><div class="config-meta-value">Custom Form + Conditions</div></div>
+          <div class="config-meta-item"><div class="config-meta-label">Data Source</div><div class="config-meta-value">New tab: 📝 Quizzes</div></div>
+        </div>
+
+        <div class="section-h">Setup: Create a Quizzes tab in Google Sheets</div>
+        <div class="action-steps">
+          <div class="action-step"><div class="action-step-num">1</div><div>Add a new tab <span class="step-code">📝 Quizzes</span> to your Master Sheet with columns: <span class="step-code">Quiz ID, Quiz Name, Question, Option A, Option B, Option C, Option D, Correct Answer, XP Award, Category</span></div></div>
+          <div class="action-step"><div class="action-step-num">2</div><div>Populate 5 questions per quiz. Start with: "Fraternity History" and "Chapter Constitution" as the two initial quizzes.</div></div>
+          <div class="action-step"><div class="action-step-num">3</div><div>Add a <span class="step-code">📝 Quiz Attempts</span> tab: <span class="step-code">Attempt ID, Member #, Quiz ID, Score, Date Taken, XP Awarded, Pass/Fail</span></div></div>
+        </div>
+
+        <div class="section-h">Quiz Screen Flow in Glide</div>
+        <div class="action-steps">
+          <div class="action-step"><div class="action-step-num">1</div><div>List screen shows available quizzes from the Quizzes tab — title + category + XP reward</div></div>
+          <div class="action-step"><div class="action-step-num">2</div><div>Tap → Details screen shows questions one at a time using Choice components mapped to Option A/B/C/D columns</div></div>
+          <div class="action-step"><div class="action-step-num">3</div><div>Submit → Glide Action writes a new row to Quiz Attempts tab → Make.com watches for new rows → calculates score → awards XP if score ≥ 80%</div></div>
+          <div class="action-step"><div class="action-step-num">4</div><div>Retake limit: Add a computed column counting the user's attempts in the last 30 days. Hide the submit button if count ≥ 3.</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREEN 7 — SERVICE LOG -->
+    <div id="screen-service" class="screen-block">
+      <div class="screen-header">
+        <div class="screen-header-left">
+          <span class="screen-emoji">🙌</span>
+          <div>
+            <div class="screen-title">Service Log</div>
+            <div class="screen-subtitle">Log and view community service hours</div>
+          </div>
+        </div>
+        <span class="screen-role-badge role-all">All Members</span>
+      </div>
+      <div class="screen-body">
+        <div class="config-meta">
+          <div class="config-meta-item"><div class="config-meta-label">Glide Layout</div><div class="config-meta-value">List + Add Form</div></div>
+          <div class="config-meta-item"><div class="config-meta-label">Data Source</div><div class="config-meta-value">🙌 Service Log tab</div></div>
+          <div class="config-meta-item"><div class="config-meta-label">Filter (Members)</div><div class="config-meta-value">Member # = Current User</div></div>
+          <div class="config-meta-item"><div class="config-meta-label">Filter (Chair+)</div><div class="config-meta-value">No filter — see all</div></div>
+        </div>
+
+        <div class="section-h">Add New Entry Form</div>
+        <table class="config-table">
+          <thead><tr><th>Field</th><th>Input Type</th><th>Auto-fill?</th></tr></thead>
+          <tbody>
+            <tr><td>Date</td><td>Date picker</td><td>Default: today</td></tr>
+            <tr><td>Event / Program Name</td><td>Text</td><td>No</td></tr>
+            <tr><td>Hours Logged</td><td>Number (0.5 increments)</td><td>No</td></tr>
+            <tr><td>Organization / Partner</td><td>Text</td><td>No</td></tr>
+            <tr><td>Member #</td><td>Hidden</td><td>Yes — current user's Member #</td></tr>
+            <tr><td>Member Name</td><td>Hidden</td><td>Yes — current user's Full Name</td></tr>
+            <tr><td>XP Earned</td><td>Hidden computed</td><td>Yes — Hours × 30</td></tr>
+            <tr><td>Verified By</td><td>Hidden</td><td>Set to "Pending" until Chair confirms</td></tr>
+          </tbody>
+        </table>
+
+        <div class="callout callout-warn"><span class="callout-icon">⚠️</span>XP for service should only be officially counted once a Chair verifies the entry. Add a <span class="step-code">Verified?</span> column. Make.com only awards XP to the Engagement Log when <span class="step-code">Verified? = Yes</span> — preventing self-reporting abuse.</div>
+      </div>
+    </div>
+
+    <!-- SCREEN 8 — DIRECTORY -->
+    <div id="screen-directory" class="screen-block">
+      <div class="screen-header">
+        <div class="screen-header-left">
+          <span class="screen-emoji">👥</span>
+          <div>
+            <div class="screen-title">Chapter Directory</div>
+            <div class="screen-subtitle">Browse member profiles — search by name or employer</div>
+          </div>
+        </div>
+        <span class="screen-role-badge role-all">All Members</span>
+      </div>
+      <div class="screen-body">
+        <div class="config-meta">
+          <div class="config-meta-item"><div class="config-meta-label">Glide Layout</div><div class="config-meta-value">List Screen</div></div>
+          <div class="config-meta-item"><div class="config-meta-label">Data Source</div><div class="config-meta-value">👥 Users (all active)</div></div>
+          <div class="config-meta-item"><div class="config-meta-label">Search Enabled</div><div class="config-meta-value">Yes — Full Name, Employer</div></div>
+          <div class="config-meta-item"><div class="config-meta-label">Filter</div><div class="config-meta-value">Status = "Active"</div></div>
+        </div>
+
+        <div class="section-h">List Item + Detail View</div>
+        <table class="config-table">
+          <thead><tr><th>Element</th><th>List View</th><th>Detail (tap) View</th></tr></thead>
+          <tbody>
+            <tr><td>Photo</td><td>Circle avatar image</td><td>Large hero image</td></tr>
+            <tr><td>Name</td><td>Title</td><td>H1 title</td></tr>
+            <tr><td>Title / Employer</td><td>Subtitle</td><td>Subtitle</td></tr>
+            <tr><td>City</td><td>—</td><td>Text field</td></tr>
+            <tr><td>LinkedIn</td><td>—</td><td>Link button → opens LinkedIn</td></tr>
+            <tr><td>Member #</td><td>—</td><td>Small text (read-only)</td></tr>
+            <tr><td>Avatar Level</td><td>—</td><td>Badge display</td></tr>
+          </tbody>
+        </table>
+        <div class="callout callout-tip"><span class="callout-icon">💡</span>Hide sensitive data in directory view: <span class="step-code">Email Address</span>, <span class="step-code">Phone</span>, <span class="step-code">Total XP</span>, and <span class="step-code">Role</span> should not be visible to all members in directory mode. Only show professional + social fields.</div>
+      </div>
+    </div>
+
+    <!-- SCREEN 9 — SCANNER -->
+    <div id="screen-scanner" class="screen-block">
+      <div class="screen-header">
+        <div class="screen-header-left">
+          <span class="screen-emoji">📷</span>
+          <div>
+            <div class="screen-title">QR Scanner</div>
+            <div class="screen-subtitle">Chair tool — scan brothers into events, log hours</div>
+          </div>
+        </div>
+        <span class="screen-role-badge role-chair">Chair + Admin</span>
+      </div>
+      <div class="screen-body">
+        <div class="config-meta">
+          <div class="config-meta-item"><div class="config-meta-label">Glide Layout</div><div class="config-meta-value">Custom Screen</div></div>
+          <div class="config-meta-item"><div class="config-meta-label">Visibility</div><div class="config-meta-value">Role = Chair OR Admin only</div></div>
+          <div class="config-meta-item"><div class="config-meta-label">Data Written To</div><div class="config-meta-value">📋 Engagement Log tab</div></div>
+        </div>
+
+        <div class="section-h">Scanner Setup (most critical screen)</div>
+        <div class="action-steps">
+          <div class="action-step"><div class="action-step-num">1</div><div>Add Component → <span class="glide-label">Barcode Scanner</span> — this opens the device camera to scan QR codes. Map the scanned value to a temporary field: <span class="step-code">Scanned Value</span>.</div></div>
+          <div class="action-step"><div class="action-step-num">2</div><div>Add an <span class="glide-label">Action</span> that triggers after a successful scan: Parse the scanned string to extract the Member # (strip the "MEMBER:" prefix using a Template or Math column).</div></div>
+          <div class="action-step"><div class="action-step-num">3</div><div>Lookup the member: Add a <span class="step-code">Lookup</span> computed column that finds the <span class="step-code">Full Name</span> from the Users table where <span class="step-code">Member # = Scanned Member #</span>. Display this name as a confirmation to the Chair.</div></div>
+          <div class="action-step"><div class="action-step-num">4</div><div>Add a <span class="glide-label">Choice</span> component: "Activity Type" — picker from the Point Economy tab. This lets the Chair select what type of check-in (Meeting, Service, etc.).</div></div>
+          <div class="action-step"><div class="action-step-num">5</div><div>Add a <span class="glide-label">Button</span>: "Confirm Check-In" → Action: Add Row to 📋 Engagement Log with: Member #, Member Name, Activity Type, XP Award (lookup from Point Economy), Date (today), Logged By (current user's Member #).</div></div>
+        </div>
+
+        <div class="section-h">Confirmation UI</div>
+        <table class="config-table">
+          <thead><tr><th>Component</th><th>Field</th><th>Purpose</th></tr></thead>
+          <tbody>
+            <tr><td>Barcode Scanner</td><td>→ Scanned Value</td><td>Captures QR code</td></tr>
+            <tr><td>Text display</td><td>Looked-up Full Name</td><td>Shows "Checking in: Marcus Williams"</td></tr>
+            <tr><td>Text display</td><td>Looked-up Member #</td><td>Confirms correct member</td></tr>
+            <tr><td>Choice / Dropdown</td><td>Activity Type</td><td>Meeting / Service / Event</td></tr>
+            <tr><td>Number input</td><td>Hours (if service)</td><td>Shown only when Activity = Service</td></tr>
+            <tr><td>Text input</td><td>Event Name</td><td>Optional notes field</td></tr>
+            <tr><td>Button</td><td>Confirm Check-In</td><td>Writes row to Engagement Log</td></tr>
+          </tbody>
+        </table>
+
+        <div class="callout callout-success"><span class="callout-icon">✅</span>After "Confirm Check-In" fires, show a success notification: "ΤΤΣ-001 checked in — 50 XP awarded." Reset the Scanned Value field so the Chair can scan the next person immediately.</div>
+      </div>
+    </div>
+
+    <!-- SCREEN 10 — FINANCIALS -->
+    <div id="screen-financials" class="screen-block">
+      <div class="screen-header">
+        <div class="screen-header-left">
+          <span class="screen-emoji">💰</span>
+          <div>
+            <div class="screen-title">Financials</div>
+            <div class="screen-subtitle">Dues status, payment links, expense reports</div>
+          </div>
+        </div>
+        <span class="screen-role-badge role-admin">Admin Only</span>
+      </div>
+      <div class="screen-body">
+        <div class="config-meta">
+          <div class="config-meta-item"><div class="config-meta-label">Glide Layout</div><div class="config-meta-value">List + Details</div></div>
+          <div class="config-meta-item"><div class="config-meta-label">Data Source</div><div class="config-meta-value">👥 Users (dues columns only)</div></div>
+          <div class="config-meta-item"><div class="config-meta-label">Visibility</div><div class="config-meta-value">Role = Admin ONLY</div></div>
+        </div>
+
+        <div class="section-h">Required Columns to add to Users tab</div>
+        <div class="chip-row">
+          <span class="chip">Dues Status</span><span class="chip">Dues Paid Date</span>
+          <span class="chip">Amount Owed</span><span class="chip">Financial Hold?</span>
+          <span class="chip">Payment Notes</span>
+        </div>
+
+        <div class="section-h">Member-Facing Dues Screen (all members can see their OWN status)</div>
+        <div class="action-steps">
+          <div class="action-step"><div class="action-step-num">1</div><div>Add a separate simplified screen (not the Admin financials) showing only the current user's dues status — <span class="step-code">Dues Status</span>, <span class="step-code">Amount Owed</span></div></div>
+          <div class="action-step"><div class="action-step-num">2</div><div>Add a <span class="glide-label">Button</span>: "Pay Dues" → Action: Open URL → your chapter's Zelle link or PayPal.me URL</div></div>
+          <div class="action-step"><div class="action-step-num">3</div><div>Add a <span class="glide-label">Button</span>: "Submit Expense Report" → Action: Open URL → Google Form for expense submissions</div></div>
+        </div>
+
+        <div class="vis-rule">Admin view: shows ALL members' dues status in a list with color-coded indicators (Paid = green, Late = amber, Outstanding = red)</div>
+      </div>
+    </div>
+
+    <!-- SCREEN 11 — PIA -->
+    <div id="screen-pia" class="screen-block">
+      <div class="screen-header">
+        <div class="screen-header-left">
+          <span class="screen-emoji">📈</span>
+          <div>
+            <div class="screen-title">PIA Builder</div>
+            <div class="screen-subtitle">Program assessment dashboard — regional/national export</div>
+          </div>
+        </div>
+        <span class="screen-role-badge role-pia">PIA Analyst + Admin</span>
+      </div>
+      <div class="screen-body">
+        <div class="config-meta">
+          <div class="config-meta-item"><div class="config-meta-label">Glide Layout</div><div class="config-meta-value">Details + List</div></div>
+          <div class="config-meta-item"><div class="config-meta-label">Data Source</div><div class="config-meta-value">📊 PIA Builder tab</div></div>
+          <div class="config-meta-item"><div class="config-meta-label">Visibility</div><div class="config-meta-value">Role = PIA OR Admin</div></div>
+        </div>
+
+        <div class="section-h">Dashboard Components</div>
+        <table class="config-table">
+          <thead><tr><th>Component</th><th>Glide Type</th><th>Field</th></tr></thead>
+          <tbody>
+            <tr><td>Total programs run</td><td><span class="glide-label">Number (computed)</span></td><td>Count of PIA Builder rows</td></tr>
+            <tr><td>Total brothers engaged</td><td><span class="glide-label">Number (rollup)</span></td><td>Sum of "# Brothers Participated"</td></tr>
+            <tr><td>Total hours logged</td><td><span class="glide-label">Number (rollup)</span></td><td>Sum of "Total Hours Logged"</td></tr>
+            <tr><td>Programs list</td><td><span class="glide-label">List</span></td><td>All PIA Builder rows — sorted by date</td></tr>
+            <tr><td>Export button</td><td><span class="glide-label">Button → URL</span></td><td>Opens Make.com webhook to trigger PDF export</td></tr>
+          </tbody>
+        </table>
+
+        <div class="callout callout-tip"><span class="callout-icon">💡</span>The rollup columns (Total brothers, Total hours) require Glide's <span class="step-code">Rollup</span> computed column type — select the PIA Builder table, choose the numeric column, and pick "Sum." These auto-update whenever a new program row is added.</div>
+      </div>
+    </div>
+
+    <!-- SCREEN 12 — ADMIN -->
+    <div id="screen-admin" class="screen-block">
+      <div class="screen-header">
+        <div class="screen-header-left">
+          <span class="screen-emoji">⚙️</span>
+          <div>
+            <div class="screen-title">Admin Panel</div>
+            <div class="screen-subtitle">Chapter controls — roles, XP adjustments, quest activation</div>
+          </div>
+        </div>
+        <span class="screen-role-badge role-admin">Admin Only</span>
+      </div>
+      <div class="screen-body">
+        <div class="config-meta">
+          <div class="config-meta-item"><div class="config-meta-label">Glide Layout</div><div class="config-meta-value">Details Screen</div></div>
+          <div class="config-meta-item"><div class="config-meta-label">Data Source</div><div class="config-meta-value">👥 Users + All tabs</div></div>
+          <div class="config-meta-item"><div class="config-meta-label">Visibility</div><div class="config-meta-value">Role = Admin ONLY</div></div>
+        </div>
+
+        <div class="section-h">Admin Actions</div>
+        <div class="action-steps">
+          <div class="action-step"><div class="action-step-num">1</div><div><strong>Change member role:</strong> List all members → tap → edit Role dropdown. Choice options: Admin, Chair, PIA, Member.</div></div>
+          <div class="action-step"><div class="action-step-num">2</div><div><strong>Manual XP award:</strong> Inline number editor on Total XP field + a text note field for reason. Writes to Engagement Log with "Admin Override" tag.</div></div>
+          <div class="action-step"><div class="action-step-num">3</div><div><strong>Chapter Website link:</strong> Button → Open URL → your chapter website.</div></div>
+          <div class="action-step"><div class="action-step-num">4</div><div><strong>Download full roster:</strong> Button → Open URL → Google Sheets export link (CSV download of Users tab).</div></div>
+          <div class="action-step"><div class="action-step-num">5</div><div><strong>Activate new Quest:</strong> Toggle the "Active?" column on the Quests & Badges tab from this panel.</div></div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider"/>
+
+    <!-- AUTOMATIONS -->
+    <div id="automations" class="setup-block">
+      <div class="setup-title">⚡ Make.com Automation Flows</div>
+
+      <div style="margin-bottom:1.5rem;">
+        <div style="font-size:0.88rem;font-weight:600;color:var(--navy);margin-bottom:8px;">Flow 1 — Engagement Log → XP Update</div>
+        <div class="action-steps">
+          <div class="action-step"><div class="action-step-num">T</div><div>Trigger: Google Sheets — New Row in 📋 Engagement Log</div></div>
+          <div class="action-step"><div class="action-step-num">A</div><div>Action: Google Sheets → Update Row in 👥 Users where Member # matches → add XP Awarded to Total XP</div></div>
+          <div class="action-step"><div class="action-step-num">A</div><div>Action: Check if any badge threshold is crossed → if yes, append badge name to Earned Badges field</div></div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:1.5rem;">
+        <div style="font-size:0.88rem;font-weight:600;color:var(--navy);margin-bottom:8px;">Flow 2 — Service Verification → XP + PIA</div>
+        <div class="action-steps">
+          <div class="action-step"><div class="action-step-num">T</div><div>Trigger: Google Sheets — Row Updated in 🙌 Service Log where Verified? changes to "Yes"</div></div>
+          <div class="action-step"><div class="action-step-num">A</div><div>Action: Add Row to 📋 Engagement Log with Hours × 30 as XP Awarded</div></div>
+          <div class="action-step"><div class="action-step-num">A</div><div>Action: Add Row to 📊 PIA Builder if event hasn't been logged yet</div></div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:1.5rem;">
+        <div style="font-size:0.88rem;font-weight:600;color:var(--navy);margin-bottom:8px;">Flow 3 — Quiz Attempt → Score + XP</div>
+        <div class="action-steps">
+          <div class="action-step"><div class="action-step-num">T</div><div>Trigger: New Row in 📝 Quiz Attempts tab</div></div>
+          <div class="action-step"><div class="action-step-num">A</div><div>Action (Router): IF Score ≥ 80 → Add XP to Engagement Log + update Pass/Fail = "Pass"</div></div>
+          <div class="action-step"><div class="action-step-num">A</div><div>Action: IF Score = 100 → also append "Scholar" badge to Earned Badges</div></div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:1.5rem;">
+        <div style="font-size:0.88rem;font-weight:600;color:var(--navy);margin-bottom:8px;">Flow 4 — Profile Completion Badge</div>
+        <div class="action-steps">
+          <div class="action-step"><div class="action-step-num">T</div><div>Trigger: Row Updated in 👥 Users where Profile Complete? changes to "Yes"</div></div>
+          <div class="action-step"><div class="action-step-num">A</div><div>Action: Add Row to 📋 Engagement Log — Activity: "Complete 100% Profile", XP: 100</div></div>
+          <div class="action-step"><div class="action-step-num">A</div><div>Action: Append "Architect" to Earned Badges field</div></div>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size:0.88rem;font-weight:600;color:var(--navy);margin-bottom:8px;">Flow 5 — PIA Export to PDF</div>
+        <div class="action-steps">
+          <div class="action-step"><div class="action-step-num">T</div><div>Trigger: Webhook (called by the "Export PIA" button in Glide)</div></div>
+          <div class="action-step"><div class="action-step-num">A</div><div>Action: Google Sheets → Read 📊 PIA Builder tab range</div></div>
+          <div class="action-step"><div class="action-step-num">A</div><div>Action: Convert to PDF (use Make's built-in Google Drive → Export as PDF)</div></div>
+          <div class="action-step"><div class="action-step-num">A</div><div>Action: Gmail → Send PDF to District email address as attachment</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COMPUTED COLUMNS -->
+    <div id="computed" class="setup-block">
+      <div class="setup-title">🧮 Computed Columns Reference</div>
+
+      <div style="margin-bottom:1.25rem;">
+        <div style="font-size:0.82rem;font-weight:600;color:var(--navy);margin-bottom:6px;">Avatar Image URL (If-Then-Else in Users tab)</div>
+        <div class="formula-block">
+<span class="kw">IF</span> Total XP <span class="num">≥ 2500</span> → <span class="str">"https://[your-storage]/avatar-icon.png"</span>
+<span class="kw">ELSE IF</span> Total XP <span class="num">≥ 1500</span> → <span class="str">"https://[your-storage]/avatar-gold.png"</span>
+<span class="kw">ELSE IF</span> Total XP <span class="num">≥ 1000</span> → <span class="str">"https://[your-storage]/avatar-silver.png"</span>
+<span class="kw">ELSE IF</span> Total XP <span class="num">≥ 500</span>  → <span class="str">"https://[your-storage]/avatar-bronze.png"</span>
+<span class="kw">ELSE</span>                        → <span class="str">"https://[your-storage]/avatar-base.png"</span>
+        </div>
+        <div class="callout callout-tip" style="margin-top:6px;"><span class="callout-icon">💡</span>Host your PNG files on Google Drive (shared link) or Cloudinary (free tier). Replace <span class="step-code">[your-storage]</span> with the actual base URL. Name files exactly as shown in the formula.</div>
+      </div>
+
+      <div style="margin-bottom:1.25rem;">
+        <div style="font-size:0.82rem;font-weight:600;color:var(--navy);margin-bottom:6px;">Avatar Level (If-Then-Else in Users tab)</div>
+        <div class="formula-block">
+<span class="kw">IF</span> Total XP <span class="num">≥ 2500</span> → <span class="str">"Chapter Icon"</span>
+<span class="kw">ELSE IF</span> Total XP <span class="num">≥ 1500</span> → <span class="str">"Gold Legend"</span>
+<span class="kw">ELSE IF</span> Total XP <span class="num">≥ 1000</span> → <span class="str">"Silver Elite"</span>
+<span class="kw">ELSE IF</span> Total XP <span class="num">≥ 500</span>  → <span class="str">"Bronze Varsity"</span>
+<span class="kw">ELSE</span>                        → <span class="str">"Neophyte"</span>
+        </div>
+      </div>
+
+      <div style="margin-bottom:1.25rem;">
+        <div style="font-size:0.82rem;font-weight:600;color:var(--navy);margin-bottom:6px;">Profile Complete? (If-Then-Else in Users tab)</div>
+        <div class="formula-block">
+<span class="kw">IF</span> Full Name <span class="fn">is not empty</span>
+  <span class="kw">AND</span> Email Address <span class="fn">is not empty</span>
+  <span class="kw">AND</span> Employer <span class="fn">is not empty</span>
+  <span class="kw">AND</span> Job Title <span class="fn">is not empty</span>
+  <span class="kw">AND</span> City / State <span class="fn">is not empty</span>
+→ <span class="str">"Yes"</span>
+<span class="kw">ELSE</span> → <span class="str">"No"</span>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size:0.82rem;font-weight:600;color:var(--navy);margin-bottom:6px;">QR Data (Template column in Users tab)</div>
+        <div class="formula-block">
+<span class="str">MEMBER:</span>{<span class="fn">Member #</span>}
+<span class="kw">→ Example output:</span> <span class="str">MEMBER:ΤΤΣ-001</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="doc-footer">
+      <span>The Blue Ledger · Glide Config Guide · v1.0</span>
+      <span>Build sequence: Setup → Data → Roles → Screens 1–12 → Automations</span>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  // Active nav tracking on scroll
+  const sections = document.querySelectorAll('[id]');
+  const navItems = document.querySelectorAll('.nav-item');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navItems.forEach(item => {
+          item.classList.remove('active');
+          if (item.getAttribute('href') === '#' + entry.target.id) {
+            item.classList.add('active');
+          }
+        });
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+
+  sections.forEach(s => observer.observe(s));
+
+  navItems.forEach(item => {
+    item.addEventListener('click', () => {
+      navItems.forEach(i => i.classList.remove('active'));
+      item.classList.add('active');
+    });
+  });
+</script>
+</body>
+</html>

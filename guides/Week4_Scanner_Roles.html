@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>The Blue Ledger — Week 4 Scanner & Roles</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap');
+:root{--navy:#001A4D;--gold:#C9A84C;--gold-l:#F5E6C8;--gold-pale:#FDF8EE;--cream:#FAF8F3;--ink:#0D0D0D;--muted:#6B6B6B;--border:#E2DDD4;--success:#1A6B3A;--success-bg:#EAF5EE;--info-bg:#EAF0FB;--info:#003087;--warn-bg:#FFF3DC;--warn:#7A4A00;--danger-bg:#FCE4EC;--danger:#8B1A1A;--phone-w:310px;--phone-h:640px;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Instrument Sans',sans-serif;background:var(--cream);color:var(--ink);}
+.hdr{background:var(--navy);padding:1.25rem 2rem;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid var(--gold);position:sticky;top:0;z-index:50;}
+.hdr-logo{font-family:'DM Serif Display',serif;font-size:1.15rem;color:var(--gold);}
+.hdr-sub{font-size:0.68rem;color:rgba(255,255,255,0.45);font-family:'DM Mono',monospace;letter-spacing:0.1em;text-transform:uppercase;margin-top:2px;}
+.hdr-badge{background:var(--gold);color:var(--navy);font-size:0.68rem;font-weight:600;padding:3px 10px;border-radius:4px;font-family:'DM Mono',monospace;text-transform:uppercase;}
+.layout{display:flex;min-height:calc(100vh - 64px);}
+.sidebar{width:230px;flex-shrink:0;background:#fff;border-right:1px solid var(--border);padding:1.5rem 0;position:sticky;top:64px;height:calc(100vh - 64px);overflow-y:auto;}
+.sl{font-size:0.62rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);padding:0 1.25rem;margin:1.2rem 0 0.4rem;font-family:'DM Mono',monospace;}
+.sl:first-child{margin-top:0;}
+.si{display:flex;align-items:center;gap:8px;padding:7px 1.25rem;font-size:0.82rem;color:var(--muted);cursor:pointer;border-left:3px solid transparent;transition:all .15s;text-decoration:none;}
+.si:hover{background:var(--cream);color:var(--ink);}
+.si.active{background:var(--gold-pale);color:var(--navy);border-left-color:var(--gold);font-weight:600;}
+.si-dot{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:0.62rem;font-weight:700;font-family:'DM Mono',monospace;flex-shrink:0;color:var(--muted);}
+.si.active .si-dot{background:var(--navy);border-color:var(--navy);color:#fff;}
+.main{flex:1;padding:2rem 2.5rem;}
+.section{margin-bottom:3.5rem;scroll-margin-top:80px;}
+.week-tag{font-family:'DM Mono',monospace;font-size:0.68rem;color:var(--muted);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:4px;}
+.sec-title{font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--navy);}
+.sec-desc{font-size:0.88rem;color:var(--muted);margin-top:6px;line-height:1.6;max-width:580px;}
+
+/* PHONE */
+.phone-cluster{display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;margin-bottom:1.5rem;}
+.phone-wrap{display:flex;flex-direction:column;align-items:center;gap:8px;}
+.phone-lbl{font-size:0.7rem;font-family:'DM Mono',monospace;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;}
+.phone{width:var(--phone-w);background:#0A0A0A;border-radius:36px;padding:10px;box-shadow:0 0 0 1px #333;}
+.phone-notch{width:80px;height:20px;background:#0A0A0A;border-radius:0 0 14px 14px;margin:0 auto 4px;position:relative;z-index:2;}
+.phone-screen{background:#fff;border-radius:24px;overflow:hidden;height:var(--phone-h);display:flex;flex-direction:column;}
+.pstatus{background:var(--navy);height:26px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;font-size:0.6rem;color:rgba(255,255,255,0.6);font-family:'DM Mono',monospace;flex-shrink:0;}
+
+/* SCANNER SCREEN */
+.scr-scanner{flex:1;display:flex;flex-direction:column;background:#000;}
+.scan-topbar{background:rgba(0,0,0,0.85);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;}
+.scan-topbar-title{font-family:'DM Serif Display',serif;font-size:0.9rem;color:var(--gold);}
+.scan-topbar-role{font-size:0.6rem;font-family:'DM Mono',monospace;color:rgba(255,255,255,0.4);background:rgba(147,51,234,0.2);border:1px solid rgba(147,51,234,0.3);border-radius:20px;padding:2px 8px;}
+.scan-viewport{flex:1;position:relative;display:flex;align-items:center;justify-content:center;background:#111;}
+.scan-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
+.scan-frame{width:160px;height:160px;position:relative;}
+.scan-corner{position:absolute;width:28px;height:28px;border-color:var(--gold);border-style:solid;}
+.sc-tl{top:0;left:0;border-width:3px 0 0 3px;border-radius:4px 0 0 0;}
+.sc-tr{top:0;right:0;border-width:3px 3px 0 0;border-radius:0 4px 0 0;}
+.sc-bl{bottom:0;left:0;border-width:0 0 3px 3px;border-radius:0 0 0 4px;}
+.sc-br{bottom:0;right:0;border-width:0 3px 3px 0;border-radius:0 0 4px 0;}
+.scan-laser{position:absolute;left:6px;right:6px;height:2px;background:var(--gold);opacity:0.8;top:50%;animation:scanline 2s ease-in-out infinite;}
+@keyframes scanline{0%,100%{top:15%}50%{top:85%}}
+.scan-hint{position:absolute;bottom:10px;left:0;right:0;text-align:center;font-size:0.65rem;font-family:'DM Mono',monospace;color:rgba(255,255,255,0.4);}
+.scan-bottom{background:#0D0D0D;padding:10px 12px;}
+.scan-event-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.scan-event-label{font-size:0.62rem;font-family:'DM Mono',monospace;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.08em;}
+.scan-event-val{font-size:0.75rem;font-weight:600;color:#fff;}
+.scan-activity-select{background:#1A1A1A;border:1px solid #333;border-radius:8px;padding:7px 10px;font-size:0.75rem;color:#fff;width:100%;font-family:'Instrument Sans',sans-serif;margin-bottom:8px;}
+.scan-confirm-btn{background:var(--gold);color:var(--navy);border:none;border-radius:10px;padding:10px;width:100%;font-size:0.82rem;font-weight:700;font-family:'Instrument Sans',sans-serif;cursor:pointer;}
+.scan-counter{text-align:center;font-size:0.62rem;font-family:'DM Mono',monospace;color:rgba(255,255,255,0.3);margin-top:6px;}
+
+/* SUCCESS STATE */
+.scr-success{flex:1;display:flex;flex-direction:column;background:#000;align-items:center;justify-content:center;padding:1.5rem;}
+.success-ring{width:80px;height:80px;border-radius:50%;border:3px solid var(--success);display:flex;align-items:center;justify-content:center;margin-bottom:1rem;}
+.success-check{font-size:2rem;}
+.success-name{font-family:'DM Serif Display',serif;font-size:1.1rem;color:#fff;margin-bottom:4px;text-align:center;}
+.success-membernum{font-size:0.68rem;font-family:'DM Mono',monospace;color:rgba(255,255,255,0.4);margin-bottom:1rem;}
+.success-xp{background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.3);border-radius:10px;padding:12px 20px;text-align:center;margin-bottom:1.25rem;}
+.success-xp-num{font-family:'DM Serif Display',serif;font-size:1.6rem;color:var(--gold);}
+.success-xp-lbl{font-size:0.6rem;font-family:'DM Mono',monospace;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.1em;}
+.success-scan-next{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.7);border-radius:10px;padding:10px;width:100%;font-size:0.78rem;font-family:'Instrument Sans',sans-serif;cursor:pointer;text-align:center;}
+
+/* ROLES SCREEN */
+.scr-roles{flex:1;display:flex;flex-direction:column;background:#f5f5f5;}
+.roles-topbar{background:var(--navy);padding:10px 12px;}
+.roles-title{font-family:'DM Serif Display',serif;font-size:0.95rem;color:var(--gold);}
+.roles-sub{font-size:0.62rem;color:rgba(255,255,255,0.4);font-family:'DM Mono',monospace;margin-top:2px;}
+.roles-list{flex:1;padding:10px;display:flex;flex-direction:column;gap:6px;overflow:hidden;}
+.role-row{background:#fff;border:1px solid var(--border);border-radius:10px;padding:8px 10px;display:flex;align-items:center;gap:8px;}
+.role-avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.68rem;font-weight:700;flex-shrink:0;}
+.role-info{flex:1;}
+.role-name{font-size:0.8rem;font-weight:600;color:var(--ink);}
+.role-badge{font-size:0.6rem;font-family:'DM Mono',monospace;padding:2px 7px;border-radius:20px;font-weight:600;}
+.badge-admin{background:#FCE4EC;color:#880E4F;}
+.badge-chair{background:#EDE7F6;color:#4A235A;}
+.badge-pia{background:var(--success-bg);color:var(--success);}
+.badge-member{background:var(--info-bg);color:var(--info);}
+.role-arrow{font-size:0.75rem;color:var(--muted);}
+
+/* GUIDE PANELS */
+.guide-panel{background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:1.25rem;}
+.guide-top{background:var(--navy);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;}
+.guide-top-title{font-size:0.82rem;font-weight:600;color:var(--gold);}
+.guide-top-pill{font-size:0.62rem;font-family:'DM Mono',monospace;background:rgba(201,168,76,0.18);color:var(--gold);border:1px solid rgba(201,168,76,0.3);border-radius:20px;padding:2px 8px;}
+.guide-body{padding:12px 14px;}
+.step-list{display:flex;flex-direction:column;gap:0;}
+.step-row{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--border);}
+.step-row:last-child{border:none;}
+.step-n{width:22px;height:22px;border-radius:50%;background:var(--navy);color:#fff;font-size:0.65rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'DM Mono',monospace;margin-top:1px;}
+.step-n.gold{background:var(--gold);color:var(--navy);}
+.step-n.green{background:var(--success);color:#fff;}
+.step-title{font-size:0.82rem;font-weight:600;color:var(--ink);}
+.step-detail{font-size:0.76rem;color:var(--muted);margin-top:2px;line-height:1.55;}
+.code{font-family:'DM Mono',monospace;font-size:0.72rem;background:#F0EDE7;border:1px solid var(--border);border-radius:4px;padding:1px 5px;color:var(--navy);white-space:nowrap;}
+.callout{border-radius:8px;padding:9px 12px;font-size:0.78rem;line-height:1.55;margin:8px 0;display:flex;gap:8px;align-items:flex-start;}
+.callout span{flex-shrink:0;font-size:14px;}
+.c-tip{background:var(--info-bg);border:1px solid #BDD0F5;color:var(--info);}
+.c-warn{background:var(--warn-bg);border:1px solid #F5D98A;color:var(--warn);}
+.c-ok{background:var(--success-bg);border:1px solid #A8D5BC;color:var(--success);}
+.c-danger{background:var(--danger-bg);border:1px solid #F4C0D1;color:var(--danger);}
+
+/* ROLE MATRIX */
+.matrix-wrap{overflow-x:auto;margin:10px 0;}
+.matrix{border-collapse:collapse;width:100%;font-size:0.78rem;}
+.matrix th{background:var(--navy);color:var(--gold);padding:8px 10px;text-align:left;font-size:0.68rem;font-family:'DM Mono',monospace;letter-spacing:0.07em;text-transform:uppercase;white-space:nowrap;}
+.matrix td{padding:7px 10px;border:1px solid var(--border);vertical-align:middle;color:var(--ink);}
+.matrix tr:nth-child(even) td{background:var(--cream);}
+.yes{color:var(--success);font-weight:600;font-size:0.8rem;}
+.no{color:#CCC;font-size:0.8rem;}
+.matrix td.feature{font-weight:500;color:var(--ink);}
+
+/* FLOW DIAGRAM */
+.flow-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:0 0 8px;}
+.fb{font-size:0.73rem;padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:#fff;white-space:nowrap;}
+.fb.start{background:var(--navy);color:var(--gold);border-color:var(--navy);font-weight:600;}
+.fb.end{background:var(--success-bg);color:var(--success);border-color:#A8D5BC;font-weight:600;}
+.fb.gate{background:var(--warn-bg);color:var(--warn);border-color:#F5D98A;}
+.fb.auto{background:var(--info-bg);color:var(--info);border-color:#BDD0F5;}
+.fa{font-size:0.75rem;color:var(--muted);}
+
+/* CHECKLIST */
+.chk-item{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--border);}
+.chk-item:last-child{border:none;}
+.chk-box{width:18px;height:18px;border:1.5px solid var(--border);border-radius:4px;flex-shrink:0;margin-top:1px;}
+.chk-title{font-size:0.83rem;font-weight:600;color:var(--ink);}
+.chk-sub{font-size:0.74rem;color:var(--muted);margin-top:2px;line-height:1.4;}
+
+/* PROGRESS BAR */
+.progress-track{height:6px;background:var(--border);border-radius:3px;margin:1rem 0;}
+.progress-fill{height:100%;background:var(--gold);border-radius:3px;transition:width .3s;}
+
+hr{border:none;border-top:1px solid var(--border);margin:2.5rem 0;}
+@media(max-width:700px){.sidebar{display:none;}.main{padding:1rem;}.phone-cluster{justify-content:center;}}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div>
+    <div class="hdr-logo">The Blue Ledger</div>
+    <div class="hdr-sub">Week 4 — QR Scanner & Role-Based Access</div>
+  </div>
+  <div class="hdr-badge">Glide Build Guide</div>
+</header>
+
+<div class="layout">
+
+<nav class="sidebar">
+  <div class="sl">Week 4 Screens</div>
+  <a href="#overview" class="si active"><div class="si-dot">0</div> Overview</a>
+  <a href="#scanner" class="si"><div class="si-dot">1</div> QR Scanner</a>
+  <a href="#success" class="si"><div class="si-dot">2</div> Scan Confirm</a>
+  <a href="#roles-screen" class="si"><div class="si-dot">3</div> Role Manager</a>
+  <div class="sl">Configuration</div>
+  <a href="#role-matrix" class="si"><div class="si-dot">R</div> Role Matrix</a>
+  <a href="#glide-config" class="si"><div class="si-dot">G</div> Glide Steps</a>
+  <a href="#scanner-logic" class="si"><div class="si-dot">S</div> Scanner Logic</a>
+  <a href="#make-flow" class="si"><div class="si-dot">M</div> Make.com Flow</a>
+  <a href="#checklist" class="si"><div class="si-dot">✓</div> Week 4 Checklist</a>
+</nav>
+
+<main class="main">
+
+  <!-- OVERVIEW -->
+  <div class="section" id="overview">
+    <div class="week-tag">Week 4 · Operations</div>
+    <div class="sec-title">Scanner & Role-Gating</div>
+    <div class="sec-desc">This week makes the app operationally real. Chairs get a live QR scanner to log attendance and service hours. Role-based access locks every sensitive screen. By end of week you can demo a live check-in at a chapter meeting.</div>
+
+    <div class="progress-track"><div class="progress-fill" style="width:33%"></div></div>
+    <div style="font-size:0.75rem;color:var(--muted);font-family:'DM Mono',monospace;">Build progress · Week 4 of 12 · 33% complete</div>
+
+    <div style="margin-top:1.25rem;">
+      <div class="flow-row">
+        <div class="fb start">Chair opens app</div>
+        <div class="fa">→</div>
+        <div class="fb">Scanner tab visible</div>
+        <div class="fa">→</div>
+        <div class="fb">Camera opens</div>
+        <div class="fa">→</div>
+        <div class="fb">Scans brother's QR</div>
+        <div class="fa">→</div>
+        <div class="fb gate">Lookup Member #</div>
+        <div class="fa">→</div>
+        <div class="fb">Confirm screen</div>
+        <div class="fa">→</div>
+        <div class="fb auto">XP auto-logged</div>
+        <div class="fa">→</div>
+        <div class="fb end">Ready for next scan</div>
+      </div>
+    </div>
+
+    <div class="callout c-tip"><span>💡</span> The QR Scanner tab only appears for members with Role = Chair or Admin. Regular members never see it — Glide's visibility conditions handle this automatically once roles are assigned.</div>
+  </div>
+
+  <!-- SCANNER SCREEN -->
+  <div class="section" id="scanner">
+    <div class="week-tag">Screen 1 · Chair + Admin</div>
+    <div class="sec-title">QR Scanner</div>
+    <div class="sec-desc">The most operationally important screen in the app. A Chair opens this at an event, selects the activity type, and scans each brother's Digital ID card. Each scan writes a row to the Engagement Log and fires the XP update.</div>
+
+    <div class="phone-cluster">
+      <div class="phone-wrap">
+        <div class="phone-lbl">Ready to scan</div>
+        <div class="phone">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+            <div class="pstatus"><span>9:41</span><span>⚡ 87%</span></div>
+            <div class="scr-scanner">
+              <div class="scan-topbar">
+                <div>
+                  <div class="scan-topbar-title">QR Scanner</div>
+                  <div style="font-size:0.58rem;color:rgba(255,255,255,0.35);font-family:'DM Mono',monospace;margin-top:1px;">Fall Kickoff Meeting · Sep 5</div>
+                </div>
+                <div class="scan-topbar-role">CHAIR</div>
+              </div>
+              <div class="scan-viewport">
+                <div class="scan-overlay">
+                  <div class="scan-frame">
+                    <div class="scan-corner sc-tl"></div>
+                    <div class="scan-corner sc-tr"></div>
+                    <div class="scan-corner sc-bl"></div>
+                    <div class="scan-corner sc-br"></div>
+                    <div class="scan-laser"></div>
+                  </div>
+                </div>
+                <div class="scan-hint">Hold QR code inside the frame</div>
+              </div>
+              <div class="scan-bottom">
+                <div class="scan-event-row">
+                  <div>
+                    <div class="scan-event-label">Event</div>
+                    <div class="scan-event-val">Fall Kickoff Meeting</div>
+                  </div>
+                  <div style="margin-left:auto;text-align:right;">
+                    <div class="scan-event-label">Scanned</div>
+                    <div class="scan-event-val" style="color:var(--gold);">12 / 28</div>
+                  </div>
+                </div>
+                <select class="scan-activity-select">
+                  <option>Chapter Meeting (on time) — 50 XP</option>
+                  <option>Chapter Meeting (late) — 25 XP</option>
+                  <option>Service Hour — 30 XP/hr</option>
+                  <option>Committee Meeting — 20 XP</option>
+                </select>
+                <div class="scan-counter">Last scan: DeShawn Carter · 2 min ago</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="phone-wrap">
+        <div class="phone-lbl">Scan detected</div>
+        <div class="phone">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+            <div class="pstatus"><span>9:41</span><span>⚡ 87%</span></div>
+            <div class="scr-scanner">
+              <div class="scan-topbar">
+                <div><div class="scan-topbar-title">QR Scanner</div></div>
+                <div class="scan-topbar-role">CHAIR</div>
+              </div>
+              <div class="scan-viewport" style="background:#0a1a0a;">
+                <div style="text-align:center;padding:1rem;">
+                  <div style="font-size:0.65rem;font-family:'DM Mono',monospace;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">QR Detected</div>
+                  <div style="background:rgba(26,107,58,0.2);border:1px solid rgba(26,107,58,0.4);border-radius:10px;padding:14px;margin-bottom:10px;">
+                    <div style="width:44px;height:44px;border-radius:50%;background:#1A2A1A;border:2px solid #1A6B3A;display:flex;align-items:center;justify-content:center;margin:0 auto 8px;font-size:1.1rem;">👤</div>
+                    <div style="font-family:'DM Serif Display',serif;font-size:1rem;color:#fff;">Marcus J. Williams</div>
+                    <div style="font-size:0.62rem;font-family:'DM Mono',monospace;color:rgba(255,255,255,0.4);margin-top:2px;">ΤΤΣ-001 · Gold Legend</div>
+                    <div style="font-size:0.68rem;color:#86EFAC;margin-top:6px;font-family:'DM Mono',monospace;">+50 XP · Chapter Meeting</div>
+                  </div>
+                  <button class="scan-confirm-btn" style="margin-bottom:8px;">✓ Confirm Check-In</button>
+                  <div class="scan-confirm-btn" style="background:transparent;border:1px solid #333;color:rgba(255,255,255,0.5);font-weight:400;">✗ Cancel</div>
+                </div>
+                <div class="scan-hint" style="bottom:6px;">Tap confirm to log attendance</div>
+              </div>
+              <div class="scan-bottom">
+                <div class="scan-event-row">
+                  <div><div class="scan-event-label">Activity</div><div class="scan-event-val">Chapter Meeting (on time)</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="phone-wrap">
+        <div class="phone-lbl">Check-in confirmed</div>
+        <div class="phone">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+            <div class="pstatus"><span>9:41</span><span>⚡ 87%</span></div>
+            <div class="scr-success">
+              <div class="success-ring">
+                <div class="success-check">✓</div>
+              </div>
+              <div class="success-name">Marcus J. Williams</div>
+              <div class="success-membernum">ΤΤΣ-001 · Checked in at 9:41 AM</div>
+              <div class="success-xp">
+                <div class="success-xp-num">+50 XP</div>
+                <div class="success-xp-lbl">Chapter Meeting · On Time</div>
+              </div>
+              <div style="font-size:0.72rem;font-family:'DM Mono',monospace;color:rgba(255,255,255,0.3);text-align:center;margin-bottom:1rem;">Logged to Engagement Log ✓</div>
+              <button class="scan-next" style="background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.3);color:var(--gold);border-radius:10px;padding:12px;width:100%;font-size:0.82rem;font-weight:600;font-family:'Instrument Sans',sans-serif;cursor:pointer;">Scan Next Brother →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="guide-panel">
+      <div class="guide-top"><div class="guide-top-title">Scanner screen — Glide configuration</div><div class="guide-top-pill">New Screen → Custom</div></div>
+      <div class="guide-body">
+        <div class="step-list">
+          <div class="step-row"><div class="step-n">1</div><div class="step-body"><div class="step-title">Add Barcode Scanner component</div><div class="step-detail">Add Screen → Custom → name: <span class="code">QR Scanner</span>. Add Component → <span class="code">Barcode Scanner</span>. This opens the device camera. Map scanned value to a user-specific column: <span class="code">Scanned QR Value</span> (add this to Users table as a basic text column — it acts as a temporary holding field per user session).</div></div></div>
+          <div class="step-row"><div class="step-n">2</div><div class="step-body"><div class="step-title">Add the Member Lookup computed column</div><div class="step-detail">Data Editor → Users → Add Column → <span class="code">Lookup</span> → name: <span class="code">Scanned Member Name</span>. Lookup from: 👥 Users table, where <span class="code">QR Data = Scanned QR Value</span>, return: <span class="code">Full Name</span>. Add a second lookup for <span class="code">Scanned Member # </span> returning the Member # field.</div></div></div>
+          <div class="step-row"><div class="step-n">3</div><div class="step-body"><div class="step-title">Add Activity Type picker</div><div class="step-detail">Add Component → <span class="code">Choice</span> → Label: "Activity Type". Options: pull from <span class="code">⚡ Point Economy</span> tab, <span class="code">Activity / Action</span> column. Map selection to a temp column <span class="code">Selected Activity</span> on Users table.</div></div></div>
+          <div class="step-row"><div class="step-n">4</div><div class="step-body"><div class="step-title">Add XP Lookup from Point Economy</div><div class="step-detail">Add Column → <span class="code">Lookup</span> → <span class="code">Selected XP</span>: from ⚡ Point Economy where <span class="code">Activity / Action = Selected Activity</span>, return <span class="code">XP Awarded</span>. This auto-pulls the correct XP value based on what the Chair selects.</div></div></div>
+          <div class="step-row"><div class="step-n">5</div><div class="step-body"><div class="step-title">Configure the Confirm button action</div><div class="step-detail">Add Component → Button → "Confirm Check-In". Action chain: (1) <span class="code">Add Row</span> to 📋 Engagement Log — all fields auto-filled from lookup columns. (2) <span class="code">Clear Values</span> — reset Scanned QR Value and Selected Activity. (3) <span class="code">Show Notification</span> → "Checked in! +{XP} XP". (4) Navigate back to scanner camera view.</div></div></div>
+          <div class="step-row"><div class="step-n">6</div><div class="step-body"><div class="step-title">Set scanner tab visibility</div><div class="step-detail">Scanner tab → Visibility → Condition: <span class="code">User's Role is Admin</span> OR <span class="code">User's Role is Chair</span>. The tab literally disappears from the nav bar for Member and PIA roles — they never know it exists.</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUCCESS STATE -->
+  <div class="section" id="success">
+    <div class="week-tag">Screen 2 · Confirmation</div>
+    <div class="sec-title">Scan Confirmation State</div>
+    <div class="sec-desc">After the Chair taps Confirm, a full-screen success state appears for 2–3 seconds before resetting to scanner mode. It shows who was checked in, how much XP was awarded, and confirms the data was written to the sheet.</div>
+
+    <div class="guide-panel">
+      <div class="guide-top"><div class="guide-top-title">Confirmation state — implementation</div><div class="guide-top-pill">Inline — no new screen needed</div></div>
+      <div class="guide-body">
+        <div class="callout c-tip"><span>💡</span> Don't create a separate screen for this. Use a <span class="code">Container</span> component with visibility condition: <span class="code">Scanned QR Value is not empty AND confirm action just ran</span>. The container shows the success state; the scanner container hides. After 3 seconds (or on "Scan Next" tap), clear the temp values and the scanner view returns.</div>
+        <div class="step-list" style="margin-top:10px;">
+          <div class="step-row"><div class="step-n">1</div><div class="step-body"><div class="step-title">Add a "Last Scan Success" flag column</div><div class="step-detail">Add <span class="code">Last Scan Success</span> boolean column to Users table. Set to True in the confirm action. Set back to False in the "Scan Next" button action. Use this to toggle between scanner view and success view.</div></div></div>
+          <div class="step-row"><div class="step-n">2</div><div class="step-body"><div class="step-title">Success container content</div><div class="step-detail">Show: <span class="code">Scanned Member Name</span>, <span class="code">Scanned Member #</span>, <span class="code">Selected XP</span>, check mark icon (Rich Text), timestamp (now). All read from computed columns already set up.</div></div></div>
+          <div class="step-row"><div class="step-n">3</div><div class="step-body"><div class="step-title">"Scan Next Brother" button</div><div class="step-detail">Action: Clear <span class="code">Scanned QR Value</span>, clear <span class="code">Selected Activity</span>, set <span class="code">Last Scan Success = False</span>. This resets the screen to scanner mode instantly — the Chair never has to navigate anywhere.</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROLES SCREEN -->
+  <div class="section" id="roles-screen">
+    <div class="week-tag">Screen 3 · Admin Only</div>
+    <div class="sec-title">Role Manager</div>
+    <div class="sec-desc">The Admin screen where the President assigns and changes member roles. Built inside the Admin Panel tab — just a filtered list of all members with inline role editing. No separate screen needed.</div>
+
+    <div class="phone-cluster">
+      <div class="phone-wrap">
+        <div class="phone-lbl">Admin view</div>
+        <div class="phone">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+            <div class="pstatus"><span>9:41</span><span>⚡ 87%</span></div>
+            <div class="scr-roles">
+              <div class="roles-topbar">
+                <div class="roles-title">Role Manager</div>
+                <div class="roles-sub">Admin Panel · Tap a member to change role</div>
+              </div>
+              <div class="roles-list">
+                <div class="role-row">
+                  <div class="role-avatar" style="background:#FCE4EC;color:#880E4F;">MJ</div>
+                  <div class="role-info">
+                    <div class="role-name">Marcus J. Williams</div>
+                    <span class="role-badge badge-admin">Admin / President</span>
+                  </div>
+                  <div class="role-arrow">›</div>
+                </div>
+                <div class="role-row">
+                  <div class="role-avatar" style="background:#EDE7F6;color:#4A235A;">DA</div>
+                  <div class="role-info">
+                    <div class="role-name">DeShawn A. Carter</div>
+                    <span class="role-badge badge-chair">Chair</span>
+                  </div>
+                  <div class="role-arrow">›</div>
+                </div>
+                <div class="role-row">
+                  <div class="role-avatar" style="background:#EAF5EE;color:#1A6B3A;">ET</div>
+                  <div class="role-info">
+                    <div class="role-name">Elijah T. Brooks</div>
+                    <span class="role-badge badge-pia">PIA Analyst</span>
+                  </div>
+                  <div class="role-arrow">›</div>
+                </div>
+                <div class="role-row">
+                  <div class="role-avatar" style="background:#EAF0FB;color:#003087;">JM</div>
+                  <div class="role-info">
+                    <div class="role-name">Jordan M. Hayes</div>
+                    <span class="role-badge badge-member">Member</span>
+                  </div>
+                  <div class="role-arrow">›</div>
+                </div>
+                <div class="role-row">
+                  <div class="role-avatar" style="background:#EAF0FB;color:#003087;">IR</div>
+                  <div class="role-info">
+                    <div class="role-name">Isaiah R. Ford</div>
+                    <span class="role-badge badge-member">Member</span>
+                  </div>
+                  <div class="role-arrow">›</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="phone-wrap">
+        <div class="phone-lbl">Edit role (tap a member)</div>
+        <div class="phone">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+            <div class="pstatus"><span>9:41</span><span>⚡ 87%</span></div>
+            <div class="scr-roles">
+              <div class="roles-topbar">
+                <div class="roles-title">Edit Role</div>
+                <div class="roles-sub">DeShawn A. Carter · ΤΤΣ-002</div>
+              </div>
+              <div style="padding:14px;flex:1;display:flex;flex-direction:column;gap:12px;">
+                <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:10px;">
+                  <div class="role-avatar" style="background:#EDE7F6;color:#4A235A;width:40px;height:40px;">DA</div>
+                  <div>
+                    <div style="font-size:0.85rem;font-weight:600;">DeShawn A. Carter</div>
+                    <div style="font-size:0.65rem;font-family:'DM Mono',monospace;color:var(--muted);">ΤΤΣ-002 · Silver Elite · 1,250 XP</div>
+                  </div>
+                </div>
+                <div>
+                  <div style="font-size:0.65rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:8px;">Assign Role</div>
+                  <div style="display:flex;flex-direction:column;gap:6px;">
+                    <div style="background:#FCE4EC;border:1px solid #F4C0D1;border-radius:8px;padding:8px 12px;font-size:0.78rem;color:#880E4F;font-weight:600;">Admin / President</div>
+                    <div style="background:#EDE7F6;border:2px solid #B39DDB;border-radius:8px;padding:8px 12px;font-size:0.78rem;color:#4A235A;font-weight:600;">✓  Chair  ← current</div>
+                    <div style="background:#EAF5EE;border:1px solid #A8D5BC;border-radius:8px;padding:8px 12px;font-size:0.78rem;color:#1A6B3A;font-weight:600;">PIA Analyst</div>
+                    <div style="background:#EAF0FB;border:1px solid #BDD0F5;border-radius:8px;padding:8px 12px;font-size:0.78rem;color:#003087;font-weight:600;">Member</div>
+                  </div>
+                </div>
+                <div style="margin-top:auto;">
+                  <button style="background:var(--navy);color:#fff;border:none;border-radius:10px;padding:11px;width:100%;font-size:0.82rem;font-weight:600;font-family:'Instrument Sans',sans-serif;cursor:pointer;">Save Role Change</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr/>
+
+  <!-- ROLE MATRIX -->
+  <div class="section" id="role-matrix">
+    <div class="week-tag">Reference</div>
+    <div class="sec-title">Complete Role Access Matrix</div>
+    <div class="sec-desc">Every screen and feature mapped against all four roles. Configure each Glide screen's visibility condition using this matrix as your source of truth.</div>
+    <div class="matrix-wrap">
+      <table class="matrix">
+        <thead>
+          <tr>
+            <th>Feature / Screen</th>
+            <th>Member</th>
+            <th>Chair</th>
+            <th>PIA</th>
+            <th>Admin</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="feature">Home Dashboard</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+          <tr><td class="feature">Digital ID Card</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+          <tr><td class="feature">My Profile (edit)</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+          <tr><td class="feature">Leaderboard</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+          <tr><td class="feature">My Quests & Badges</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+          <tr><td class="feature">Side Quest Quizzes</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+          <tr><td class="feature">Service Log (own)</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+          <tr><td class="feature">Chapter Directory</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+          <tr><td class="feature">QR Scanner</td><td class="no">✗</td><td class="yes">✓</td><td class="no">✗</td><td class="yes">✓</td></tr>
+          <tr><td class="feature">Service Log (all members)</td><td class="no">✗</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+          <tr><td class="feature">Verify service hours</td><td class="no">✗</td><td class="yes">✓</td><td class="no">✗</td><td class="yes">✓</td></tr>
+          <tr><td class="feature">PIA Builder Dashboard</td><td class="no">✗</td><td class="no">✗</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+          <tr><td class="feature">PIA Export button</td><td class="no">✗</td><td class="no">✗</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+          <tr><td class="feature">Dues status (all members)</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td><td class="yes">✓</td></tr>
+          <tr><td class="feature">Expense report approval</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td><td class="yes">✓</td></tr>
+          <tr><td class="feature">Manual XP adjustment</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td><td class="yes">✓</td></tr>
+          <tr><td class="feature">Role Manager</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td><td class="yes">✓</td></tr>
+          <tr><td class="feature">Admin Panel</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td><td class="yes">✓</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- GLIDE CONFIG -->
+  <div class="section" id="glide-config">
+    <div class="week-tag">Configuration</div>
+    <div class="sec-title">Week 4 Glide Build Steps</div>
+    <div class="guide-panel">
+      <div class="guide-top"><div class="guide-top-title">Complete in this order — ~4 hours total</div><div class="guide-top-pill">Weeks 4–5</div></div>
+      <div class="guide-body">
+        <div class="step-list">
+          <div class="step-row"><div class="step-n">1</div><div class="step-body"><div class="step-title">Assign roles to existing members (15 min)</div><div class="step-detail">Open 👥 Users tab in Google Sheets. Fill the <span class="code">Role</span> column for each member: Admin, Chair, PIA, or Member. Save. Glide picks up role changes within ~60 seconds via the sheet sync.</div></div></div>
+          <div class="step-row"><div class="step-n">2</div><div class="step-body"><div class="step-title">Create Glide Roles and map them (20 min)</div><div class="step-detail">Settings → Roles → Create 4 roles. For each: Condition → <span class="code">Role column equals "Admin"</span> (repeat for each). Test by signing in as a Chair-role member — the Scanner tab should appear. Sign in as Member — Scanner tab should be invisible.</div></div></div>
+          <div class="step-row"><div class="step-n">3</div><div class="step-body"><div class="step-title">Add temp columns to Users table (10 min)</div><div class="step-detail">Add 4 columns: <span class="code">Scanned QR Value</span> (text), <span class="code">Selected Activity</span> (text), <span class="code">Selected XP</span> (number, computed via lookup), <span class="code">Last Scan Success</span> (boolean). These are session-state holders — they reset after each scan.</div></div></div>
+          <div class="step-row"><div class="step-n">4</div><div class="step-body"><div class="step-title">Build the QR Scanner screen (60 min)</div><div class="step-detail">New Screen → Custom → source: 👥 Users (current user row). Add: Barcode Scanner component, Activity Type choice picker, Scanned Member Name display (from lookup), Confirm button with full action chain. See Scanner Logic section below for exact action setup.</div></div></div>
+          <div class="step-row"><div class="step-n">5</div><div class="step-body"><div class="step-title">Add scanner tab to nav bar (5 min)</div><div class="step-detail">Layout → Nav Bar → Add Tab → QR Scanner screen → icon: camera or QR code. Set visibility: Role = Chair OR Admin. Drag tab to position 4 (between Quests and Profile).</div></div></div>
+          <div class="step-row"><div class="step-n">6</div><div class="step-body"><div class="step-title">Build Role Manager in Admin Panel (30 min)</div><div class="step-detail">Admin Panel screen → Add Component → Inline List → source: 👥 Users, all rows, no filter. Each row links to an Edit screen. Edit screen shows the Role field as a <span class="code">Choice</span> component with 4 options. Submit updates the Role column directly in the sheet.</div></div></div>
+          <div class="step-row"><div class="step-n">7</div><div class="step-body"><div class="step-title">Set all screen visibility conditions (45 min)</div><div class="step-detail">Work through every screen in the app and apply visibility rules from the Role Matrix above. The most critical ones: Financials (Admin only), Scanner (Chair + Admin), PIA Builder (PIA + Admin), Role Manager (Admin only). Test each by switching your test account's role.</div></div></div>
+          <div class="step-row"><div class="step-n">8</div><div class="step-body"><div class="step-title">Build Financials screen — Week 5 preview (30 min)</div><div class="step-detail">New Screen → Details → 👥 Users. Add: Dues Status display, Amount Owed, Pay Dues button (link to Zelle/PayPal URL), Submit Expense Report button (link to Google Form). Admin sub-view: Inline List of all members showing dues status with color-coded chips.</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCANNER LOGIC -->
+  <div class="section" id="scanner-logic">
+    <div class="week-tag">Scanner Deep-Dive</div>
+    <div class="sec-title">Confirm Button — Full Action Chain</div>
+    <div class="sec-desc">The Confirm Check-In button is the most complex action in the app. It runs 5 steps in sequence. Set each up in Glide's Action Editor in this exact order.</div>
+    <div class="guide-panel">
+      <div class="guide-top"><div class="guide-top-title">Action chain — Confirm Check-In button</div><div class="guide-top-pill">5 sequential actions</div></div>
+      <div class="guide-body">
+        <div class="step-list">
+          <div class="step-row"><div class="step-n gold">1</div><div class="step-body"><div class="step-title">Add Row → 📋 Engagement Log</div><div class="step-detail">
+            Log ID: <span class="code">Template: LOG-{ROWID}</span><br>
+            Date: <span class="code">Current date/time</span><br>
+            Member #: <span class="code">Scanned Member #</span> (lookup column)<br>
+            Member Name: <span class="code">Scanned Member Name</span> (lookup column)<br>
+            Activity Type: <span class="code">Selected Activity</span><br>
+            XP Awarded: <span class="code">Selected XP</span> (lookup column)<br>
+            Logged By: <span class="code">Current user's Member #</span>
+          </div></div></div>
+          <div class="step-row"><div class="step-n gold">2</div><div class="step-body"><div class="step-title">Set Column Values → Users (scanned member's row)</div><div class="step-detail">Find the scanned member's row (where Member # = Scanned Member #). Add <span class="code">Selected XP</span> to their <span class="code">Total XP</span> column. This is the live XP increment — the leaderboard updates immediately.</div></div></div>
+          <div class="step-row"><div class="step-n gold">3</div><div class="step-body"><div class="step-title">Set Column Values → Users (current user — Chair)</div><div class="step-detail">Set <span class="code">Last Scan Success = true</span>. This triggers the success state container to appear on the scanner screen. Also increment the Chair's own session counter: <span class="code">Session Scan Count + 1</span> (for the "12 / 28" display).</div></div></div>
+          <div class="step-row"><div class="step-n gold">4</div><div class="step-body"><div class="step-title">Show Notification</div><div class="step-detail">Message: <span class="code">{Scanned Member Name} checked in — +{Selected XP} XP</span>. Duration: 3 seconds. This also appears as a toast on Android/iOS system level.</div></div></div>
+          <div class="step-row"><div class="step-n gold">5</div><div class="step-body"><div class="step-title">Clear Values (on "Scan Next" tap — separate button)</div><div class="step-detail">Set <span class="code">Scanned QR Value = empty</span>, <span class="code">Selected Activity = empty</span>, <span class="code">Last Scan Success = false</span>. The scanner camera view reappears automatically because its visibility condition checks that Last Scan Success = false.</div></div></div>
+        </div>
+        <div class="callout c-warn" style="margin-top:10px;"><span>⚠️</span> Steps 1 and 2 must run in order — the row must be added to the Engagement Log before Make.com picks it up for the XP update automation. If they run simultaneously, Make.com may process an incomplete row.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAKE.COM FLOW -->
+  <div class="section" id="make-flow">
+    <div class="week-tag">Automation</div>
+    <div class="sec-title">Make.com — Scanner XP Flow</div>
+    <div class="guide-panel">
+      <div class="guide-top"><div class="guide-top-title">Scenario: New Engagement Log Row → XP Update</div><div class="guide-top-pill">Runs every 15 min or instant webhook</div></div>
+      <div class="guide-body">
+        <div class="callout c-tip"><span>💡</span> Glide's Set Column Values action (Step 2 above) can handle XP increments directly — you may not need Make.com for the basic scanner flow. Use Make.com for the badge-checking logic that runs after each XP update.</div>
+        <div class="step-list" style="margin-top:10px;">
+          <div class="step-row"><div class="step-n">T</div><div class="step-body"><div class="step-title">Trigger: Google Sheets — Watch for new rows in 📋 Engagement Log</div><div class="step-detail">Set to run every 15 minutes (free tier) or use a Glide webhook trigger (paid) for instant processing.</div></div></div>
+          <div class="step-row"><div class="step-n">1</div><div class="step-body"><div class="step-title">Router: Check all badge thresholds</div><div class="step-detail">For the member in the new row, pull their updated Total XP from the Users tab. Run through each badge threshold: 25hr service, 50hr service, 100hr service, 10 meetings on time, 3 semesters dues paid, etc.</div></div></div>
+          <div class="step-row"><div class="step-n">2</div><div class="step-body"><div class="step-title">Conditional: If threshold crossed AND badge not yet earned</div><div class="step-detail">Check the member's <span class="code">Earned Badges</span> field. If the badge name is NOT already in that field, proceed. If it is, skip — prevents duplicate awards.</div></div></div>
+          <div class="step-row"><div class="step-n">3</div><div class="step-body"><div class="step-title">Action: Append badge to Earned Badges field</div><div class="step-detail">Google Sheets → Update Row → <span class="code">Earned Badges = current value + ", BadgeName"</span>. Make.com's text concatenation handles the comma-separated list append.</div></div></div>
+          <div class="step-row"><div class="step-n">4</div><div class="step-body"><div class="step-title">Action: Add XP bonus row to Engagement Log</div><div class="step-detail">For badges with XP bonuses (e.g. 25-Hour Builder = +250 XP), write a second row to the Engagement Log: Activity Type = <span class="code">"Badge Award: [Badge Name]"</span>, XP = badge bonus amount.</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHECKLIST -->
+  <div class="section" id="checklist">
+    <div class="week-tag">Week 4 Deliverables</div>
+    <div class="sec-title">Completion Checklist</div>
+    <div class="guide-panel">
+      <div class="guide-top"><div class="guide-top-title">Before moving to Week 5 (Financials)</div><div class="guide-top-pill">All must pass</div></div>
+      <div class="guide-body">
+        <div class="chk-item"><div class="chk-box"></div><div><div class="chk-title">All 4 roles assigned in Google Sheet and synced to Glide</div><div class="chk-sub">Sign in as a Chair-role member — Scanner tab is visible. Sign in as Member — Scanner tab is gone.</div></div></div>
+        <div class="chk-item"><div class="chk-box"></div><div><div class="chk-title">QR Scanner camera opens and reads codes correctly</div><div class="chk-sub">Test on a real device. Open a brother's Digital ID card on one phone. Scan it with the Chair phone. Verify the member name populates in the confirmation view.</div></div></div>
+        <div class="chk-item"><div class="chk-box"></div><div><div class="chk-title">Confirm Check-In writes a row to Engagement Log</div><div class="chk-sub">After a test scan, open the Google Sheet and verify a new row appeared in 📋 Engagement Log with correct Member #, Activity Type, and XP Awarded.</div></div></div>
+        <div class="chk-item"><div class="chk-box"></div><div><div class="chk-title">Total XP updates on the member's profile after scan</div><div class="chk-sub">Check the scanned member's Home Dashboard — XP number should reflect the newly earned points within 60 seconds of the scan.</div></div></div>
+        <div class="chk-item"><div class="chk-box"></div><div><div class="chk-title">Success state shows and resets correctly</div><div class="chk-sub">After confirm: success screen shows member name + XP. Tap "Scan Next" — scanner camera returns. No stale data from previous scan.</div></div></div>
+        <div class="chk-item"><div class="chk-box"></div><div><div class="chk-title">Financials screen hidden from all non-Admin roles</div><div class="chk-sub">Sign in as Chair, PIA, and Member accounts. Financials tab must be invisible in all three cases.</div></div></div>
+        <div class="chk-item"><div class="chk-box"></div><div><div class="chk-title">Live event test: scan at a real chapter meeting</div><div class="chk-sub">This is the Week 4 milestone. Set up at one real chapter event. A Chair scans at least 5 brothers. Verify all rows appear correctly in the sheet afterward.</div></div></div>
+        <div class="chk-item"><div class="chk-box"></div><div><div class="chk-title">Make.com badge-checking scenario active</div><div class="chk-sub">Manually trigger the scenario after adding a test Engagement Log row. Verify badges are awarded and not duplicated on repeated runs.</div></div></div>
+      </div>
+    </div>
+    <div class="callout c-ok" style="margin-top:1rem;"><span>✅</span> Week 4 complete = first live operational use at a real event. Week 5 is Financials & Resources — dues payment links, expense reporting, and the chapter portal. Shorter build, mostly external link configuration.</div>
+  </div>
+
+</main>
+</div>
+
+<script>
+const sections = document.querySelectorAll('.section[id]');
+const navLinks = document.querySelectorAll('.si');
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      navLinks.forEach(l => {
+        l.classList.remove('active');
+        if (l.getAttribute('href') === '#' + e.target.id) l.classList.add('active');
+      });
+    }
+  });
+}, { rootMargin: '-20% 0px -65% 0px' });
+sections.forEach(s => obs.observe(s));
+</script>
+</body>
+</html>

@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>The Blue Ledger — Week 10 — PIA Builder</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@0,400;0,500;0,600&display=swap');
+:root{--navy:#001A4D;--gold:#C9A84C;--gold-l:#F5E6C8;--gold-pale:#FDF8EE;--cream:#FAF8F3;--ink:#0D0D0D;--muted:#6B6B6B;--border:#E2DDD4;--success:#1A6B3A;--success-bg:#EAF5EE;--success-border:#A8D5BC;--info:#003087;--info-bg:#EAF0FB;--info-border:#BDD0F5;--warn:#7A4A00;--warn-bg:#FFF3DC;--warn-border:#F5D98A;--danger:#8B1A1A;--danger-bg:#FCE4EC;--danger-border:#F4C0D1;--phone-w:300px;--phone-h:600px;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Instrument Sans',sans-serif;background:var(--cream);color:var(--ink);}
+.hdr{background:var(--navy);padding:1.25rem 2rem;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid var(--gold);position:sticky;top:0;z-index:50;}
+.hdr-logo{font-family:'DM Serif Display',serif;font-size:1.15rem;color:var(--gold);}
+.hdr-sub{font-size:.68rem;color:rgba(255,255,255,.45);font-family:'DM Mono',monospace;letter-spacing:.1em;text-transform:uppercase;margin-top:2px;}
+.hdr-badge{background:var(--gold);color:var(--navy);font-size:.68rem;font-weight:600;padding:3px 10px;border-radius:4px;font-family:'DM Mono',monospace;text-transform:uppercase;}
+.layout{display:flex;min-height:calc(100vh - 64px);}
+.sidebar{width:225px;flex-shrink:0;background:#fff;border-right:1px solid var(--border);padding:1.5rem 0;position:sticky;top:64px;height:calc(100vh - 64px);overflow-y:auto;}
+.sl{font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding:0 1.25rem;margin:1.2rem 0 .4rem;font-family:'DM Mono',monospace;}
+.si{display:flex;align-items:center;gap:8px;padding:7px 1.25rem;font-size:.82rem;color:var(--muted);cursor:pointer;border-left:3px solid transparent;transition:all .15s;text-decoration:none;}
+.si:hover{background:var(--cream);color:var(--ink);}
+.si.active{background:var(--gold-pale);color:var(--navy);border-left-color:var(--gold);font-weight:600;}
+.si-dot{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:700;font-family:'DM Mono',monospace;flex-shrink:0;color:var(--muted);}
+.si.active .si-dot{background:var(--navy);border-color:var(--navy);color:#fff;}
+.main{flex:1;padding:2rem 2.5rem;max-width:840px;}
+.section{margin-bottom:3rem;scroll-margin-top:80px;}
+.week-tag{font-family:'DM Mono',monospace;font-size:.68rem;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px;}
+.sec-title{font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--navy);}
+.sec-desc{font-size:.88rem;color:var(--muted);margin-top:6px;line-height:1.6;max-width:580px;margin-bottom:1.25rem;}
+.g{background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:1.25rem;}
+.gt{background:var(--navy);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;}
+.gtt{font-size:.82rem;font-weight:600;color:var(--gold);}
+.gtp{font-size:.62rem;font-family:'DM Mono',monospace;background:rgba(201,168,76,.18);color:var(--gold);border:1px solid rgba(201,168,76,.3);border-radius:20px;padding:2px 8px;}
+.gb{padding:12px 14px;}
+.sr{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--border);}
+.sr:last-child{border:none;}
+.sn{width:22px;height:22px;border-radius:50%;background:var(--navy);color:#fff;font-size:.65rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'DM Mono',monospace;margin-top:1px;}
+.sn.gd{background:var(--gold);color:var(--navy);}
+.sn.gr{background:var(--success);color:#fff;}
+.sn.bx{background:var(--success-bg);border:1.5px solid var(--success);color:var(--success);}
+.st{font-size:.83rem;font-weight:600;color:var(--ink);}
+.sd{font-size:.76rem;color:var(--muted);margin-top:2px;line-height:1.55;}
+.cd{font-family:'DM Mono',monospace;font-size:.72rem;background:#F0EDE7;border:1px solid var(--border);border-radius:4px;padding:1px 5px;color:var(--navy);white-space:nowrap;}
+.cb{border-radius:8px;padding:9px 12px;font-size:.78rem;line-height:1.55;margin:8px 0;display:flex;gap:8px;align-items:flex-start;}
+.cb span{font-size:14px;flex-shrink:0;}
+.ct{background:var(--info-bg);border:1px solid var(--info-border);color:var(--info);}
+.cw{background:var(--warn-bg);border:1px solid var(--warn-border);color:var(--warn);}
+.co{background:var(--success-bg);border:1px solid var(--success-border);color:var(--success);}
+.cd2{background:var(--danger-bg);border:1px solid var(--danger-border);color:var(--danger);}
+.chk{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--border);}
+.chk:last-child{border:none;}
+.cb2{width:18px;height:18px;border:1.5px solid var(--border);border-radius:4px;flex-shrink:0;margin-top:1px;}
+.ct2{font-size:.83rem;font-weight:600;color:var(--ink);}
+.cs{font-size:.74rem;color:var(--muted);margin-top:2px;line-height:1.4;}
+.flow-r{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:0 0 10px;}
+.fb{font-size:.73rem;padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:#fff;white-space:nowrap;}
+.fb.s{background:var(--navy);color:var(--gold);border-color:var(--navy);font-weight:600;}
+.fb.e{background:var(--success-bg);color:var(--success);border-color:#A8D5BC;font-weight:600;}
+.fb.a{background:var(--info-bg);color:var(--info);border-color:#BDD0F5;}
+.fb.w{background:var(--warn-bg);color:var(--warn);border-color:#F5D98A;}
+.fa{font-size:.8rem;color:var(--muted);}
+.ptrak{height:6px;background:var(--border);border-radius:3px;margin:1rem 0;}
+.pfil{height:100%;border-radius:3px;background:var(--gold);}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:1.25rem;}
+.pcard{background:#fff;border:1px solid var(--border);border-radius:10px;padding:.85rem;text-align:center;}
+.pcard-num{font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--navy);}
+.pcard-lbl{font-size:.65rem;font-family:'DM Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:2px;}
+hr{border:none;border-top:1px solid var(--border);margin:2rem 0;}
+.badge{display:inline-flex;align-items:center;font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:20px;font-family:'DM Mono',monospace;white-space:nowrap;}
+.bs{background:var(--success-bg);color:var(--success);}
+.bw{background:var(--warn-bg);color:var(--warn);}
+.bi{background:var(--info-bg);color:var(--info);}
+.bg{background:var(--gold-pale);color:var(--warn);}
+.bd{background:var(--danger-bg);color:var(--danger);}
+.tbl{width:100%;border-collapse:collapse;font-size:.8rem;}
+.tbl th{background:var(--cream);padding:8px 10px;text-align:left;font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-family:'DM Mono',monospace;border-bottom:1px solid var(--border);}
+.tbl td{padding:8px 10px;border-bottom:1px solid var(--border);color:var(--ink);vertical-align:middle;}
+.tbl tr:last-child td{border:none;}
+.tbl tr:nth-child(even) td{background:var(--cream);}
+.hero{background:var(--navy);border-radius:14px;padding:1.75rem 2rem;margin-bottom:1.5rem;position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;top:-40px;right:-40px;width:160px;height:160px;border-radius:50%;background:rgba(201,168,76,.06);}
+.htag{font-family:'DM Mono',monospace;font-size:.65rem;color:rgba(255,255,255,.35);letter-spacing:.12em;text-transform:uppercase;margin-bottom:5px;}
+.htitle{font-family:'DM Serif Display',serif;font-size:1.6rem;color:var(--gold);margin-bottom:.5rem;}
+.hdesc{font-size:.86rem;color:rgba(255,255,255,.6);line-height:1.65;max-width:500px;}
+@media(max-width:700px){.sidebar{display:none;}.main{padding:1.25rem;}}
+</style>
+</head>
+<body>
+<header class="hdr">
+  <div><div class="hdr-logo">The Blue Ledger</div><div class="hdr-sub">Week 10 — PIA Builder & Analytics</div></div>
+  <div class="hdr-badge">~2.5 hours</div>
+</header>
+<div class="layout">
+<nav class="sidebar"><div class="sl">Week 10</div><a href="#pia_overview" class="si "><div class="si-dot">0</div> Overview</a><a href="#pia_screen" class="si "><div class="si-dot">1</div> PIA Screen</a><a href="#pia_make" class="si "><div class="si-dot">2</div> Export Automation</a><a href="#analytics" class="si "><div class="si-dot">3</div> Analytics (Bonus)</a><a href="#checklist10" class="si "><div class="si-dot">✓</div> Checklist</a></nav>
+<main class="main"><div class="hero">
+<div class="htag">Week 10 · Automation & Analytics</div>
+<div class="htitle">PIA Builder & Automated Reporting</div>
+<div class="hdesc">The Program Implementation Assessment dashboard goes fully automated this week. The PIA Analyst and President can export a complete regional/national report with one tap. Make.com converts the PIA Builder tab to a PDF and emails it to the district automatically.</div>
+</div><div class="ptrak"><div class="pfil" style="width:83%"></div></div><div style="font-size:.75rem;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:1.25rem;">Week 10 of 12 · 83% complete</div><div class="section" id="pia_overview">
+<div class="week-tag">Week 10</div>
+<div class="sec-title">What Gets Built</div>
+<div class="sec-desc">PIA Builder screen with live rollups, export webhook, Make.com PDF generation, and Gmail delivery. Estimated time: 2.5 hours.</div>
+<div class="pgrid"><div class="pcard"><div class="pcard-num">1</div><div class="pcard-lbl">Tap to export</div></div><div class="pcard"><div class="pcard-num">5</div><div class="pcard-lbl">Program areas</div></div><div class="pcard"><div class="pcard-num">∞</div><div class="pcard-lbl">Auto-aggregates</div></div><div class="pcard"><div class="pcard-num">0</div><div class="pcard-lbl">Manual work</div></div></div>
+</div><div class="section" id="pia_screen">
+<div class="week-tag">Glide</div>
+<div class="sec-title">PIA Builder Screen</div>
+
+<div class="g"><div class="gt"><div class="gtt">PIA Builder screen — full configuration</div><div class="gtp">~60 min</div></div><div class="gb"><div class="sr"><div class="sn ">1</div><div><div class="st">Screen setup</div><div class="sd">Add Screen → Details → source: 📊 PIA Builder tab. Visibility: Role = Admin OR Role = PIA. Name: 'PIA Builder'. Nav tab with chart icon. Add to Operations section in sidebar.</div></div></div><div class="sr"><div class="sn ">2</div><div><div class="st">Summary stat cards at top</div><div class="sd">Add 3 stat display components using Rollup columns: (1) <span class='cd'>Program Count</span> = count of rows in PIA Builder tab. (2) <span class='cd'>Total Brothers Engaged</span> = sum of '# Brothers Participated'. (3) <span class='cd'>Total Hours</span> = sum of 'Total Hours Logged'. Display as a 3-column grid at the top of the screen.</div></div></div><div class="sr"><div class="sn ">3</div><div><div class="st">Program list</div><div class="sd">Below stats: Inline List → 📊 PIA Builder tab → all rows → sorted by Date descending. Each row shows: Program Area (bold), Program Name, date, brothers count, hours. Tap → Detail view with all fields including Community Partners and Estimated Impact.</div></div></div><div class="sr"><div class="sn ">4</div><div><div class="st">Add New Program button</div><div class="sd">Floating button or top-bar button → Add New Program → Form screen → source: 📊 PIA Builder. Fields: Program Area (dropdown: Economic Empowerment / Educational Development / Health & Wellness / Social Action / Chapter Development), Program Name, Date(s), # Brothers Participated, Total Hours Logged, Community Partners, Estimated Impact, Documentation Link. Visible only to Admin and PIA roles.</div></div></div><div class="sr"><div class="sn ">5</div><div><div class="st">Export PIA button</div><div class="sd">Top-right button → label: 'Export PDF →' → Action: Open URL → your Make.com webhook URL (generated in next step). The webhook fires the PDF generation scenario. Show a confirmation notification: 'PIA report sent to district email.'</div></div></div><div class="sr"><div class="sn ">6</div><div><div class="st">Reporting period selector</div><div class="sd">Above the program list, add a Choice component: Reporting Period (Fall 2025 / Spring 2026 / Full Year 2025). When changed, filter the list to show only programs within that period. This also passes the period as a parameter to the export webhook.</div></div></div></div></div>
+</div><div class="section" id="pia_make">
+<div class="week-tag">Make.com</div>
+<div class="sec-title">PIA Export Automation</div>
+
+<div class="g"><div class="gt"><div class="gtt">Scenario: PIA Export → PDF → Gmail</div><div class="gtp">~45 min to build</div></div><div class="gb"><div class="sr"><div class="sn ">T</div><div><div class="st">Trigger: Webhooks → Custom Webhook</div><div class="sd">Create a new webhook in Make.com. Copy the URL — paste it into the Glide 'Export PIA' button action. The webhook receives: reporting period (from Glide), triggered by (member name and role).</div></div></div><div class="sr"><div class="sn ">1</div><div><div class="st">Google Sheets → Get Range</div><div class="sd">Read the entire 📊 PIA Builder tab. Filter rows matching the reporting period received from the webhook. This becomes your report data.</div></div></div><div class="sr"><div class="sn ">2</div><div><div class="st">Google Docs → Create Document from Template</div><div class="sd">Create a Google Doc template with placeholders: {{chapter_name}}, {{period}}, {{total_programs}}, {{total_brothers}}, {{total_hours}}, and a table for program rows. Make.com fills in the placeholders with the sheet data. Use 'Create Document from Template' module.</div></div></div><div class="sr"><div class="sn ">3</div><div><div class="st">Google Drive → Export as PDF</div><div class="sd">Convert the filled Google Doc to PDF format. Make.com's Google Drive module has an 'Export File' action that converts Docs to PDF. Store the PDF in a designated Drive folder.</div></div></div><div class="sr"><div class="sn ">4</div><div><div class="st">Gmail → Send Email with Attachment</div><div class="sd">To: your district or regional contact email. Subject: 'PIA Report — Tau Tau Sigma Chapter — {{period}}'. Body: chapter name, total stats summary, note that the full report is attached. Attachment: the generated PDF from step 3. Add CC to President and PIA Analyst.</div></div></div><div class="sr"><div class="sn ">5</div><div><div class="st">Update a 'Last Export' timestamp</div><div class="sd">Google Sheets → Update a cell in the PIA Builder tab (e.g. cell A1 label area) with the timestamp of the last export. Display this on the PIA Builder screen so the Analyst knows when the report was last sent.</div></div></div></div></div><div class="cb ct"><span>💡</span><div>Build the Google Doc template first before wiring the Make.com scenario. Create a blank Doc, format it the way your district report should look, add {{placeholders}} for all variable fields, then share it with your Make.com Google account. The template is reusable — you just update the data for each export.</div></div>
+</div><div class="section" id="analytics">
+<div class="week-tag">Bonus</div>
+<div class="sec-title">Chapter Analytics Dashboard</div>
+<div class="sec-desc">Optional — if time allows after PIA Builder.</div>
+<div class="g"><div class="gt"><div class="gtt">Add analytics to the Admin Panel</div><div class="gtp">~30 min</div></div><div class="gb"><div class="sr"><div class="sn ">1</div><div><div class="st">Weekly XP trend</div><div class="sd">Add a bar-chart style visualization using Glide's chart components (if available on your plan) or a Rich Text component with a manually calculated summary. Show XP earned per week for the current semester.</div></div></div><div class="sr"><div class="sn ">2</div><div><div class="st">Attendance rate</div><div class="sd">Rollup: count of Chapter Meeting check-ins this semester / total members / total meetings held. Display as a percentage. Target: ≥70% average attendance.</div></div></div><div class="sr"><div class="sn ">3</div><div><div class="st">Service hours by member</div><div class="sd">Inline List sorted by service hours descending. Shows who's closest to the 25hr and 100hr milestones. President can use this to personally reach out to brothers who are close to a badge.</div></div></div><div class="sr"><div class="sn ">4</div><div><div class="st">Dues collection rate</div><div class="sd">Count Dues Status = 'Paid' / total members. Display as a progress bar toward 100% collection. Admin sees this on the dashboard — creates urgency for outreach before the deadline.</div></div></div></div></div>
+</div><div class="section" id="checklist10">
+<div class="week-tag">Checklist</div>
+<div class="sec-title">Week 10 Completion Checklist</div>
+
+<div class="g"><div class="gt"><div class="gtt">Before moving to Week 11 Beta Test</div><div class="gtp">4 items</div></div><div class="gb"><div class="chk"><div class="cb2"></div><div><div class="ct2">PIA Builder screen shows live rollup stats</div><div class="cs">Total Programs, Total Brothers, Total Hours all calculate correctly from the PIA Builder tab. Adding a new program row increases all three counts automatically.</div></div></div><div class="chk"><div class="cb2"></div><div><div class="ct2">Add New Program form works end-to-end</div><div class="cs">Fill in all fields, submit — new row appears in 📊 PIA Builder tab in the sheet. Stats update on the screen.</div></div></div><div class="chk"><div class="cb2"></div><div><div class="ct2">Export PIA webhook fires and sends email</div><div class="cs">Tap Export PDF. Within 3 minutes, the district email address receives an email with the PDF attached. Open the PDF — confirm all program data is present and formatted correctly.</div></div></div><div class="chk"><div class="cb2"></div><div><div class="ct2">Reporting period filter works</div><div class="cs">Switch between Fall 2025, Spring 2026, Full Year — program list updates to show only the relevant programs for each period.</div></div></div></div></div>
+</div></main>
+</div>
+<script>
+const secs=document.querySelectorAll('.section[id]');
+const navs=document.querySelectorAll('.si');
+const obs=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting){navs.forEach(l=>{l.classList.remove('active');if(l.getAttribute('href')==='#'+x.target.id)l.classList.add('active');});}});},{rootMargin:'-20% 0px -65% 0px'});
+secs.forEach(s=>obs.observe(s));
+</script>
+</body>
+</html>

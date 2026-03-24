@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>The Blue Ledger — Week 5 Financials & Resources</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Instrument+Sans:ital,wght@0,400;0,500;0,600&display=swap');
+:root{
+  --navy:#001A4D;--gold:#C9A84C;--gold-l:#F5E6C8;--gold-pale:#FDF8EE;
+  --cream:#FAF8F3;--ink:#0D0D0D;--muted:#6B6B6B;--border:#E2DDD4;
+  --success:#1A6B3A;--success-bg:#EAF5EE;--success-border:#A8D5BC;
+  --info:#003087;--info-bg:#EAF0FB;--info-border:#BDD0F5;
+  --warn:#7A4A00;--warn-bg:#FFF3DC;--warn-border:#F5D98A;
+  --danger:#8B1A1A;--danger-bg:#FCE4EC;--danger-border:#F4C0D1;
+  --phone-w:310px;--phone-h:620px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Instrument Sans',sans-serif;background:var(--cream);color:var(--ink);}
+
+.hdr{background:var(--navy);padding:1.25rem 2rem;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid var(--gold);position:sticky;top:0;z-index:50;}
+.hdr-logo{font-family:'DM Serif Display',serif;font-size:1.15rem;color:var(--gold);}
+.hdr-sub{font-size:.68rem;color:rgba(255,255,255,.45);font-family:'DM Mono',monospace;letter-spacing:.1em;text-transform:uppercase;margin-top:2px;}
+.hdr-badge{background:var(--gold);color:var(--navy);font-size:.68rem;font-weight:600;padding:3px 10px;border-radius:4px;font-family:'DM Mono',monospace;text-transform:uppercase;}
+
+.layout{display:flex;min-height:calc(100vh - 64px);}
+.sidebar{width:230px;flex-shrink:0;background:#fff;border-right:1px solid var(--border);padding:1.5rem 0;position:sticky;top:64px;height:calc(100vh - 64px);overflow-y:auto;}
+.sl{font-size:.62rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding:0 1.25rem;margin:1.2rem 0 .4rem;font-family:'DM Mono',monospace;}
+.sl:first-child{margin-top:0;}
+.si{display:flex;align-items:center;gap:8px;padding:7px 1.25rem;font-size:.82rem;color:var(--muted);cursor:pointer;border-left:3px solid transparent;transition:all .15s;text-decoration:none;}
+.si:hover{background:var(--cream);color:var(--ink);}
+.si.active{background:var(--gold-pale);color:var(--navy);border-left-color:var(--gold);font-weight:600;}
+.si-dot{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.62rem;font-weight:700;font-family:'DM Mono',monospace;flex-shrink:0;color:var(--muted);}
+.si.active .si-dot{background:var(--navy);border-color:var(--navy);color:#fff;}
+.si.done .si-dot{background:var(--success);border-color:var(--success);color:#fff;}
+
+.main{flex:1;padding:2rem 2.5rem;}
+.section{margin-bottom:3rem;scroll-margin-top:80px;}
+.week-tag{font-family:'DM Mono',monospace;font-size:.68rem;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px;}
+.sec-title{font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--navy);}
+.sec-desc{font-size:.88rem;color:var(--muted);margin-top:6px;line-height:1.6;max-width:580px;margin-bottom:1.25rem;}
+
+/* PROGRESS */
+.progress-track{height:6px;background:var(--border);border-radius:3px;margin:1rem 0;}
+.progress-fill{height:100%;border-radius:3px;background:var(--gold);transition:width .3s;}
+
+/* PHONE */
+.phone-cluster{display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;margin-bottom:1.5rem;}
+.phone-wrap{display:flex;flex-direction:column;align-items:center;gap:8px;}
+.phone-lbl{font-size:.7rem;font-family:'DM Mono',monospace;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;}
+.phone{width:var(--phone-w);background:#0A0A0A;border-radius:36px;padding:10px;box-shadow:0 0 0 1px #333;}
+.phone-notch{width:80px;height:20px;background:#0A0A0A;border-radius:0 0 14px 14px;margin:0 auto 4px;}
+.phone-screen{background:#fff;border-radius:24px;overflow:hidden;height:var(--phone-h);display:flex;flex-direction:column;}
+.pstatus{background:var(--navy);height:26px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;font-size:.6rem;color:rgba(255,255,255,.6);font-family:'DM Mono',monospace;flex-shrink:0;}
+
+/* SCREEN STYLES */
+.scr{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.scr-top{background:var(--navy);padding:12px 14px;}
+.scr-title{font-family:'DM Serif Display',serif;font-size:.95rem;color:var(--gold);}
+.scr-sub{font-size:.62rem;color:rgba(255,255,255,.4);font-family:'DM Mono',monospace;margin-top:2px;}
+.scr-body{flex:1;padding:12px;overflow:hidden;display:flex;flex-direction:column;gap:10px;}
+
+/* DUES CARD */
+.dues-status-card{border-radius:12px;padding:1rem;border:1.5px solid;text-align:center;}
+.dues-paid{background:var(--success-bg);border-color:var(--success-border);}
+.dues-late{background:var(--warn-bg);border-color:var(--warn-border);}
+.dues-outstanding{background:var(--danger-bg);border-color:var(--danger-border);}
+.dues-amount{font-family:'DM Serif Display',serif;font-size:1.6rem;margin-bottom:4px;}
+.dues-label{font-size:.62rem;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.1em;}
+.dues-badge{display:inline-block;padding:3px 12px;border-radius:20px;font-size:.65rem;font-weight:700;font-family:'DM Mono',monospace;margin-top:6px;}
+
+.action-btn{border-radius:10px;padding:10px 12px;width:100%;font-size:.78rem;font-weight:600;font-family:'Instrument Sans',sans-serif;cursor:pointer;border:none;text-align:center;}
+.btn-navy{background:var(--navy);color:#fff;}
+.btn-outline-sm{background:transparent;border:1px solid var(--border);color:var(--muted);}
+.btn-gold{background:var(--gold);color:var(--navy);}
+
+.info-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:.78rem;}
+.info-row:last-child{border:none;}
+.info-key{color:var(--muted);}
+.info-val{font-weight:600;color:var(--ink);}
+
+.member-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);}
+.member-row:last-child{border:none;}
+.m-avatar{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.62rem;font-weight:700;flex-shrink:0;}
+.m-name{flex:1;font-size:.76rem;font-weight:600;}
+.status-pill{font-size:.58rem;padding:2px 7px;border-radius:20px;font-weight:700;font-family:'DM Mono',monospace;}
+.sp-paid{background:var(--success-bg);color:var(--success);}
+.sp-late{background:var(--warn-bg);color:var(--warn);}
+.sp-out{background:var(--danger-bg);color:var(--danger);}
+
+/* EXPENSE FORM */
+.form-field{margin-bottom:8px;}
+.field-label-sm{font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:3px;}
+.field-input-sm{width:100%;border:1px solid var(--border);border-radius:6px;padding:7px 9px;font-size:.75rem;background:var(--cream);}
+.field-input-sm.filled{border-color:var(--navy);background:var(--info-bg);color:var(--info);}
+
+/* GUIDE PANELS */
+.guide-panel{background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:1.25rem;}
+.guide-top{background:var(--navy);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;}
+.guide-top-title{font-size:.82rem;font-weight:600;color:var(--gold);}
+.guide-top-pill{font-size:.62rem;font-family:'DM Mono',monospace;background:rgba(201,168,76,.18);color:var(--gold);border:1px solid rgba(201,168,76,.3);border-radius:20px;padding:2px 8px;}
+.guide-body{padding:12px 14px;}
+.step-row{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--border);}
+.step-row:last-child{border:none;}
+.step-n{width:22px;height:22px;border-radius:50%;background:var(--navy);color:#fff;font-size:.65rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'DM Mono',monospace;margin-top:1px;}
+.step-n.gold{background:var(--gold);color:var(--navy);}
+.step-n.green{background:var(--success);color:#fff;}
+.step-title{font-size:.83rem;font-weight:600;color:var(--ink);}
+.step-detail{font-size:.76rem;color:var(--muted);margin-top:2px;line-height:1.55;}
+.code{font-family:'DM Mono',monospace;font-size:.72rem;background:#F0EDE7;border:1px solid var(--border);border-radius:4px;padding:1px 5px;color:var(--navy);white-space:nowrap;}
+
+.callout{border-radius:8px;padding:9px 12px;font-size:.78rem;line-height:1.55;margin:8px 0;display:flex;gap:8px;align-items:flex-start;}
+.callout span{flex-shrink:0;font-size:14px;}
+.c-tip{background:var(--info-bg);border:1px solid var(--info-border);color:var(--info);}
+.c-warn{background:var(--warn-bg);border:1px solid var(--warn-border);color:var(--warn);}
+.c-ok{background:var(--success-bg);border:1px solid var(--success-border);color:var(--success);}
+
+/* FLOW */
+.flow-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:0 0 10px;}
+.fb{font-size:.73rem;padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:#fff;white-space:nowrap;}
+.fb.start{background:var(--navy);color:var(--gold);border-color:var(--navy);font-weight:600;}
+.fb.end{background:var(--success-bg);color:var(--success);border-color:#A8D5BC;font-weight:600;}
+.fb.auto{background:var(--info-bg);color:var(--info);border-color:#BDD0F5;}
+.fb.warn{background:var(--warn-bg);color:var(--warn);border-color:#F5D98A;}
+.fa{font-size:.8rem;color:var(--muted);}
+
+/* GOOGLE FORM */
+.gform{background:#fff;border-radius:10px;border:1px solid var(--border);overflow:hidden;}
+.gform-header{background:#4285F4;padding:14px 16px;}
+.gform-title{font-size:.9rem;font-weight:600;color:#fff;}
+.gform-sub{font-size:.7rem;color:rgba(255,255,255,.7);margin-top:2px;}
+.gform-body{padding:12px 14px;display:flex;flex-direction:column;gap:10px;}
+.gform-field{border-bottom:1px solid var(--border);padding-bottom:10px;}
+.gform-field:last-child{border:none;padding:0;}
+.gform-label{font-size:.75rem;font-weight:600;color:var(--ink);margin-bottom:4px;}
+.gform-req{color:#D93025;font-size:.7rem;}
+.gform-input{font-size:.75rem;color:var(--muted);border:none;border-bottom:1px solid var(--border);width:100%;padding:4px 0;background:transparent;}
+
+/* MAKE FLOW */
+.make-scenario{background:var(--cream);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px;}
+.make-title{font-size:.8rem;font-weight:600;color:var(--navy);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.make-steps{display:flex;flex-direction:column;gap:5px;}
+.make-step{display:flex;gap:8px;font-size:.76rem;color:var(--muted);align-items:flex-start;}
+.make-step-icon{font-size:12px;flex-shrink:0;margin-top:2px;}
+.make-step strong{color:var(--ink);}
+
+/* CHKLIST */
+.chk{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--border);}
+.chk:last-child{border:none;}
+.chk-box{width:18px;height:18px;border:1.5px solid var(--border);border-radius:4px;flex-shrink:0;margin-top:1px;}
+.chk-title{font-size:.83rem;font-weight:600;color:var(--ink);}
+.chk-sub{font-size:.74rem;color:var(--muted);margin-top:2px;line-height:1.4;}
+
+/* TABS */
+.tab-bar{display:flex;gap:6px;margin-bottom:1.25rem;flex-wrap:wrap;}
+.tab-btn{font-size:.75rem;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:#fff;color:var(--muted);cursor:pointer;transition:all .15s;font-family:'Instrument Sans',sans-serif;font-weight:500;}
+.tab-btn.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+.tab-content{display:none;}
+.tab-content.active{display:block;}
+
+hr{border:none;border-top:1px solid var(--border);margin:2.5rem 0;}
+@media(max-width:700px){.sidebar{display:none;}.main{padding:1.25rem;}.phone-cluster{justify-content:center;}}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div>
+    <div class="hdr-logo">The Blue Ledger</div>
+    <div class="hdr-sub">Week 5 — Financials & Resources</div>
+  </div>
+  <div class="hdr-badge">~90 min build</div>
+</header>
+
+<div class="layout">
+<nav class="sidebar">
+  <div class="sl">Week 5 Screens</div>
+  <a href="#overview" class="si active"><div class="si-dot">0</div> Overview</a>
+  <a href="#member-dues" class="si"><div class="si-dot">1</div> Member Dues View</a>
+  <a href="#admin-dues" class="si"><div class="si-dot">2</div> Admin Dues Panel</a>
+  <a href="#expense-form" class="si"><div class="si-dot">3</div> Expense Report Form</a>
+  <a href="#chapter-portal" class="si"><div class="si-dot">4</div> Chapter Portal Links</a>
+  <div class="sl">Configuration</div>
+  <a href="#sheet-setup" class="si"><div class="si-dot">S</div> Sheet Columns</a>
+  <a href="#glide-steps" class="si"><div class="si-dot">G</div> Glide Build Steps</a>
+  <a href="#make-flows" class="si"><div class="si-dot">M</div> Make.com Flows</a>
+  <a href="#checklist" class="si"><div class="si-dot">✓</div> Week 5 Checklist</a>
+</nav>
+
+<main class="main">
+
+  <!-- OVERVIEW -->
+  <div class="section" id="overview">
+    <div class="week-tag">Week 5 · Operations</div>
+    <div class="sec-title">Financials & Resources</div>
+    <div class="sec-desc">The shortest build week in the entire roadmap. Three new Google Sheet columns, two Glide screens, one Google Form, and two Make.com automations. Everything here is link configuration and display logic — no complex scanner or QR work. Estimated time: 90 minutes.</div>
+
+    <div class="progress-track"><div class="progress-fill" style="width:42%"></div></div>
+    <div style="font-size:.75rem;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:1.25rem;">Week 5 of 12 · 42% complete · Alpha milestone next week</div>
+
+    <div class="flow-row">
+      <div class="fb start">Member taps Financials</div>
+      <div class="fa">→</div>
+      <div class="fb">Sees their dues status</div>
+      <div class="fa">→</div>
+      <div class="fb warn">Taps "Pay Dues"</div>
+      <div class="fa">→</div>
+      <div class="fb">Opens Zelle / PayPal</div>
+      <div class="fa">→</div>
+      <div class="fb auto">Admin marks paid</div>
+      <div class="fa">→</div>
+      <div class="fb end">+50 XP auto-awarded</div>
+    </div>
+
+    <div class="callout c-tip"><span>💡</span> The dues payment itself happens outside the app (Zelle/PayPal) — that's intentional. You never handle money inside Glide. The app just shows status and provides the payment link. Admin confirms in the sheet, Make.com fires the XP.</div>
+  </div>
+
+  <!-- MEMBER DUES VIEW -->
+  <div class="section" id="member-dues">
+    <div class="week-tag">Screen 1 · All Members</div>
+    <div class="sec-title">Member Dues View</div>
+    <div class="sec-desc">Every member sees their own dues status and has one-tap access to pay. The screen adapts its color and messaging based on whether they're Paid, Late, or Outstanding.</div>
+
+    <div class="phone-cluster">
+      <div class="phone-wrap">
+        <div class="phone-lbl">Status: Paid</div>
+        <div class="phone">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+            <div class="pstatus"><span>9:41</span><span>⚡ 87%</span></div>
+            <div class="scr">
+              <div class="scr-top">
+                <div class="scr-title">Financials</div>
+                <div class="scr-sub">Fall 2025 Semester</div>
+              </div>
+              <div class="scr-body">
+                <div class="dues-status-card dues-paid">
+                  <div class="dues-amount" style="color:var(--success);">$85.00</div>
+                  <div class="dues-label" style="color:var(--success);">Chapter Dues — Fall 2025</div>
+                  <div class="dues-badge" style="background:var(--success);color:#fff;">✓ PAID</div>
+                </div>
+                <div style="background:var(--cream);border-radius:10px;padding:10px 12px;">
+                  <div class="info-row"><span class="info-key">Paid Date</span><span class="info-val">Sept 5, 2025</span></div>
+                  <div class="info-row"><span class="info-key">XP Awarded</span><span class="info-val" style="color:var(--success);">+50 XP ✓</span></div>
+                  <div class="info-row"><span class="info-key">Next Due</span><span class="info-val">Spring 2026</span></div>
+                </div>
+                <button class="action-btn btn-outline-sm">Submit Expense Report</button>
+                <button class="action-btn btn-outline-sm">Chapter Website →</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="phone-wrap">
+        <div class="phone-lbl">Status: Late</div>
+        <div class="phone">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+            <div class="pstatus"><span>9:41</span><span>⚡ 87%</span></div>
+            <div class="scr">
+              <div class="scr-top" style="background:#7A4A00;">
+                <div class="scr-title" style="color:#FAC775;">Financials</div>
+                <div class="scr-sub" style="color:rgba(255,255,255,.45);">Action required</div>
+              </div>
+              <div class="scr-body">
+                <div class="dues-status-card dues-late">
+                  <div class="dues-amount" style="color:var(--warn);">$85.00</div>
+                  <div class="dues-label" style="color:var(--warn);">Chapter Dues — Fall 2025</div>
+                  <div class="dues-badge" style="background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn-border);">⚠ LATE</div>
+                </div>
+                <div style="background:var(--warn-bg);border:1px solid var(--warn-border);border-radius:10px;padding:10px 12px;font-size:.75rem;color:var(--warn);line-height:1.5;">
+                  Dues are past the posted deadline. You have 14 days before a financial hold is applied. Pay now to secure your +50 XP.
+                </div>
+                <button class="action-btn btn-gold">Pay Dues via Zelle →</button>
+                <button class="action-btn btn-outline-sm">Pay via PayPal →</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="phone-wrap">
+        <div class="phone-lbl">Status: Outstanding</div>
+        <div class="phone">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+            <div class="pstatus"><span>9:41</span><span>⚡ 87%</span></div>
+            <div class="scr">
+              <div class="scr-top" style="background:#8B1A1A;">
+                <div class="scr-title" style="color:#FCA5A5;">Financials</div>
+                <div class="scr-sub" style="color:rgba(255,255,255,.45);">Financial hold active</div>
+              </div>
+              <div class="scr-body">
+                <div class="dues-status-card dues-outstanding">
+                  <div class="dues-amount" style="color:var(--danger);">$85.00</div>
+                  <div class="dues-label" style="color:var(--danger);">Chapter Dues — Fall 2025</div>
+                  <div class="dues-badge" style="background:var(--danger-bg);color:var(--danger);border:1px solid var(--danger-border);">✗ OUTSTANDING</div>
+                </div>
+                <div style="background:var(--danger-bg);border:1px solid var(--danger-border);border-radius:10px;padding:10px 12px;font-size:.75rem;color:var(--danger);line-height:1.5;">
+                  Financial hold is active. Voting and officer eligibility suspended until dues are paid in full.
+                </div>
+                <button class="action-btn" style="background:#8B1A1A;color:#fff;">Pay Now — Remove Hold →</button>
+                <button class="action-btn btn-outline-sm" style="font-size:.72rem;">Contact Treasurer</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="guide-panel">
+      <div class="guide-top"><div class="guide-top-title">Glide config — Member Dues screen</div><div class="guide-top-pill">Details screen · All roles</div></div>
+      <div class="guide-body">
+        <div class="step-row"><div class="step-n">1</div><div><div class="step-title">Create the screen</div><div class="step-detail">Add Screen → Details → source: 👥 Users (current user row). Name it <span class="code">Financials</span>. Add to the nav bar with a wallet/money icon. Visible to all roles — every member needs to see their own status.</div></div></div>
+        <div class="step-row"><div class="step-n">2</div><div><div class="step-title">Add the dues status card (conditional styling)</div><div class="step-detail">Add Component → Rich Text or Card. Use Conditional Visibility or an If-Then-Else column to show three different card styles based on the <span class="code">Dues Status</span> column value. Paid = green, Late = amber, Outstanding = red. Each card shows the <span class="code">Amount Owed</span> value and a status badge.</div></div></div>
+        <div class="step-row"><div class="step-n">3</div><div><div class="step-title">Pay Dues button → external URL</div><div class="step-detail">Add Component → Button → label: <span class="code">Pay Dues via Zelle →</span> → Action: Open URL → paste your chapter's Zelle link (format: <span class="code">https://enroll.zellepay.com/qr-codes/YOUR_TOKEN</span> or your custom Zelle QR link). Add a second button for PayPal if needed.</div></div></div>
+        <div class="step-row"><div class="step-n">4</div><div><div class="step-title">Submit Expense Report button</div><div class="step-detail">Button → label: <span class="code">Submit Expense Report</span> → Action: Open URL → your Google Form URL (built in the Expense Form section below). This opens the form in the member's browser.</div></div></div>
+        <div class="step-row"><div class="step-n">5</div><div><div class="step-title">Hide Pay Dues button when status is Paid</div><div class="step-detail">Pay Dues button → Visibility condition: <span class="code">Dues Status is NOT "Paid"</span>. No need to show the payment button to members who've already paid. Replace it with a confirmation message when status = Paid.</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN DUES PANEL -->
+  <div class="section" id="admin-dues">
+    <div class="week-tag">Screen 2 · Admin Only</div>
+    <div class="sec-title">Admin Dues Panel</div>
+    <div class="sec-desc">The Treasurer and President view — a full table of all members' dues status with one-tap mark-as-paid functionality. Lives inside the existing Admin Panel screen as an inline list.</div>
+
+    <div class="phone-cluster">
+      <div class="phone-wrap">
+        <div class="phone-lbl">Admin overview</div>
+        <div class="phone">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+            <div class="pstatus"><span>9:41</span><span>⚡ 87%</span></div>
+            <div class="scr">
+              <div class="scr-top">
+                <div class="scr-title">Dues Management</div>
+                <div class="scr-sub">Admin · Fall 2025</div>
+              </div>
+              <div class="scr-body" style="padding:8px 10px;">
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px;">
+                  <div style="background:var(--success-bg);border:1px solid var(--success-border);border-radius:8px;padding:8px;text-align:center;"><div style="font-family:'DM Serif Display',serif;font-size:1.1rem;color:var(--success);">5</div><div style="font-size:.58rem;color:var(--success);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.06em;">Paid</div></div>
+                  <div style="background:var(--warn-bg);border:1px solid var(--warn-border);border-radius:8px;padding:8px;text-align:center;"><div style="font-family:'DM Serif Display',serif;font-size:1.1rem;color:var(--warn);">1</div><div style="font-size:.58rem;color:var(--warn);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.06em;">Late</div></div>
+                  <div style="background:var(--danger-bg);border:1px solid var(--danger-border);border-radius:8px;padding:8px;text-align:center;"><div style="font-family:'DM Serif Display',serif;font-size:1.1rem;color:var(--danger);">1</div><div style="font-size:.58rem;color:var(--danger);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.06em;">Owed</div></div>
+                </div>
+                <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:8px 10px;">
+                  <div class="member-row">
+                    <div class="m-avatar" style="background:#C9A84C;color:#001A4D;">MJ</div>
+                    <div class="m-name">Marcus Williams</div>
+                    <span class="status-pill sp-paid">Paid</span>
+                  </div>
+                  <div class="member-row">
+                    <div class="m-avatar" style="background:#888;color:#fff;">DA</div>
+                    <div class="m-name">DeShawn Carter</div>
+                    <span class="status-pill sp-paid">Paid</span>
+                  </div>
+                  <div class="member-row">
+                    <div class="m-avatar" style="background:#CD7F32;color:#fff;">ET</div>
+                    <div class="m-name">Elijah Brooks</div>
+                    <span class="status-pill sp-paid">Paid</span>
+                  </div>
+                  <div class="member-row">
+                    <div class="m-avatar" style="background:#185FA5;color:#fff;">IR</div>
+                    <div class="m-name">Isaiah Ford</div>
+                    <span class="status-pill sp-late">Late</span>
+                  </div>
+                  <div class="member-row">
+                    <div class="m-avatar" style="background:#185FA5;color:#fff;">BM</div>
+                    <div class="m-name">Brandon Mitchell</div>
+                    <span class="status-pill sp-out">Outstanding</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="phone-wrap">
+        <div class="phone-lbl">Mark paid (tap member)</div>
+        <div class="phone">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+            <div class="pstatus"><span>9:41</span><span>⚡ 87%</span></div>
+            <div class="scr">
+              <div class="scr-top">
+                <div class="scr-title">Edit Dues</div>
+                <div class="scr-sub">Isaiah R. Ford · ΤΤΣ-005</div>
+              </div>
+              <div class="scr-body">
+                <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+                  <div class="m-avatar" style="background:#185FA5;color:#fff;width:38px;height:38px;font-size:.7rem;">IR</div>
+                  <div><div style="font-size:.85rem;font-weight:600;">Isaiah R. Ford</div><div style="font-size:.62rem;font-family:'DM Mono',monospace;color:var(--muted);">ΤΤΣ-005 · 210 XP · Neophyte</div></div>
+                </div>
+                <div>
+                  <div class="field-label-sm">Dues Status</div>
+                  <div style="display:flex;flex-direction:column;gap:5px;margin-top:4px;">
+                    <div style="background:var(--success-bg);border:1px solid var(--success-border);border-radius:8px;padding:8px 12px;font-size:.78rem;color:var(--success);font-weight:600;cursor:pointer;">✓ Paid</div>
+                    <div style="background:var(--warn-bg);border:2px solid var(--warn);border-radius:8px;padding:8px 12px;font-size:.78rem;color:var(--warn);font-weight:600;">← Current: Late</div>
+                    <div style="background:var(--danger-bg);border:1px solid var(--danger-border);border-radius:8px;padding:8px 12px;font-size:.78rem;color:var(--danger);font-weight:600;cursor:pointer;">Outstanding</div>
+                  </div>
+                </div>
+                <div>
+                  <div class="field-label-sm">Payment Date</div>
+                  <div class="field-input-sm" style="margin-top:4px;">2025-10-14</div>
+                </div>
+                <div>
+                  <div class="field-label-sm">Notes</div>
+                  <div class="field-input-sm" style="margin-top:4px;color:var(--muted);">Optional notes…</div>
+                </div>
+                <div style="margin-top:auto;display:flex;gap:6px;">
+                  <button class="action-btn btn-outline-sm" style="flex:0 0 70px;font-size:.72rem;">← Back</button>
+                  <button class="action-btn btn-navy" style="flex:1;font-size:.78rem;">Save · Award +50 XP</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="guide-panel">
+      <div class="guide-top"><div class="guide-top-title">Glide config — Admin dues panel</div><div class="guide-top-pill">Admin Panel · Inline list</div></div>
+      <div class="guide-body">
+        <div class="step-row"><div class="step-n">1</div><div><div class="step-title">Add dues summary stats to Admin Panel</div><div class="step-detail">Admin Panel screen → top section → add 3 stat displays using Rollup computed columns: Count of members where Dues Status = "Paid", Count = "Late", Count = "Outstanding". Display as a 3-column grid of colored tiles.</div></div></div>
+        <div class="step-row"><div class="step-n">2</div><div><div class="step-title">Add Inline List — all members</div><div class="step-detail">Admin Panel → Add Component → Inline List → source: 👥 Users → show all rows (override row owners). Columns: Member initials (avatar), Full Name, Dues Status (badge chip). Sort by Dues Status so Outstanding appears first.</div></div></div>
+        <div class="step-row"><div class="step-n">3</div><div><div class="step-title">Tap → Edit screen</div><div class="step-detail">Each list row taps to an Edit screen. Edit fields: <span class="code">Dues Status</span> (Choice: Paid / Late / Outstanding), <span class="code">Dues Paid Date</span> (Date picker), <span class="code">Payment Notes</span> (Text). Submit action: Set Column Values → update the row → trigger Make.com scenario via webhook.</div></div></div>
+        <div class="step-row"><div class="step-n">4</div><div><div class="step-title">Submit action chain</div><div class="step-detail">(1) Set <span class="code">Dues Status</span> to selected value. (2) Set <span class="code">Dues Paid Date</span> to entered date. (3) If new status = "Paid": call Make.com webhook to award +50 XP. (4) Show notification: "Dues updated for [member name]". (5) Navigate back to the list.</div></div></div>
+        <div class="callout c-warn"><span>⚠️</span> Set the Admin Dues Panel visibility to <span class="code">Role = Admin</span> only. The member's own dues view (Screen 1) is separate and visible to all — they should only ever see their own data, not the full list.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXPENSE REPORT FORM -->
+  <div class="section" id="expense-form">
+    <div class="week-tag">Screen 3 · All Members</div>
+    <div class="sec-title">Expense Report Form</div>
+    <div class="sec-desc">Built as a Google Form (not inside Glide). The "Submit Expense Report" button opens the form in the member's browser. Responses flow automatically into a new tab in your Master Sheet.</div>
+
+    <div style="max-width:500px;margin-bottom:1.5rem;">
+      <div class="gform">
+        <div class="gform-header">
+          <div class="gform-title">The Blue Ledger — Expense Report</div>
+          <div class="gform-sub">Tau Tau Sigma Chapter · Submit within 30 days of expense</div>
+        </div>
+        <div class="gform-body">
+          <div class="gform-field">
+            <div class="gform-label">Full Name <span class="gform-req">*</span></div>
+            <input class="gform-input" placeholder="Marcus J. Williams" readonly/>
+          </div>
+          <div class="gform-field">
+            <div class="gform-label">Member Number <span class="gform-req">*</span></div>
+            <input class="gform-input" placeholder="ΤΤΣ-001" readonly/>
+          </div>
+          <div class="gform-field">
+            <div class="gform-label">Date of Expense <span class="gform-req">*</span></div>
+            <input class="gform-input" placeholder="MM/DD/YYYY" readonly/>
+          </div>
+          <div class="gform-field">
+            <div class="gform-label">Expense Category <span class="gform-req">*</span></div>
+            <input class="gform-input" placeholder="Event Supplies / Printing / Travel / Other" readonly/>
+          </div>
+          <div class="gform-field">
+            <div class="gform-label">Amount <span class="gform-req">*</span></div>
+            <input class="gform-input" placeholder="$0.00" readonly/>
+          </div>
+          <div class="gform-field">
+            <div class="gform-label">Event / Program Name <span class="gform-req">*</span></div>
+            <input class="gform-input" placeholder="e.g. Habitat for Humanity Build" readonly/>
+          </div>
+          <div class="gform-field">
+            <div class="gform-label">Description</div>
+            <input class="gform-input" placeholder="Brief description of what was purchased and why" readonly/>
+          </div>
+          <div class="gform-field">
+            <div class="gform-label">Receipt Upload <span class="gform-req">*</span></div>
+            <input class="gform-input" placeholder="Attach photo or PDF of receipt" readonly/>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="guide-panel">
+      <div class="guide-top"><div class="guide-top-title">How to create this in Google Forms</div><div class="guide-top-pill">~15 min</div></div>
+      <div class="guide-body">
+        <div class="step-row"><div class="step-n">1</div><div><div class="step-title">Create the form</div><div class="step-detail">Go to <span class="code">forms.google.com</span> → Blank form. Title: <span class="code">The Blue Ledger — Expense Report</span>. Description: <span class="code">Tau Tau Sigma Chapter · Submit within 30 days of expense</span>.</div></div></div>
+        <div class="step-row"><div class="step-n">2</div><div><div class="step-title">Add all 8 fields</div><div class="step-detail">Full Name (Short answer, required) → Member Number (Short answer, required) → Date of Expense (Date, required) → Expense Category (Dropdown: Event Supplies / Printing / Travel / Food / Other, required) → Amount (Short answer, required) → Event Name (Short answer, required) → Description (Paragraph, optional) → Receipt (File Upload, required).</div></div></div>
+        <div class="step-row"><div class="step-n">3</div><div><div class="step-title">Link responses to Master Sheet</div><div class="step-detail">Form → Responses tab → Link to Spreadsheet → select your Master Sheet → create a new tab called <span class="code">💸 Expense Reports</span>. All submissions now flow directly into the sheet in real time.</div></div></div>
+        <div class="step-row"><div class="step-n">4</div><div><div class="step-title">Get the shareable form URL</div><div class="step-detail">Form → Send button → copy the link. Paste this URL into the Glide "Submit Expense Report" button action. Done — members tap the button, browser opens the form, receipt attaches to Google Drive automatically.</div></div></div>
+        <div class="step-row" style="border:none;"><div class="step-n green">✓</div><div><div class="step-title">Optional: Confirmation email</div><div class="step-detail">Form → Settings → Presentation → Confirmation message: <span class="code">Expense report received. The Treasurer will review within 7 days.</span>. Also enable "Send responders a copy" so members have a paper trail.</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHAPTER PORTAL LINKS -->
+  <div class="section" id="chapter-portal">
+    <div class="week-tag">Screen 4 · All Members</div>
+    <div class="sec-title">Chapter Portal & Resources</div>
+    <div class="sec-desc">A simple resource hub — external links to the chapter website, national org, and key documents. Add as a section at the bottom of the Home Dashboard or as its own tab. Takes 10 minutes to configure.</div>
+
+    <div class="guide-panel">
+      <div class="guide-top"><div class="guide-top-title">Resource links to add to Glide</div><div class="guide-top-pill">Home Dashboard → bottom section</div></div>
+      <div class="guide-body">
+        <div class="step-row"><div class="step-n">1</div><div><div class="step-title">Chapter Website</div><div class="step-detail">Button → label: <span class="code">Chapter Website →</span> → Action: Open URL → your chapter website. Use secondary button style (outline, not filled navy).</div></div></div>
+        <div class="step-row"><div class="step-n">2</div><div><div class="step-title">National Organization Portal</div><div class="step-detail">Button → label: <span class="code">PBS National →</span> → Action: Open URL → <span class="code">https://pbs1914.org</span> or your national org's member portal URL.</div></div></div>
+        <div class="step-row"><div class="step-n">3</div><div><div class="step-title">Chapter Constitution (PDF)</div><div class="step-detail">Button → label: <span class="code">View Constitution →</span> → Action: Open URL → direct link to the PDF stored in Google Drive. Set sharing to "Anyone with the link can view."</div></div></div>
+        <div class="step-row"><div class="step-n">4</div><div><div class="step-title">Meeting Minutes (Google Drive folder)</div><div class="step-detail">Button → label: <span class="code">Meeting Minutes →</span> → Action: Open URL → shared Google Drive folder link. Members can view all past minutes without needing a separate login.</div></div></div>
+        <div class="step-row" style="border:none;"><div class="step-n">5</div><div><div class="step-title">Contact the Treasurer</div><div class="step-detail">Button → label: <span class="code">Contact Treasurer →</span> → Action: Open URL → <span class="code">mailto:treasurer@yourchapter.org</span>. Opens the member's default email app with the address pre-filled. Shown only when Dues Status ≠ "Paid".</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <hr/>
+
+  <!-- SHEET SETUP -->
+  <div class="section" id="sheet-setup">
+    <div class="week-tag">Google Sheets</div>
+    <div class="sec-title">New Columns & Tabs for Week 5</div>
+
+    <div class="guide-panel">
+      <div class="guide-top"><div class="guide-top-title">Add to 👥 Users tab — 3 new columns</div><div class="guide-top-pill">Do this first</div></div>
+      <div class="guide-body">
+        <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:.8rem;">
+            <thead>
+              <tr style="background:var(--navy);">
+                <th style="color:var(--gold);padding:8px 10px;text-align:left;font-size:.65rem;font-family:'DM Mono',monospace;letter-spacing:.08em;text-transform:uppercase;">Column Name</th>
+                <th style="color:var(--gold);padding:8px 10px;text-align:left;font-size:.65rem;font-family:'DM Mono',monospace;letter-spacing:.08em;text-transform:uppercase;">Type</th>
+                <th style="color:var(--gold);padding:8px 10px;text-align:left;font-size:.65rem;font-family:'DM Mono',monospace;letter-spacing:.08em;text-transform:uppercase;">Values</th>
+                <th style="color:var(--gold);padding:8px 10px;text-align:left;font-size:.65rem;font-family:'DM Mono',monospace;letter-spacing:.08em;text-transform:uppercase;">Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:8px 10px;font-family:'DM Mono',monospace;font-weight:600;color:var(--navy);">Dues Status</td>
+                <td style="padding:8px 10px;color:var(--muted);">Text</td>
+                <td style="padding:8px 10px;">Paid · Late · Outstanding</td>
+                <td style="padding:8px 10px;color:var(--muted);">Set manually by Admin. Make.com reads this to trigger XP.</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border);background:var(--cream);">
+                <td style="padding:8px 10px;font-family:'DM Mono',monospace;font-weight:600;color:var(--navy);">Dues Paid Date</td>
+                <td style="padding:8px 10px;color:var(--muted);">Date</td>
+                <td style="padding:8px 10px;">YYYY-MM-DD</td>
+                <td style="padding:8px 10px;color:var(--muted);">Filled in by Admin when marking paid.</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:8px 10px;font-family:'DM Mono',monospace;font-weight:600;color:var(--navy);">Amount Owed</td>
+                <td style="padding:8px 10px;color:var(--muted);">Number</td>
+                <td style="padding:8px 10px;">e.g. 85</td>
+                <td style="padding:8px 10px;color:var(--muted);">Set to 0 once paid. Glide displays with $ prefix.</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border);background:var(--cream);">
+                <td style="padding:8px 10px;font-family:'DM Mono',monospace;font-weight:600;color:var(--navy);">Dues XP Awarded?</td>
+                <td style="padding:8px 10px;color:var(--muted);">Text (Yes/No)</td>
+                <td style="padding:8px 10px;">Yes · No</td>
+                <td style="padding:8px 10px;color:var(--muted);">Prevents Make.com from awarding +50 XP twice for the same semester.</td>
+              </tr>
+              <tr>
+                <td style="padding:8px 10px;font-family:'DM Mono',monospace;font-weight:600;color:var(--navy);">Payment Notes</td>
+                <td style="padding:8px 10px;color:var(--muted);">Text</td>
+                <td style="padding:8px 10px;">Free text</td>
+                <td style="padding:8px 10px;color:var(--muted);">Optional Admin notes — Zelle confirmation #, etc.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout c-tip" style="margin-top:10px;"><span>💡</span> Also add a new tab to the Master Sheet: <span class="code">💸 Expense Reports</span>. This is where the Google Form responses land. Columns auto-created by Google Forms: Timestamp, Full Name, Member Number, Date of Expense, Category, Amount, Event Name, Description, Receipt URL.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GLIDE STEPS -->
+  <div class="section" id="glide-steps">
+    <div class="week-tag">Glide Build Order</div>
+    <div class="sec-title">Complete Week 5 in This Order</div>
+    <div class="guide-panel">
+      <div class="guide-top"><div class="guide-top-title">Full build sequence — ~90 minutes total</div><div class="guide-top-pill">8 steps</div></div>
+      <div class="guide-body">
+        <div class="step-row"><div class="step-n">1</div><div><div class="step-title">Update Google Sheet (10 min)</div><div class="step-detail">Add the 5 new columns to the 👥 Users tab. Fill in current dues status for all members. Create the 💸 Expense Reports tab. Sync to Glide — wait 60 seconds, then confirm the new columns appear in the Data Editor.</div></div></div>
+        <div class="step-row"><div class="step-n">2</div><div><div class="step-title">Set column types in Glide Data Editor (5 min)</div><div class="step-detail">Dues Status → Text. Dues Paid Date → Date. Amount Owed → Number. Dues XP Awarded? → Text. Verify all 5 new columns are visible and typed correctly.</div></div></div>
+        <div class="step-row"><div class="step-n">3</div><div><div class="step-title">Create Member Dues screen (20 min)</div><div class="step-detail">Add Screen → Details → 👥 Users (current user). Components: Dues Status card (use If-Then-Else to color-code), Amount Owed, Dues Paid Date, Pay Dues button (URL), Submit Expense Report button (URL), Chapter Website button (URL). Set Pay Dues button visibility: Dues Status ≠ "Paid".</div></div></div>
+        <div class="step-row"><div class="step-n">4</div><div><div class="step-title">Add to nav bar (5 min)</div><div class="step-detail">Layout → Nav Bar → add Financials screen. Icon: wallet or dollar sign. Visible to all roles. Drag to position between Directory and Profile.</div></div></div>
+        <div class="step-row"><div class="step-n">5</div><div><div class="step-title">Build Google Form (15 min)</div><div class="step-detail">Create at forms.google.com using the 8 fields above. Link responses to Master Sheet (new tab: 💸 Expense Reports). Copy the form URL. Paste into the "Submit Expense Report" button in Glide.</div></div></div>
+        <div class="step-row"><div class="step-n">6</div><div><div class="step-title">Add Admin dues panel to Admin Panel screen (15 min)</div><div class="step-detail">Admin Panel → add 3 stat tiles at top (Rollup columns: count by dues status). Add Inline List → 👥 Users → all rows → show Full Name + Dues Status badge. Tap → Edit screen with Dues Status dropdown + Dues Paid Date + Save button.</div></div></div>
+        <div class="step-row"><div class="step-n">7</div><div><div class="step-title">Add resource links to Home Dashboard (5 min)</div><div class="step-detail">Home Dashboard → scroll to bottom → add a "Resources" section with 3–4 external link buttons: Chapter Website, National Portal, Constitution PDF, Meeting Minutes. Use outline button style.</div></div></div>
+        <div class="step-row" style="border:none;"><div class="step-n">8</div><div><div class="step-title">Build Make.com automation (15 min)</div><div class="step-detail">See the Make.com section below. Two scenarios: (1) Dues paid → +50 XP. (2) New expense report → notify Treasurer. Set up and test both before Week 6.</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAKE FLOWS -->
+  <div class="section" id="make-flows">
+    <div class="week-tag">Automation</div>
+    <div class="sec-title">Week 5 Make.com Scenarios</div>
+
+    <div class="make-scenario">
+      <div class="make-title">⚡ Scenario 1 — Dues Paid → +50 XP</div>
+      <div class="make-steps">
+        <div class="make-step"><span class="make-step-icon">⬤</span><div><strong>Trigger:</strong> Google Sheets — Watch Rows → 👥 Users tab → filter: Dues Status = "Paid" AND Dues XP Awarded? ≠ "Yes". Runs every 15 minutes.</div></div>
+        <div class="make-step"><span class="make-step-icon">→</span><div><strong>Action 1:</strong> Google Sheets → Add Row → 📋 Engagement Log. Values: Date = today, Member # = from trigger row, Member Name = from trigger row, Activity Type = "Dues Paid (On Time)", XP Awarded = 50, Logged By = "System".</div></div>
+        <div class="make-step"><span class="make-step-icon">→</span><div><strong>Action 2:</strong> Google Sheets → Update Row → 👥 Users where Member # matches. Set Total XP = Total XP + 50.</div></div>
+        <div class="make-step"><span class="make-step-icon">→</span><div><strong>Action 3:</strong> Google Sheets → Update Row → set Dues XP Awarded? = "Yes". This is the idempotency flag — prevents double-firing.</div></div>
+      </div>
+    </div>
+
+    <div class="make-scenario">
+      <div class="make-title">📧 Scenario 2 — New Expense Report → Notify Treasurer</div>
+      <div class="make-steps">
+        <div class="make-step"><span class="make-step-icon">⬤</span><div><strong>Trigger:</strong> Google Sheets — Watch Rows → 💸 Expense Reports tab → new row added (Google Forms submission).</div></div>
+        <div class="make-step"><span class="make-step-icon">→</span><div><strong>Action 1:</strong> Gmail → Send Email. To: treasurer@yourchapter.org. Subject: <span class="code">New Expense Report: {Member Name} — ${Amount}</span>. Body: all form fields formatted as a clean summary. Include the Google Drive receipt link.</div></div>
+        <div class="make-step"><span class="make-step-icon">→</span><div><strong>Action 2 (optional):</strong> Gmail → Send confirmation to the member's email. Body: "Your expense report has been received. Expect reimbursement within 7 days of approval."</div></div>
+      </div>
+    </div>
+
+    <div class="callout c-ok"><span>✅</span> Both scenarios together use fewer than 100 Make.com operations per month for an average chapter. Well within the free tier limit of 1,000 operations/month.</div>
+  </div>
+
+  <!-- CHECKLIST -->
+  <div class="section" id="checklist">
+    <div class="week-tag">Week 5 Deliverables</div>
+    <div class="sec-title">Completion Checklist</div>
+    <div class="guide-panel">
+      <div class="guide-top"><div class="guide-top-title">All must pass before Week 6 Alpha</div><div class="guide-top-pill">7 items</div></div>
+      <div class="guide-body">
+        <div class="chk"><div class="chk-box"></div><div><div class="chk-title">Dues Status, Dues Paid Date, Amount Owed columns added to Users tab</div><div class="chk-sub">Open Master Sheet — all 5 new columns visible and populated for existing members.</div></div></div>
+        <div class="chk"><div class="chk-box"></div><div><div class="chk-title">Member Dues screen shows correct status with color-coded card</div><div class="chk-sub">Sign in as a "Paid" member — green card. Sign in as "Late" member — amber card. Sign in as "Outstanding" — red card.</div></div></div>
+        <div class="chk"><div class="chk-box"></div><div><div class="chk-title">Pay Dues button opens Zelle/PayPal link</div><div class="chk-sub">Tap the button on a real phone — Zelle or PayPal app opens (or browser opens the payment URL). Confirm the correct chapter account is shown.</div></div></div>
+        <div class="chk"><div class="chk-box"></div><div><div class="chk-title">Google Form created and linked to Master Sheet</div><div class="chk-sub">Submit a test expense report. Open the Master Sheet — new row appears in 💸 Expense Reports tab within 30 seconds.</div></div></div>
+        <div class="chk"><div class="chk-box"></div><div><div class="chk-title">Submit Expense Report button opens the form correctly</div><div class="chk-sub">Tap from Glide — form opens in browser with all 8 fields. Receipt upload field is present.</div></div></div>
+        <div class="chk"><div class="chk-box"></div><div><div class="chk-title">Admin can mark dues paid and XP fires</div><div class="chk-sub">Sign in as Admin. Find a "Late" member. Mark as Paid. Wait 15 minutes (Make.com free tier schedule). Check Engagement Log — +50 XP row appeared. Check member's Total XP — it increased by 50.</div></div></div>
+        <div class="chk"><div class="chk-box"></div><div><div class="chk-title">Treasurer notified on new expense submission</div><div class="chk-sub">Submit a test form. Treasurer email inbox receives the notification with all fields and receipt link within 5 minutes.</div></div></div>
+      </div>
+    </div>
+    <div class="callout c-ok" style="margin-top:1rem;"><span>🎯</span> Week 5 complete = all operational infrastructure is live. Week 6 is the Alpha Milestone — a real live-event test with the E-Board. No new screens to build, just testing and tweaking. You're one week away from having a fully working chapter app.</div>
+  </div>
+
+</main>
+</div>
+
+<script>
+const sections = document.querySelectorAll('.section[id]');
+const navLinks = document.querySelectorAll('.si');
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if(e.isIntersecting){
+      navLinks.forEach(l => {
+        l.classList.remove('active');
+        if(l.getAttribute('href') === '#' + e.target.id) l.classList.add('active');
+      });
+    }
+  });
+},{rootMargin:'-20% 0px -65% 0px'});
+sections.forEach(s => obs.observe(s));
+</script>
+</body>
+</html>

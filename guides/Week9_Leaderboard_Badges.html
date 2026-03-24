@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>The Blue Ledger — Week 9 — Leaderboard & Badges</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@0,400;0,500;0,600&display=swap');
+:root{--navy:#001A4D;--gold:#C9A84C;--gold-l:#F5E6C8;--gold-pale:#FDF8EE;--cream:#FAF8F3;--ink:#0D0D0D;--muted:#6B6B6B;--border:#E2DDD4;--success:#1A6B3A;--success-bg:#EAF5EE;--success-border:#A8D5BC;--info:#003087;--info-bg:#EAF0FB;--info-border:#BDD0F5;--warn:#7A4A00;--warn-bg:#FFF3DC;--warn-border:#F5D98A;--danger:#8B1A1A;--danger-bg:#FCE4EC;--danger-border:#F4C0D1;--phone-w:300px;--phone-h:600px;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Instrument Sans',sans-serif;background:var(--cream);color:var(--ink);}
+.hdr{background:var(--navy);padding:1.25rem 2rem;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid var(--gold);position:sticky;top:0;z-index:50;}
+.hdr-logo{font-family:'DM Serif Display',serif;font-size:1.15rem;color:var(--gold);}
+.hdr-sub{font-size:.68rem;color:rgba(255,255,255,.45);font-family:'DM Mono',monospace;letter-spacing:.1em;text-transform:uppercase;margin-top:2px;}
+.hdr-badge{background:var(--gold);color:var(--navy);font-size:.68rem;font-weight:600;padding:3px 10px;border-radius:4px;font-family:'DM Mono',monospace;text-transform:uppercase;}
+.layout{display:flex;min-height:calc(100vh - 64px);}
+.sidebar{width:225px;flex-shrink:0;background:#fff;border-right:1px solid var(--border);padding:1.5rem 0;position:sticky;top:64px;height:calc(100vh - 64px);overflow-y:auto;}
+.sl{font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding:0 1.25rem;margin:1.2rem 0 .4rem;font-family:'DM Mono',monospace;}
+.si{display:flex;align-items:center;gap:8px;padding:7px 1.25rem;font-size:.82rem;color:var(--muted);cursor:pointer;border-left:3px solid transparent;transition:all .15s;text-decoration:none;}
+.si:hover{background:var(--cream);color:var(--ink);}
+.si.active{background:var(--gold-pale);color:var(--navy);border-left-color:var(--gold);font-weight:600;}
+.si-dot{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:700;font-family:'DM Mono',monospace;flex-shrink:0;color:var(--muted);}
+.si.active .si-dot{background:var(--navy);border-color:var(--navy);color:#fff;}
+.main{flex:1;padding:2rem 2.5rem;max-width:840px;}
+.section{margin-bottom:3rem;scroll-margin-top:80px;}
+.week-tag{font-family:'DM Mono',monospace;font-size:.68rem;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px;}
+.sec-title{font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--navy);}
+.sec-desc{font-size:.88rem;color:var(--muted);margin-top:6px;line-height:1.6;max-width:580px;margin-bottom:1.25rem;}
+.g{background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:1.25rem;}
+.gt{background:var(--navy);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;}
+.gtt{font-size:.82rem;font-weight:600;color:var(--gold);}
+.gtp{font-size:.62rem;font-family:'DM Mono',monospace;background:rgba(201,168,76,.18);color:var(--gold);border:1px solid rgba(201,168,76,.3);border-radius:20px;padding:2px 8px;}
+.gb{padding:12px 14px;}
+.sr{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--border);}
+.sr:last-child{border:none;}
+.sn{width:22px;height:22px;border-radius:50%;background:var(--navy);color:#fff;font-size:.65rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'DM Mono',monospace;margin-top:1px;}
+.sn.gd{background:var(--gold);color:var(--navy);}
+.sn.gr{background:var(--success);color:#fff;}
+.sn.bx{background:var(--success-bg);border:1.5px solid var(--success);color:var(--success);}
+.st{font-size:.83rem;font-weight:600;color:var(--ink);}
+.sd{font-size:.76rem;color:var(--muted);margin-top:2px;line-height:1.55;}
+.cd{font-family:'DM Mono',monospace;font-size:.72rem;background:#F0EDE7;border:1px solid var(--border);border-radius:4px;padding:1px 5px;color:var(--navy);white-space:nowrap;}
+.cb{border-radius:8px;padding:9px 12px;font-size:.78rem;line-height:1.55;margin:8px 0;display:flex;gap:8px;align-items:flex-start;}
+.cb span{font-size:14px;flex-shrink:0;}
+.ct{background:var(--info-bg);border:1px solid var(--info-border);color:var(--info);}
+.cw{background:var(--warn-bg);border:1px solid var(--warn-border);color:var(--warn);}
+.co{background:var(--success-bg);border:1px solid var(--success-border);color:var(--success);}
+.cd2{background:var(--danger-bg);border:1px solid var(--danger-border);color:var(--danger);}
+.chk{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--border);}
+.chk:last-child{border:none;}
+.cb2{width:18px;height:18px;border:1.5px solid var(--border);border-radius:4px;flex-shrink:0;margin-top:1px;}
+.ct2{font-size:.83rem;font-weight:600;color:var(--ink);}
+.cs{font-size:.74rem;color:var(--muted);margin-top:2px;line-height:1.4;}
+.flow-r{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:0 0 10px;}
+.fb{font-size:.73rem;padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:#fff;white-space:nowrap;}
+.fb.s{background:var(--navy);color:var(--gold);border-color:var(--navy);font-weight:600;}
+.fb.e{background:var(--success-bg);color:var(--success);border-color:#A8D5BC;font-weight:600;}
+.fb.a{background:var(--info-bg);color:var(--info);border-color:#BDD0F5;}
+.fb.w{background:var(--warn-bg);color:var(--warn);border-color:#F5D98A;}
+.fa{font-size:.8rem;color:var(--muted);}
+.ptrak{height:6px;background:var(--border);border-radius:3px;margin:1rem 0;}
+.pfil{height:100%;border-radius:3px;background:var(--gold);}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:1.25rem;}
+.pcard{background:#fff;border:1px solid var(--border);border-radius:10px;padding:.85rem;text-align:center;}
+.pcard-num{font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--navy);}
+.pcard-lbl{font-size:.65rem;font-family:'DM Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:2px;}
+hr{border:none;border-top:1px solid var(--border);margin:2rem 0;}
+.badge{display:inline-flex;align-items:center;font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:20px;font-family:'DM Mono',monospace;white-space:nowrap;}
+.bs{background:var(--success-bg);color:var(--success);}
+.bw{background:var(--warn-bg);color:var(--warn);}
+.bi{background:var(--info-bg);color:var(--info);}
+.bg{background:var(--gold-pale);color:var(--warn);}
+.bd{background:var(--danger-bg);color:var(--danger);}
+.tbl{width:100%;border-collapse:collapse;font-size:.8rem;}
+.tbl th{background:var(--cream);padding:8px 10px;text-align:left;font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-family:'DM Mono',monospace;border-bottom:1px solid var(--border);}
+.tbl td{padding:8px 10px;border-bottom:1px solid var(--border);color:var(--ink);vertical-align:middle;}
+.tbl tr:last-child td{border:none;}
+.tbl tr:nth-child(even) td{background:var(--cream);}
+.hero{background:var(--navy);border-radius:14px;padding:1.75rem 2rem;margin-bottom:1.5rem;position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;top:-40px;right:-40px;width:160px;height:160px;border-radius:50%;background:rgba(201,168,76,.06);}
+.htag{font-family:'DM Mono',monospace;font-size:.65rem;color:rgba(255,255,255,.35);letter-spacing:.12em;text-transform:uppercase;margin-bottom:5px;}
+.htitle{font-family:'DM Serif Display',serif;font-size:1.6rem;color:var(--gold);margin-bottom:.5rem;}
+.hdesc{font-size:.86rem;color:rgba(255,255,255,.6);line-height:1.65;max-width:500px;}
+@media(max-width:700px){.sidebar{display:none;}.main{padding:1.25rem;}}
+</style>
+</head>
+<body>
+<header class="hdr">
+  <div><div class="hdr-logo">The Blue Ledger</div><div class="hdr-sub">Week 9 — Leaderboard & Achievement Gallery</div></div>
+  <div class="hdr-badge">~2.5 hours</div>
+</header>
+<div class="layout">
+<nav class="sidebar"><div class="sl">Week 9</div><a href="#leaderboard" class="si "><div class="si-dot">1</div> Leaderboard</a><a href="#badges" class="si "><div class="si-dot">2</div> Achievement Gallery</a><a href="#auto_badges" class="si "><div class="si-dot">3</div> Badge Automations</a><a href="#checklist9" class="si "><div class="si-dot">✓</div> Checklist</a></nav>
+<main class="main"><div class="hero">
+<div class="htag">Week 9 · Gamification</div>
+<div class="htitle">Leaderboard & Achievement Gallery</div>
+<div class="hdesc">The full gamification layer completes this week. The Leaderboard gets its visual podium and chapter-wide rankings with avatar images. The Achievement Gallery shows every badge — earned ones glow, locked ones gray out. All badge award automations go live.</div>
+</div><div class="ptrak"><div class="pfil" style="width:75%"></div></div><div style="font-size:.75rem;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:1.25rem;">Week 9 of 12 · 75% complete · Gamification complete</div><div class="section" id="leaderboard">
+<div class="week-tag">Week 9</div>
+<div class="sec-title">Leaderboard Enhancements</div>
+
+<div class="g"><div class="gt"><div class="gtt">Upgrade the Leaderboard screen</div><div class="gtp">~45 min</div></div><div class="gb"><div class="sr"><div class="sn ">1</div><div><div class="st">Add rank number column</div><div class="sd">Data Editor → 👥 Users → Add Column → Row Number. This auto-assigns a sequential number. Then add another If-Then-Else column <span class='cd'>Rank</span> that orders by XP descending. Glide doesn't have native rank-by-value, so the simplest approach: sort the list by Total XP descending — the visual order becomes the rank, no extra column needed.</div></div></div><div class="sr"><div class="sn ">2</div><div><div class="st">Add semester filter</div><div class="sd">Above the leaderboard list, add a Choice component (Semester filter: 'All Time' / 'Fall 2025' / 'Spring 2026'). When filter changes, show XP earned only within that period by adding a Rollup column per member summing XP from Engagement Log within the date range. Semester filter drives competitive short-term engagement.</div></div></div><div class="sr"><div class="sn ">3</div><div><div class="st">Highlight the current user's row</div><div class="sd">Each list row → Conditional Style → IF Member # = Current User's Member # → apply gold background color. This makes brothers immediately spot themselves when they open the leaderboard.</div></div></div><div class="sr"><div class="sn ">4</div><div><div class="st">Add 'Top 3' callout at the top</div><div class="sd">Above the list, add 3 Text components showing Rank 1/2/3 member names and XP using Lookup columns (find the member with highest XP, second-highest, third-highest via Relations or manual Lookup). This is the podium section that makes the leaderboard feel alive.</div></div></div><div class="sr"><div class="sn ">5</div><div><div class="st">Chapter stats summary</div><div class="sd">Add a small stats card below the leaderboard: Total Active Members, Total Chapter XP (Rollup sum of all members' XP), Total Service Hours (Rollup sum). This makes the leaderboard feel like a chapter achievement dashboard, not just a competition.</div></div></div></div></div>
+</div><div class="section" id="badges">
+<div class="week-tag">Badges</div>
+<div class="sec-title">Achievement Gallery & Badge System</div>
+
+<div class="g"><div class="gt"><div class="gtt">Quests & Badges screen — full configuration</div><div class="gtp">~60 min</div></div><div class="gb"><div class="sr"><div class="sn ">1</div><div><div class="st">Build the badge list from 🎖️ Quests & Badges tab</div><div class="sd">Quests & Badges screen → List layout → source: 🎖️ Quests & Badges tab. Each row shows: Badge icon (URL), Badge Name, Category, Requirement text, XP Bonus, Rarity badge, Earned/Locked indicator.</div></div></div><div class="sr"><div class="sn ">2</div><div><div class="st">Add Earned? computed column</div><div class="sd">Data Editor → 🎖️ Quests & Badges → Add Column → If-Then-Else → name: <span class='cd'>Earned By Current User?</span>. Formula: IF Badge Name is contained in [Current User's Earned Badges field] → 'Yes' ELSE → 'No'. This is the core earned/locked logic.</div></div></div><div class="sr"><div class="sn ">3</div><div><div class="st">Style earned vs locked badges differently</div><div class="sd">Badge list item → Conditional Styling → IF Earned By Current User? = 'Yes' → green background, full opacity. IF 'No' → gray background, 50% opacity (use a style that dims it). Earned badges visually pop; locked ones fade back. Add a lock icon to locked badges using a conditional Image component.</div></div></div><div class="sr"><div class="sn ">4</div><div><div class="st">Sort: earned first</div><div class="sd">Sort the badge list: Earned By Current User? = 'Yes' appears first, then locked badges. Within earned, sort by most recently earned (if you track earn date). This means a brother's gallery fills from the top as they earn more.</div></div></div><div class="sr"><div class="sn ">5</div><div><div class="st">Badge detail screen on tap</div><div class="sd">Tap any badge → Detail screen showing: large icon, badge name, full requirement description, XP bonus, rarity, earned date (if earned), 'Not yet earned — here's how' if locked. This is where brothers go to understand exactly what they need to do next.</div></div></div></div></div>
+</div><div class="section" id="auto_badges">
+<div class="week-tag">Automations</div>
+<div class="sec-title">All Badge Award Automations</div>
+<div class="sec-desc">These are the Make.com triggers that fire badges automatically. Some were built earlier — verify they're all live this week.</div>
+<div class="g"><div class="gt"><div class="gtt">Complete badge automation map</div><div class="gtp">Make.com — verify all active</div></div><div class="gb">
+    <table class="tbl">
+    <thead><tr><th>Badge</th><th>Trigger Condition</th><th>Automation Status</th></tr></thead>
+    <tbody>
+    <tr><td><strong>Architect</strong></td><td>Profile Complete? = Yes (first time)</td><td><span class="badge bs">Built Wk 3</span></td></tr>
+    <tr><td><strong>Scholar</strong></td><td>Quiz score = 100%</td><td><span class="badge bs">Built Wk 7</span></td></tr>
+    <tr><td><strong>Faithful</strong></td><td>Dues paid on time 3 semesters in a row</td><td><span class="badge bw">Build now</span></td></tr>
+    <tr><td><strong>Punctual</strong></td><td>10 'on time' meeting check-ins total</td><td><span class="badge bw">Build now</span></td></tr>
+    <tr><td><strong>25-Hour Builder</strong></td><td>Total service hours ≥ 25</td><td><span class="badge bw">Build now</span></td></tr>
+    <tr><td><strong>The Centurion</strong></td><td>Total service hours ≥ 100</td><td><span class="badge bw">Build now</span></td></tr>
+    <tr><td><strong>Road Warrior</strong></td><td>Conference attendance logged (150 XP activity)</td><td><span class="badge bw">Build now</span></td></tr>
+    <tr><td><strong>The Plug</strong></td><td>Manual admin award (referral confirmed)</td><td><span class="badge bi">Admin manual</span></td></tr>
+    <tr><td><strong>Sigma of the Year</strong></td><td>Manual admin award (annual vote)</td><td><span class="badge bi">Admin manual</span></td></tr>
+    <tr><td><strong>Chapter Legend</strong></td><td>Total XP ≥ 2,500</td><td><span class="badge bw">Build now</span></td></tr>
+    </tbody></table>
+    </div></div>
+</div><div class="g"><div class="gt"><div class="gtt">Make.com — badge threshold scenario (covers 5 badges)</div><div class="gtp">Add to existing XP update scenario</div></div><div class="gb"><div class="sr"><div class="sn ">T</div><div><div class="st">Add after every XP update (existing scenarios)</div><div class="sd">At the end of your Engagement Log → XP Update scenario, add a Router module that runs badge checks for every member whose XP just changed.</div></div></div><div class="sr"><div class="sn ">1</div><div><div class="st">Service hours badges (25hr + Centurion)</div><div class="sd">After each verified service log entry: Rollup total service hours for the member. IF total ≥ 25 AND '25-Hour Builder' NOT in Earned Badges → award badge + 250 XP bonus. IF total ≥ 100 AND 'The Centurion' NOT in Earned Badges → award badge + 1000 XP bonus.</div></div></div><div class="sr"><div class="sn ">2</div><div><div class="st">Punctual badge (10 on-time meetings)</div><div class="sd">After each Chapter Meeting (on time) check-in: Count rows in Engagement Log for this member where Activity = 'Chapter Meeting (on time)'. IF count = 10 AND 'Punctual' NOT in Earned Badges → award badge + 200 XP bonus.</div></div></div><div class="sr"><div class="sn ">3</div><div><div class="st">Faithful badge (3 consecutive semesters on time)</div><div class="sd">After Dues Paid: Check last 3 semester entries for this member. IF all 3 = 'Paid' with dates before deadline AND 'Faithful' NOT in Earned Badges → award badge + 300 XP bonus. This requires tracking semester deadlines in a config tab.</div></div></div><div class="sr"><div class="sn ">4</div><div><div class="st">Chapter Legend badge (XP ≥ 2500)</div><div class="sd">After every XP update: IF Total XP ≥ 2500 AND 'Chapter Legend' NOT in Earned Badges → award badge + 500 XP bonus. Update Avatar Level to 'Chapter Icon'. This cascades to update the avatar image URL on the next sync.</div></div></div><div class="sr"><div class="sn ">5</div><div><div class="st">Road Warrior badge (conference attendance)</div><div class="sd">After any Engagement Log row where Activity = 'Regional/National Conference': IF 'Road Warrior' NOT in Earned Badges → award badge + 300 XP bonus. This fires once, the first time a conference activity is logged for a member.</div></div></div></div></div><div class="section" id="checklist9">
+<div class="week-tag">Checklist</div>
+<div class="sec-title">Week 9 Completion Checklist</div>
+
+<div class="g"><div class="gt"><div class="gtt">Gamification complete — before moving to Week 10</div><div class="gtp">6 items</div></div><div class="gb"><div class="chk"><div class="cb2"></div><div><div class="ct2">Leaderboard shows avatar images, highlights current user's row</div><div class="cs">Open Leaderboard — avatars visible on every row, your own row has a gold/highlighted background.</div></div></div><div class="chk"><div class="cb2"></div><div><div class="ct2">Achievement Gallery: earned badges glow, locked badges dim</div><div class="cs">Sign in as a high-XP member — their badges show in green. Sign in as a Neophyte — most badges appear gray/locked with lock indicator.</div></div></div><div class="chk"><div class="cb2"></div><div><div class="ct2">Badge detail screen shows correct info on tap</div><div class="cs">Tap any badge — detail screen shows requirement, XP bonus, rarity, earned/not earned status.</div></div></div><div class="chk"><div class="cb2"></div><div><div class="ct2">Service hour badges fire correctly</div><div class="cs">Manually set a test member's service hours to 25 in the sheet. Wait for Make.com scenario. '25-Hour Builder' badge appears in their Earned Badges field + 250 XP added to Engagement Log.</div></div></div><div class="chk"><div class="cb2"></div><div><div class="ct2">Chapter Legend badge fires at 2,500 XP</div><div class="cs">Manually bump a test member's XP to 2,500. Badge fires. Avatar image switches to Chapter Icon PNG.</div></div></div><div class="chk"><div class="cb2"></div><div><div class="ct2">All 10 badges are visible in the Achievement Gallery</div><div class="cs">Open Quests & Badges screen — all 10 badges listed. At least the Architect badge earned for members who completed their profile.</div></div></div></div></div>
+</div></main>
+</div>
+<script>
+const secs=document.querySelectorAll('.section[id]');
+const navs=document.querySelectorAll('.si');
+const obs=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting){navs.forEach(l=>{l.classList.remove('active');if(l.getAttribute('href')==='#'+x.target.id)l.classList.add('active');});}});},{rootMargin:'-20% 0px -65% 0px'});
+secs.forEach(s=>obs.observe(s));
+</script>
+</body>
+</html>
