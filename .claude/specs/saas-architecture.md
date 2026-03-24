@@ -25,7 +25,8 @@ architecture to transform it into a production SaaS product with:
 - PostgreSQL persistence with row-level security per chapter
 - Go REST API backend
 - React frontend wired to the API (existing UI design preserved)
-- Stripe billing: chapters pay a monthly subscription
+- Zeffy for member dues collection (0% fees, embeddable, nonprofit-eligible)
+- Stripe Billing for platform subscription (chapters pay monthly SaaS fee)
 - Sysadmin super-console for platform management
 
 ### Non-Goals for v1
@@ -76,7 +77,8 @@ architecture to transform it into a production SaaS product with:
 | Database hosting | **Fly.io Postgres** (managed) or **Supabase** (if RLS tooling is preferred) | Either works; Fly.io keeps it in one platform |
 | File storage | **Cloudflare R2** | S3-compatible, free egress, used for avatars and resource file uploads |
 | Email | **Resend** | Modern API, excellent deliverability, generous free tier (3k/mo), magic link emails |
-| Payments | **Stripe** | Already referenced in prototype; Stripe Billing handles subscription lifecycle |
+| Member Dues | **Zeffy** | 0% fees, embeddable iframe/popup forms, recurring memberships — chapters use this to collect dues from brothers; 501(c) nonprofits qualify |
+| Platform Billing | **Stripe Billing** | Full API + webhooks for charging chapters their monthly SaaS subscription fee; manages trials, upgrades, cancellations |
 | CDN | **Cloudflare** (included with R2) | |
 | Monitoring | **Sentry** (errors) + **Fly.io built-in metrics** | |
 
@@ -439,8 +441,9 @@ CREATE TABLE dues_records (
   amount_cents        INT NOT NULL,                        -- stored in cents
   due_date            DATE NOT NULL,
   paid_at             TIMESTAMPTZ,
-  payment_method      TEXT,                                -- 'stripe', 'cash', 'zelle', 'waived'
-  stripe_payment_intent_id TEXT,
+  payment_method      TEXT,                                -- 'zeffy', 'cash', 'zelle', 'waived', 'admin_override'
+  zeffy_form_id       TEXT,                                -- Zeffy form ID for this chapter's dues form
+  zeffy_transaction_id TEXT,                               -- Zeffy transaction reference (via webhook/Zapier)
   status              TEXT NOT NULL DEFAULT 'unpaid'
                       CHECK (status IN ('unpaid','paid','late','waived','outstanding')),
   xp_awarded          BOOLEAN NOT NULL DEFAULT FALSE,
@@ -457,6 +460,50 @@ CREATE INDEX idx_dues_chapter ON dues_records(chapter_id);
 CREATE INDEX idx_dues_member ON dues_records(chapter_id, member_id);
 CREATE INDEX idx_dues_semester ON dues_records(chapter_id, semester);
 ```
+
+---
+
+### Payment Architecture: Dual-Layer Model
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    PAYMENT FLOWS                                 │
+│                                                                  │
+│  Brothers → Chapter (DUES)          Platform → Chapter (SAAS)  │
+│  ─────────────────────────          ──────────────────────────  │
+│  Tool:    Zeffy                     Tool:  Stripe Billing       │
+│  Fee:     0%                        Fee:   2.9% + 30¢          │
+│  API:     Embed + Zapier webhook    API:   Full REST + webhooks │
+│  Flow:    Brother clicks            Flow:  Admin card on file   │
+│           embedded Zeffy form               auto-charged monthly│
+│           → Zeffy processes         → Stripe fires webhook      │
+│           → Zapier fires webhook    → API marks chapter active  │
+│           → API marks dues paid     → Access revoked if lapsed  │
+│           → XP awarded              │                           │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### Zeffy — Member Dues Collection
+- Each chapter admin pastes their Zeffy form URL into System Console → App Config
+- Blue Ledger stores the `zeffy_form_id` on the `chapters` record
+- The member-facing "Pay Dues" button opens an embedded Zeffy popup
+- Dues confirmation is received via **Zapier webhook** → Blue Ledger API endpoint `POST /webhooks/zeffy`
+- The webhook handler marks `dues_records.status = 'paid'` and awards XP
+- No Zeffy API key required — webhook payload carries `member_email` + `amount` + `transaction_id`
+
+#### Stripe — Platform Subscription Billing
+- Chapter admins enter a card when signing up for Blue Ledger
+- Stripe Billing handles monthly charge, retries, and dunning
+- Webhook `customer.subscription.updated` → `chapters.subscription_status`
+- Access gates: if `subscription_status = 'past_due'` for > 7 days, chapter enters read-only mode
+
+#### New API Endpoints (payments)
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/webhooks/zeffy` | Zeffy → Zapier → this endpoint: mark dues paid, award XP |
+| `POST` | `/webhooks/stripe` | Stripe subscription events: activate, suspend, cancel |
+| `GET`  | `/chapters/:id/billing` | Current subscription status + next billing date |
+| `POST` | `/chapters/:id/zeffy-config` | Admin saves Zeffy form ID |
 
 ---
 
