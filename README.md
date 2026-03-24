@@ -5,7 +5,7 @@ Built on Glide + Google Sheets + Make.com · Fully documented · Ready to deploy
 
 [![Screens](https://img.shields.io/badge/Screens-47-001A4D)](app/index.html)
 [![Cost](https://img.shields.io/badge/Year_1_Cost-$0-1A6B3A)](#cost)
-[![JS](https://img.shields.io/badge/JavaScript-Clean-C9A84C)](#)
+[![JS](https://img.shields.io/badge/JavaScript-Clean-C9A84C)](#)                            
 [![License](https://img.shields.io/badge/License-MIT-blue)](#license)
 
 ---
