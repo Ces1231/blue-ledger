@@ -6,6 +6,10 @@
 <title>The Blue Ledger</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap"/>
+<!-- GA4: Replace G-XXXXXXXXXX with your Measurement ID from analytics.google.com -->
+<!-- <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-XXXXXXXXXX');</script> -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 :root{
   --navy:#001A4D;--navy2:#00245C;--navy3:#002E7A;
@@ -373,9 +377,29 @@ tbody tr:hover td{background:var(--cream);}
   .mobile-menu-btn{display:flex!important;}
 }
 .mobile-menu-btn{display:none;align-items:center;justify-content:center;width:36px;height:36px;border-radius:8px;border:1px solid var(--border);background:var(--white);cursor:pointer;font-size:1.1rem;}
+body.dark-mode{
+  --cream:#0D1117;--cream2:#161B22;--ink:#E6EDF3;--ink2:#C9D1D9;
+  --muted:#8B949E;--faint:#6B7280;--border:#30363D;--border2:#21262D;
+  --white:#161B22;--card-bg:#161B22;--shadow:0 1px 3px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.2);
+  background:#0D1117;
+}
+body.dark-mode .card{background:#161B22;border-color:#30363D;}
+body.dark-mode .topbar{background:#161B22;border-color:#30363D;}
+body.dark-mode .sidebar{background:#0D1117;border-color:#30363D;}
+body.dark-mode .input{background:#0D1117;border-color:#30363D;color:#E6EDF3;}
+body.dark-mode .stat-card{background:#161B22;border-color:#30363D;}
+body.dark-mode .nav-item:hover{background:rgba(255,255,255,.05);}
+body.dark-mode .nav-item.active{background:rgba(201,168,76,.1);}
 </style>
+<link rel="manifest" href="../manifest.json"/>
+<meta name="theme-color" content="#001A4D"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Blue Ledger"/>
 </head>
 <body>
+
+<div id="offline-banner" class="hidden" style="position:fixed;top:0;left:0;right:0;background:#8B1A1A;color:#fff;text-align:center;padding:8px 16px;font-size:.8rem;z-index:9999;letter-spacing:.02em;">You are offline — data won't sync until reconnected</div>
 
 <!-- ══════════ LOGIN ══════════ -->
 <div id="login-screen">
@@ -844,16 +868,27 @@ let appSettings = {
 // ══════════════════════════════════════
 // STATE
 // ══════════════════════════════════════
+const SEMESTER_START = '2025-08-01';
+let STRIPE_PAYMENT_LINK = localStorage.getItem('bl_stripe_url') || '';
 let state = {
   currentUser: null,
   currentView: 'dashboard',
   scanMode: false,
   scanResult: null,
   selectedActivity: POINT_ECONOMY[0].activity,
+  lbFilter: 'alltime',
 };
-let members = JSON.parse(JSON.stringify(MEMBERS));
-let engLog = JSON.parse(JSON.stringify(ENGAGEMENT_LOG));
+let _sessionTimer = null;
+let members = JSON.parse(localStorage.getItem('bl_members')||'null') || JSON.parse(JSON.stringify(MEMBERS));
+let engLog = JSON.parse(localStorage.getItem('bl_englog')||'null') || JSON.parse(JSON.stringify(ENGAGEMENT_LOG));
 let svcLog = JSON.parse(JSON.stringify(SERVICE_LOG));
+
+// ── Offline detection ──
+window.addEventListener('offline',()=>document.getElementById('offline-banner').classList.remove('hidden'));
+window.addEventListener('online',()=>document.getElementById('offline-banner').classList.add('hidden'));
+
+// ── State persistence helper ──
+function saveState(){try{localStorage.setItem('bl_members',JSON.stringify(members));localStorage.setItem('bl_englog',JSON.stringify(engLog));}catch(e){}}
 
 // ══════════════════════════════════════
 // GLOBAL ERROR BOUNDARY (C1)
@@ -884,10 +919,21 @@ function doLogin(){
   state.currentUser = JSON.parse(JSON.stringify(m));
   showApp();
 }
+function resetSessionTimer(){
+  clearTimeout(_sessionTimer);
+  _sessionTimer=setTimeout(()=>{
+    showToast('Session timed out for security','error');
+    signOut();
+  },30*60*1000);
+}
 function showApp(){
   document.getElementById('login-screen').classList.add('hidden');
   document.getElementById('app').classList.remove('hidden');
   renderSidebar();
+  document.addEventListener('click',resetSessionTimer);
+  document.addEventListener('keydown',resetSessionTimer);
+  document.addEventListener('touchstart',resetSessionTimer);
+  resetSessionTimer();
   if(state.currentUser.role==='sysadmin') {
     document.getElementById('sidebar').style.background='#0D1117';
     document.getElementById('sidebar').style.borderRight='1px solid #30363D';
@@ -899,6 +945,10 @@ function showApp(){
   }
 }
 function signOut(){
+  clearTimeout(_sessionTimer);
+  document.removeEventListener('click',resetSessionTimer);
+  document.removeEventListener('keydown',resetSessionTimer);
+  document.removeEventListener('touchstart',resetSessionTimer);
   document.getElementById('app').classList.add('hidden');
   document.getElementById('login-screen').classList.remove('hidden');
   state.currentUser=null; state.currentView='dashboard';
@@ -995,6 +1045,7 @@ function navigate(view){
   document.getElementById('topbar-title').textContent=item.label;
   document.querySelectorAll('.nav-item').forEach(el=>{el.classList.remove('active');if(el.textContent.trim().startsWith(item.label.charAt(0))) el.classList.toggle('active',el.textContent.includes(item.label));});
   renderSidebar();
+  if(typeof gtag!=='undefined') gtag('event','page_view',{page_title:view,page_location:window.location.href+'#'+view});
   const body=document.getElementById('page-body');
   try{body.innerHTML='<div class="fade-in">'+renderView(view)+'</div>';}
   catch(e){body.innerHTML='<div class="card" style="padding:1.5rem;text-align:center;"><p style="color:var(--danger);">Unable to load this view. Please refresh or contact support.</p></div>';console.error('[BlueLedger] renderView error:',e);}
@@ -1107,6 +1158,7 @@ function renderDashboard(){
       <div class="stat-card"><div class="stat-label">Service Hours</div><div class="stat-value">${u.serviceHours}h</div><div class="progress-bar" style="margin-top:8px;"><div class="progress-fill green" style="width:${Math.min(100,(u.serviceHours/25)*100)}%"></div></div><div class="stat-sub">${u.serviceHours}/25h milestone</div></div>
       <div class="stat-card"><div class="stat-label">Badges Earned</div><div class="stat-value">${u.badges.length}</div><div class="stat-sub">of ${BADGES.length} total</div></div>
       <div class="stat-card"><div class="stat-label">Chapter Rank</div><div class="stat-value">#${[...members].sort((a,b)=>b.xp-a.xp).findIndex(m=>m.id===u.id)+1}</div><div class="stat-sub">out of ${members.length} active members</div></div>
+      <div class="stat-card"><div class="stat-label">Meeting Streak</div><div class="stat-value">${u.streak||0}</div><div class="stat-sub">${(u.streak||0)>=3?'On fire!':'Keep showing up!'}</div></div>
     </div>
   </div>
   ${pinnedAnn.length?`<div class="card" style="margin-top:1.25rem;"><div class="card-header"><span class="card-title">📌 Pinned Announcements</span><span class="pointer" onclick="navigate('announcements')" style="font-size:.78rem;color:var(--info);">See all →</span></div>${pinnedAnn.map(a=>`<div style="padding:.85rem 1.25rem;border-bottom:1px solid var(--border);"><div style="font-weight:600;font-size:.85rem;">${a.title}</div><div style="font-size:.76rem;color:var(--muted);margin-top:2px;">${a.body.substring(0,90)}${a.body.length>90?'…':''}</div></div>`).join('')}</div>`:''}
@@ -1134,7 +1186,7 @@ function renderDigitalID(){
       <div class="id-shield-lg"><span>ΤΤΣ</span></div>
       <div class="id-name">${u.name}</div>
       <div class="id-num">${u.id} · Initiated ${u.inducted}</div>
-      <div class="id-qr" id="qr-grid" style="grid-template-columns:repeat(9,1fr);">${genQR()}</div>
+      <div id="qr-real" style="display:flex;align-items:center;justify-content:center;background:#fff;padding:12px;border-radius:8px;margin:1rem auto;width:fit-content;"></div>
       <div class="id-stats">
         <div><div class="id-stat-val">${u.xp.toLocaleString()}</div><div class="id-stat-lbl">Total XP</div></div>
         <div><div class="id-stat-val">${u.serviceHours}h</div><div class="id-stat-lbl">Service</div></div>
@@ -1143,8 +1195,8 @@ function renderDigitalID(){
       <div class="id-level">${u.level.toUpperCase()} · ${u.status.toUpperCase()}</div>
     </div>
     <div style="margin-top:1rem;display:flex;gap:8px;">
-      <button class="btn btn-outline w-full" onclick="showToast('ID card saved to photos','success')">Save to Photos</button>
-      <button class="btn btn-outline w-full" onclick="showToast('Share link copied!','success')">Share</button>
+      <button class="btn btn-outline w-full" onclick="showToast('Save to Photos is available in the Glide mobile app','info')">Save to Photos</button>
+      <button class="btn btn-outline w-full" onclick="navigator.clipboard&&navigator.clipboard.writeText(window.location.href+'#digital-id').then(()=>showToast('Link copied to clipboard!','success')).catch(()=>showToast('Copy your browser URL to share','info'))">Share</button>
     </div>
     <div style="margin-top:.75rem;font-size:.72rem;color:var(--muted);text-align:center;font-family:'DM Mono',monospace;">Present this QR code to a Chair for event check-in</div>
   </div>`;
@@ -1152,7 +1204,10 @@ function renderDigitalID(){
 
 // ── LEADERBOARD ──
 function renderLeaderboard(){
-  const sorted=[...members].sort((a,b)=>b.xp-a.xp);
+  const filtered = state.lbFilter==='semester'
+    ? members.map(m=>({...m, xp: engLog.filter(l=>l.memberId===m.id&&l.date>=SEMESTER_START).reduce((a,l)=>a+l.xp,0)}))
+    : members;
+  const sorted=[...filtered].sort((a,b)=>b.xp-a.xp);
   const top3=sorted.slice(0,3);
   const rest=sorted.slice(3);
   const levelColors={gold:'#C9A84C',silver:'#888',bronze:'#CD7F32',neo:'#185FA5'};
@@ -1161,6 +1216,10 @@ function renderLeaderboard(){
   const rankEmojis=['🥈','🥇','🥉'];
   return `
   <div class="card" style="margin-bottom:1.25rem;">
+    <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;">
+      <div style="display:flex;gap:6px;"><button class="btn btn-sm ${state.lbFilter==='alltime'?'btn-gold':'btn-outline'}" onclick="state.lbFilter='alltime';navigate('leaderboard')">All-Time</button><button class="btn btn-sm ${state.lbFilter==='semester'?'btn-gold':'btn-outline'}" onclick="state.lbFilter='semester';navigate('leaderboard')">This Semester</button></div>
+      <button class="btn btn-sm btn-outline" onclick="exportLeaderboard()">Export CSV</button>
+    </div>
     <div class="lb-podium">
       ${podiumOrder.map((m,i)=>{
         const actualRank=sorted.indexOf(m)+1;
@@ -1177,7 +1236,7 @@ function renderLeaderboard(){
     </div>
   </div>
   <div class="card">
-    <div class="card-header"><span class="card-title">Full Rankings</span><span class="badge badge-member">${members.length} members</span></div>
+    <div class="card-header"><span class="card-title">Full Rankings</span><span class="badge badge-member">${filtered.length} members</span></div>
     ${rest.map((m,i)=>{
       const rank=i+4;
       const isYou=m.id===state.currentUser.id;
@@ -1399,7 +1458,7 @@ function renderFinancials(){
           <span class="badge badge-${myData.dues==='Paid'?'success':myData.dues==='Late'?'warn':'danger'}" style="font-size:.75rem;padding:4px 12px;">${myData.dues}</span>
         </div>
         <div style="border-top:1px solid var(--border);padding-top:1rem;margin-top:1rem;display:flex;flex-direction:column;gap:8px;">
-          <button class="btn btn-primary w-full" style="justify-content:center;" onclick="showToast('Opening payment portal…','success')">Pay Dues via Zelle →</button>
+          <button class="btn btn-primary w-full" style="justify-content:center;" onclick="STRIPE_PAYMENT_LINK?payDuesStripe():showToast('Pay via Zelle to your treasurer — Stripe coming soon','info')">Pay Dues ${STRIPE_PAYMENT_LINK?'via Stripe →':'via Zelle →'}</button>
           <button class="btn btn-outline w-full" style="justify-content:center;" onclick="showToast('Opening expense form…')">Submit Expense Report</button>
         </div>
       </div>
@@ -1411,6 +1470,7 @@ function renderFinancials(){
     <div class="stat-card"><div class="stat-label">Outstanding</div><div class="stat-value" style="color:var(--danger);">${members.filter(m=>m.dues==='Outstanding').length}</div><div class="stat-sub">action required</div></div>
     <div class="stat-card"><div class="stat-label">Late</div><div class="stat-value" style="color:var(--warn);">${members.filter(m=>m.dues==='Late').length}</div><div class="stat-sub">grace period</div></div>
   </div>
+  <div style="margin-bottom:1rem;display:flex;justify-content:flex-end;"><button class="btn btn-gold" onclick="sendDuesReminder()">Send Dues Reminder →</button></div>
   <div class="card">
     <div class="card-header"><span class="card-title">Dues Status — All Members</span></div>
     <div class="table-wrap">
@@ -1479,9 +1539,9 @@ function renderAdmin(){
     return '<div class="empty-state"><div class="empty-state-icon">◈</div><p class="empty-state-text">Admin access required</p></div>';
   return `
   <div class="admin-grid">
-    <div class="admin-action-card" onclick="showToast('Opening member import…')"><div class="admin-action-icon">⬡</div><div class="admin-action-title">Import Members</div><div class="admin-action-sub">Bulk add from spreadsheet</div></div>
+    <div class="admin-action-card" onclick="showToast('Use the Glide data import panel to bulk-add members','info')"><div class="admin-action-icon">⬡</div><div class="admin-action-title">Import Members</div><div class="admin-action-sub">Bulk add from spreadsheet</div></div>
     <div class="admin-action-card" onclick="openXPModal()"><div class="admin-action-icon">◈</div><div class="admin-action-title">Award XP</div><div class="admin-action-sub">Manual XP adjustment</div></div>
-    <div class="admin-action-card" onclick="showToast('Opening quest editor…')"><div class="admin-action-icon">◉</div><div class="admin-action-title">Manage Quests</div><div class="admin-action-sub">Activate / deactivate badges</div></div>
+    <div class="admin-action-card" onclick="showToast('Manage quests and badges in Glide App Builder','info')"><div class="admin-action-icon">◉</div><div class="admin-action-title">Manage Quests</div><div class="admin-action-sub">Activate / deactivate badges</div></div>
     <div class="admin-action-card" onclick="showToast('PIA export triggered!','success')"><div class="admin-action-icon">◧</div><div class="admin-action-title">Export PIA</div><div class="admin-action-sub">Send report to district</div></div>
   </div>
   <div class="card">
@@ -1561,6 +1621,21 @@ function confirmScan(memberId, activity, xp){
     document.getElementById('topbar-xp').textContent=`${m.xp.toLocaleString()} XP`;
   }
   showToast(`${m.name} checked in — +${xp} XP!`,'success');
+  // Streak tracking
+  const todayStr = new Date().toISOString().split('T')[0];
+  if(m.lastMeetingDate !== todayStr){
+    m.streak = (m.streak||0) + 1;
+    m.lastMeetingDate = todayStr;
+    const STREAK_BONUSES = {3:25,5:50,10:100,20:200};
+    const bonus = STREAK_BONUSES[m.streak];
+    if(bonus){
+      m.xp += bonus;
+      updateLevel(m);
+      engLog.unshift({id:`ENG-STK${engLog.length+1}`,date:todayStr,memberId:m.id,activity:`${m.streak}-Meeting Streak Bonus`,xp:bonus,source:'streak',awardedBy:'system'});
+      showToast(`${m.streak}-meeting streak! +${bonus} bonus XP!`,'success');
+    }
+  }
+  saveState();
 }
 
 function updateLevel(m){
@@ -1591,6 +1666,7 @@ function verifyService(id){
   const m=members.find(x=>x.id===entry.memberId);
   if(m){m.xp+=entry.xp;m.serviceHours+=entry.hours;updateLevel(m);}
   showToast(`${entry.hours}h verified for ${entry.memberName}`,'success');
+  saveState();
   navigate('service-log');
 }
 
@@ -1598,6 +1674,7 @@ function markDuesPaid(id){
   const m=members.find(x=>x.id===id);
   if(m){m.dues='Paid';m.xp+=50;updateLevel(m);}
   showToast(`Dues marked paid for ${m?.name}. +50 XP`,'success');
+  saveState();
   navigate('financials');
 }
 
@@ -1747,6 +1824,7 @@ function awardXP(){
   }
   closeModal();
   showToast(`+${amt} XP awarded to ${m?.name}`,'success');
+  saveState();
   navigate('admin');
 }
 
@@ -1804,7 +1882,15 @@ function filterDirectory(){
     </div>`).join('')||'<div class="empty-state" style="padding:1.5rem;"><p class="empty-state-text">No members found</p></div>';
 }
 
-function attachViewListeners(view){}
+function attachViewListeners(view){
+  if(view==='digital-id'){
+    const container=document.getElementById('qr-real');
+    if(container&&typeof QRCode!=='undefined'){
+      const u=members.find(m=>m.id===state.currentUser.id);
+      new QRCode(container,{text:`BL:${u.id}:${u.name}`,width:160,height:160,colorDark:'#001A4D',colorLight:'#ffffff'});
+    }
+  }
+}
 
 function showToast(msg,type=''){
   const container=document.getElementById('toast-container');
@@ -1876,6 +1962,7 @@ function rsvpEvent(eventId, status){
     engLog.unshift({id:`ENG-R${engLog.length+1}`,date:new Date().toISOString().split('T')[0],memberId:m.id,activity:`RSVP: ${ev?.name||'Event'}`,xp:10,source:'rsvp',awardedBy:'system'});
   }
   showToast(`RSVP confirmed: ${status} for ${ev?.name||'event'}${status==='Yes'?' +10 XP':''}`,'success');
+  saveState();
   navigate('events');
 }
 
@@ -1978,6 +2065,7 @@ function submitProps(toId){
   propsData.unshift({id:`PRO-${propsData.length+1}`,date:new Date().toISOString().split('T')[0],fromId:from.id,fromName:members.find(m=>m.id===from.id)?.name||from.name,toId,toName:to?.name||'',category:cat,message:msg,xp:10});
   closeModal();
   showToast(`Props given to ${to?.name?.split(' ')[0]}! +10 XP`,'success');
+  saveState();
   navigate('props');
 }
 
@@ -2853,6 +2941,7 @@ function requestMentor(mentorshipId){
     // L5: write to engagement log
     engLog.unshift({id:`ENG-M${engLog.length+1}`,date:new Date().toISOString().split('T')[0],memberId:u.id,activity:'Mentor Match',xp:50,source:'mentorship',awardedBy:'system'});
   }
+  saveState();
   navigate('mentorship');
 }
 
@@ -3611,9 +3700,9 @@ function renderSysData(){
       <div style="font-size:.7rem;font-family:'DM Mono',monospace;color:#8B949E;text-transform:uppercase;letter-spacing:.1em;margin-bottom:.75rem;">Data Operations</div>
       <div style="display:flex;flex-direction:column;gap:8px;">
         ${[
-          {icon:'📥',title:'Import Members',desc:'Bulk import from CSV or Google Sheet',action:"showToast('Opening import wizard…')"},
-          {icon:'📤',title:'Export All Data',desc:'Download full chapter database as CSV',action:"showToast('Preparing data export…','success')"},
-          {icon:'🔄',title:'Force Sheet Sync',desc:'Manually trigger Google Sheets sync now',action:"showToast('Sync triggered — refreshing in 5s…','success')"},
+          {icon:'📥',title:'Import Members',desc:'Bulk import from CSV or Google Sheet',action:"showToast('Use the Glide data import panel to bulk-add members','info')"},
+          {icon:'📤',title:'Export All Data',desc:'Download full chapter database as CSV',action:"exportEngagementLog()"},
+          {icon:'🔄',title:'Force Sheet Sync',desc:'Manually trigger Google Sheets sync now',action:"showToast('Sheet sync is managed by Glide automatically — or trigger a Make.com scenario','info')"},
           {icon:'🔢',title:'Recalculate All XP',desc:'Recompute all member XP from Engagement Log',action:"sysRecalcXP()"},
           {icon:'🏷️',title:'Bulk Assign Roles',desc:'Set roles for multiple members at once',action:"showToast('Opening bulk role editor…')"},
           {icon:'📊',title:'Generate PIA Report',desc:'Export current PIA data to PDF',action:"showToast('Generating PIA report…','success')"},
@@ -3663,7 +3752,7 @@ function renderSysLogs(){
   <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;">
     <input class="sys-input" id="log-search" placeholder="Filter logs…" oninput="filterSysLogs()" style="flex:1;max-width:300px;"/>
     <select class="sys-select" id="log-level" onchange="filterSysLogs()" style="width:140px;"><option value="">All levels</option><option value="ok">OK</option><option value="info">INFO</option><option value="warn">WARN</option><option value="err">ERROR</option></select>
-    <button class="sys-btn" onclick="showToast('Exporting logs…','success')">Export Logs</button>
+    <button class="sys-btn" onclick="exportAuditLog()">Export Logs</button>
   </div>
   <div class="sys-card">
     <div class="sys-card-hdr"><span class="sys-card-title">Audit Log</span><span class="sys-card-pill">${SYS_AUDIT_LOG.length} entries</span></div>
@@ -3685,8 +3774,8 @@ function renderSysConfig(){
   return `
   <div style="display:flex;flex-direction:column;gap:1rem;">
     <div class="sys-card">
-      <div class="sys-card-hdr"><span class="sys-card-title">Chapter Settings</span><button class="sys-btn sys-btn-green" style="font-size:.68rem;" onclick="showToast('Config saved!','success')">Save Changes</button></div>
-      <div class="sys-card-body">
+      <div class="sys-card-hdr"><span class="sys-card-title">Chapter Settings</span><button class="sys-btn sys-btn-green" style="font-size:.68rem;" onclick="saveChapterConfig()">Save Changes</button></div>
+      <div class="sys-card-body" id="sys-chapter-settings">
         ${[
           ['Chapter Name','Tau Tau Sigma Chapter','text'],
           ['Chapter ID','TAU-TAU-SIGMA','text'],
@@ -3698,6 +3787,7 @@ function renderSysConfig(){
           ['Min Quiz Pass Score (%)','80','number'],
           ['District Email','district@pbs1914.org','email'],
           ['Make.com Webhook URL','https://hook.make.com/…','text'],
+          ['Stripe Payment Link','','text'],
         ].map(([label,val,type])=>`
           <div class="sys-row">
             <span class="sys-key">${label}</span>
@@ -3706,8 +3796,8 @@ function renderSysConfig(){
       </div>
     </div>
     <div class="sys-card">
-      <div class="sys-card-hdr"><span class="sys-card-title">Point Economy</span><button class="sys-btn sys-btn-blue" style="font-size:.68rem;" onclick="showToast('XP values saved!','success')">Save XP Values</button></div>
-      <div class="sys-card-body">
+      <div class="sys-card-hdr"><span class="sys-card-title">Point Economy</span><button class="sys-btn sys-btn-blue" style="font-size:.68rem;" onclick="saveChapterConfig()">Save XP Values</button></div>
+      <div class="sys-card-body" id="sys-xp-economy">
         ${POINT_ECONOMY.map(p=>`<div class="sys-row"><span class="sys-key" style="min-width:200px;">${p.activity}</span><input class="sys-input" type="number" value="${p.xp}" style="width:80px;font-size:.76rem;padding:5px 8px;" onchange="p_${p.activity.replace(/\s/g,'_')}_xp=${'{'}this.value${'}'}"/><span style="color:#8B949E;font-size:.68rem;margin-left:4px;">XP</span></div>`).join('')}
       </div>
     </div>
@@ -4162,6 +4252,7 @@ function renderSettings(){
     <div class="card">
       <div class="card-header"><span class="card-title">Display</span></div>
       <div class="card-body">
+        ${(()=>{const darkOn=document.body.classList.contains('dark-mode');return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);"><div style="font-size:.83rem;font-weight:500;">Dark Mode</div><div onclick="toggleDarkMode();navigate('settings')" style="width:40px;height:22px;border-radius:11px;background:${darkOn?'var(--navy)':'var(--border)'};position:relative;cursor:pointer;transition:background .2s;flex-shrink:0;"><div style="position:absolute;top:3px;${darkOn?'right:3px':'left:3px'};width:16px;height:16px;border-radius:50%;background:#fff;transition:all .2s;"></div></div></div>`;})()}
         ${toggle('display','compactMode','Compact Mode')}
         ${toggle('display','showAvatars','Show Avatar Images')}
         <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;">
@@ -4175,13 +4266,95 @@ function renderSettings(){
     <div class="card">
       <div class="card-header"><span class="card-title">Account Actions</span></div>
       <div class="card-body" style="display:flex;flex-direction:column;gap:8px;">
-        <button class="btn btn-outline w-full" style="justify-content:center;" onclick="showToast('Downloading your data…','success')">Export My Data</button>
-        <button class="btn btn-outline w-full" style="justify-content:center;" onclick="showToast('Support ticket submitted','success')">Contact Support</button>
+        <button class="btn btn-outline w-full" style="justify-content:center;" onclick="exportMemberData()">Export My Data</button>
+        <button class="btn btn-outline w-full" style="justify-content:center;" onclick="window.location.href='mailto:support@blueledger.org?subject=Support+Request'">Contact Support</button>
         <button class="btn w-full" style="justify-content:center;background:var(--danger-bg);color:var(--danger);border:1px solid var(--danger-border);" onclick="signOut()">Sign Out</button>
       </div>
     </div>
   </div>`;
 }
+
+// ── Dark Mode ──
+function toggleDarkMode(){const on=document.body.classList.toggle('dark-mode');localStorage.setItem('bl_dark_mode',on?'1':'0');}
+
+// ── CSV Export Utilities ──
+function exportCSV(rows, filename){
+  if(!rows||!rows.length) return;
+  const header=Object.keys(rows[0]).join(',');
+  const body=rows.map(r=>Object.values(r).map(v=>`"${String(v==null?'':v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob([header+'\n'+body],{type:'text/csv'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+}
+function exportLeaderboard(){
+  const rows=[...members].sort((a,b)=>b.xp-a.xp).map((m,i)=>({Rank:i+1,Name:m.name,ID:m.id,XP:m.xp,Level:m.level,ServiceHours:m.serviceHours,Dues:m.dues,Badges:m.badges.length}));
+  exportCSV(rows,'leaderboard.csv');
+}
+function exportEngagementLog(){
+  const rows=engLog.map(l=>({Date:l.date,MemberID:l.memberId,Activity:l.activity,XP:l.xp,Source:l.source||'',AwardedBy:l.awardedBy||''}));
+  exportCSV(rows,'engagement-log.csv');
+}
+function exportMemberData(){
+  const u=members.find(m=>m.id===state.currentUser.id);
+  if(!u) return;
+  const rows=[{Name:u.name,Email:u.email,Role:u.role,XP:u.xp,Level:u.level,ServiceHours:u.serviceHours,Dues:u.dues,Inducted:u.inducted,Badges:u.badges.join(';')}];
+  exportCSV(rows,'my-blue-ledger-data.csv');
+}
+function exportAuditLog(){
+  const rows=SYS_AUDIT_LOG.map(l=>({Time:l.time,Level:l.level,Message:l.msg}));
+  exportCSV(rows,'audit-log.csv');
+}
+
+// ── Chapter Config Save ──
+function saveChapterConfig(){
+  const values={};
+  document.querySelectorAll('#sys-chapter-settings .sys-input').forEach(inp=>{
+    const key=inp.closest('.sys-row')?.querySelector('.sys-key')?.textContent?.trim();
+    if(key) values[key]=inp.value;
+  });
+  document.querySelectorAll('#sys-xp-economy .sys-input').forEach(inp=>{
+    const key=inp.closest('.sys-row')?.querySelector('.sys-key')?.textContent?.trim();
+    if(key) values[key]=inp.value;
+  });
+  try{localStorage.setItem('bl_chapter_config',JSON.stringify(values));}catch(e){}
+  STRIPE_PAYMENT_LINK = values['Stripe Payment Link'] || '';
+  localStorage.setItem('bl_stripe_url', STRIPE_PAYMENT_LINK);
+  showToast('Config saved','success');
+  pushAuditLog('ok','Chapter config updated by CES1231');
+}
+
+// ── Dues Reminder Webhook ──
+function sendDuesReminder(){
+  const cfg=JSON.parse(localStorage.getItem('bl_chapter_config')||'{}');
+  const webhookUrl=cfg['Make.com Webhook URL']||'';
+  if(!webhookUrl||webhookUrl.includes('…')||webhookUrl.length<10){
+    showToast('Set your Make.com webhook URL in System Console — App Config first','error');
+    return;
+  }
+  const outstanding=members.filter(m=>m.dues==='Outstanding'&&m.role!=='sysadmin');
+  fetch(webhookUrl,{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({trigger:'dues_reminder',count:outstanding.length,members:outstanding.map(m=>({id:m.id,name:m.name,email:m.email}))})
+  }).then(()=>{showToast(`Dues reminder sent to ${outstanding.length} members`,'success');pushAuditLog('ok',`Dues reminder triggered for ${outstanding.length} members`);})
+  .catch(()=>showToast('Webhook request failed — check your Make.com URL','error'));
+}
+
+// ── Stripe Payment ──
+function payDuesStripe(){
+  if(!STRIPE_PAYMENT_LINK){
+    showToast('Stripe not configured — contact your chapter admin','error');
+    return;
+  }
+  window.open(STRIPE_PAYMENT_LINK,'_blank');
+  pushAuditLog('info',`Member ${state.currentUser.id} opened Stripe payment link`);
+}
+
+// ── Restore dark mode on load ──
+if(localStorage.getItem('bl_dark_mode')==='1') document.body.classList.add('dark-mode');
 
 </script>
 </body>
