@@ -60,9 +60,16 @@ const NAV_SECTIONS = [
     ],
   },
   {
+    label: 'AI',
+    items: [
+      { label: 'Assistant',     path: '/assistant',   icon: '✨' },
+    ],
+  },
+  {
     label: 'Administration',
     items: [
       { label: 'Admin Panel',   path: '/admin',       icon: '⚙️',  roles: ['admin', 'sysadmin'] },
+      { label: 'AI Config',     path: '/admin/ai-config', icon: '🤖', roles: ['admin', 'sysadmin'] },
       { label: 'PIA Reports',   path: '/pia',         icon: '📊',  roles: ['pia', 'admin', 'sysadmin'] },
       { label: 'System Console',path: '/sys',         icon: '🖥️',  roles: ['sysadmin'] },
     ],

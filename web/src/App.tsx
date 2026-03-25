@@ -51,6 +51,8 @@ const AdminBillingPage      = lazy(() => import('./features/admin/AdminBillingPa
 const SysadminConsolePage   = lazy(() => import('./features/sysadmin/SysadminConsolePage').then(m => ({ default: m.SysadminConsolePage })))
 const EngagementLogPage     = lazy(() => import('./features/admin/EngagementLogPage').then(m => ({ default: m.EngagementLogPage })))
 const PointEconomyPage      = lazy(() => import('./features/admin/PointEconomyPage').then(m => ({ default: m.PointEconomyPage })))
+const AIConfigPage          = lazy(() => import('./features/admin/AIConfigPage'))
+const AssistantPage         = lazy(() => import('./features/ai/AssistantPage'))
 
 // ── Page loading fallback ──
 function PageLoader() {
@@ -140,6 +142,7 @@ export function App() {
         <Route path="/resources"       element={<ResourcesPage />} />
         <Route path="/milestones"      element={<MilestonesPage />} />
         <Route path="/alumni"          element={<AlumniPage />} />
+        <Route path="/assistant"       element={<AssistantPage />} />
 
         {/* ── Chair routes ── */}
         <Route
@@ -213,6 +216,14 @@ export function App() {
           element={
             <ProtectedRoute requiredRole="admin">
               <AdminSettingsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/ai-config"
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <AIConfigPage />
             </ProtectedRoute>
           }
         />

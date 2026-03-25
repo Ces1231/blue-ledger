@@ -41,3 +41,7 @@ terraform/**/*.tfvars
 
 # ── Claude agent files (not for git) ──
 .claude/eitri/archive/
+
+# JWT keys (never commit)
+blue-ledger-api/keys/*.pem
+*.pem

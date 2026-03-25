@@ -48,6 +48,10 @@ type Config struct {
 	StripeGrowthPriceID   string
 	StripeProPriceID      string
 
+	// AI Assistant
+	AnthropicAPIKey string
+	OpenAIAPIKey    string
+
 	// Sentry
 	SentryDSN string
 
@@ -93,6 +97,9 @@ func Load() *Config {
 		StripeStarterPriceID: getEnv("STRIPE_STARTER_PRICE_ID", ""),
 		StripeGrowthPriceID:  getEnv("STRIPE_GROWTH_PRICE_ID", ""),
 		StripeProPriceID:     getEnv("STRIPE_PRO_PRICE_ID", ""),
+
+		AnthropicAPIKey: getEnv("ANTHROPIC_API_KEY", ""),
+		OpenAIAPIKey:    getEnv("OPENAI_API_KEY", ""),
 
 		SentryDSN: getEnv("SENTRY_DSN", ""),
 

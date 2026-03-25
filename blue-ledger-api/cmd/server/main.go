@@ -10,9 +10,15 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/ces1231/blue-ledger-api/internal/ai"
+	"github.com/ces1231/blue-ledger-api/internal/alumni"
 	"github.com/ces1231/blue-ledger-api/internal/announcements"
 	"github.com/ces1231/blue-ledger-api/internal/auth"
+	"github.com/ces1231/blue-ledger-api/internal/badges"
+	"github.com/ces1231/blue-ledger-api/internal/committees"
 	"github.com/ces1231/blue-ledger-api/internal/dues"
+	"github.com/ces1231/blue-ledger-api/internal/fundraising"
+	"github.com/ces1231/blue-ledger-api/internal/jobboard"
 	"github.com/ces1231/blue-ledger-api/internal/events"
 	"github.com/ces1231/blue-ledger-api/internal/goals"
 	"github.com/ces1231/blue-ledger-api/internal/health"
@@ -28,6 +34,9 @@ import (
 	"github.com/ces1231/blue-ledger-api/internal/servicelog"
 	"github.com/ces1231/blue-ledger-api/internal/settings"
 	"github.com/ces1231/blue-ledger-api/internal/store"
+	"github.com/ces1231/blue-ledger-api/internal/quests"
+	"github.com/ces1231/blue-ledger-api/internal/resources"
+	"github.com/ces1231/blue-ledger-api/internal/sbc"
 	"github.com/ces1231/blue-ledger-api/internal/votes"
 	"github.com/ces1231/blue-ledger-api/internal/xp"
 	"github.com/ces1231/blue-ledger-api/pkg/config"
@@ -99,6 +108,15 @@ func main() {
 	notifSvc := notifications.NewNotificationsService(pool)
 
 	// ── New domain services ───────────────────────────────────────────────────
+	badgesSvc := badges.NewService(pool)
+	questsSvc := quests.NewService(pool)
+	committeesSvc := committees.NewService(pool)
+	fundraisingSvc := fundraising.NewService(pool)
+	resourcesSvc := resources.NewService(pool)
+	jobboardSvc := jobboard.NewService(pool)
+	alumniSvc := alumni.NewService(pool)
+	sbcSvc := sbc.NewService(pool)
+	aiSvc := ai.NewService(pool, cfg.AnthropicAPIKey, cfg.OpenAIAPIKey)
 	announcementsSvc := announcements.NewService(pool)
 	propsSvc := props.NewService(pool, xpSvc)
 	servicelogSvc := servicelog.NewService(pool, xpSvc)
@@ -122,6 +140,15 @@ func main() {
 	duesHandler := dues.NewHandler(duesSvc, cfg.StripeWebhookSecret)
 	notifHandler := notifications.NewHandler(notifSvc)
 
+	badgesHandler := badges.NewHandler(badgesSvc)
+	questsHandler := quests.NewHandler(questsSvc)
+	committeesHandler := committees.NewHandler(committeesSvc)
+	fundraisingHandler := fundraising.NewHandler(fundraisingSvc)
+	resourcesHandler := resources.NewHandler(resourcesSvc)
+	jobboardHandler := jobboard.NewHandler(jobboardSvc)
+	alumniHandler := alumni.NewHandler(alumniSvc)
+	sbcHandler := sbc.NewHandler(sbcSvc)
+	aiHandler := ai.NewHandler(aiSvc, cfg.AnthropicAPIKey, cfg.OpenAIAPIKey)
 	announcementsHandler := announcements.NewHandler(announcementsSvc)
 	propsHandler := props.NewHandler(propsSvc)
 	servicelogHandler := servicelog.NewHandler(servicelogSvc)
@@ -205,6 +232,19 @@ func main() {
 	messagesHandler.RegisterRoutes(v1.Group("/messages"), jwtMW)
 	healthHandler.RegisterRoutes(v1.Group("/health"), jwtMW)
 	settingsHandler.RegisterRoutes(v1.Group("/settings"), jwtMW)
+
+	// Gap sprint routes
+	badgesHandler.RegisterRoutes(v1.Group("/badges"), jwtMW)
+	questsHandler.RegisterRoutes(v1.Group("/quests"), jwtMW)
+	committeesHandler.RegisterRoutes(v1.Group("/committees"), jwtMW)
+	fundraisingHandler.RegisterRoutes(v1.Group("/fundraising"), jwtMW)
+	resourcesHandler.RegisterRoutes(v1.Group("/resources"), jwtMW)
+	jobboardHandler.RegisterRoutes(v1.Group("/job-board"), jwtMW)
+	alumniHandler.RegisterRoutes(v1.Group("/alumni"), jwtMW)
+	sbcHandler.RegisterRoutes(v1.Group("/sbc"), jwtMW)
+
+	// AI assistant routes
+	aiHandler.RegisterRoutes(v1.Group("/ai"), jwtMW)
 
 	// Platform / sysadmin routes
 	sysHandler.RegisterSysRoutes(v1, jwtMW)
