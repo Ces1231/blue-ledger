@@ -1,0 +1,55 @@
+# .github/workflows/security.yml
+# Security scanning: govulncheck (Go CVEs) + TruffleHog (secrets)
+# Runs on PRs to master.
+
+name: Security Scan
+
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+
+jobs:
+  govulncheck:
+    name: Go Vulnerability Scan
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: blue-ledger-api
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache: true
+          cache-dependency-path: blue-ledger-api/go.sum
+
+      - name: Install govulncheck
+        run: go install golang.org/x/vuln/cmd/govulncheck@latest
+
+      - name: Run govulncheck
+        run: govulncheck ./...
+
+  secrets-scan:
+    name: Secrets Detection (TruffleHog)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run TruffleHog
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --only-verified
