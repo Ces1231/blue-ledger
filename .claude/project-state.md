@@ -1,8 +1,8 @@
 # Blue Ledger — Project State
 
 meta:
-  last_updated: 2026-03-24
-  last_updated_by: eitri
+  last_updated: 2026-03-25
+  last_updated_by: jarvis
   project: The Blue Ledger
   version: 1.0.0
   project_stage: pre-production
@@ -228,18 +228,20 @@ Key JavaScript constants (in-memory):
 | Task ID | Date | Title | Packages | Status |
 |---------|------|-------|----------|--------|
 | saas-architecture | 2026-03-24 | SaaS Architecture Spec | All | Specified |
-| TASK-001 | 2026-03-24 | Project Setup & DB Foundation | pkg/db, migrations | Specified |
-| TASK-002 | 2026-03-24 | Authentication Service | internal/auth | Specified |
-| TASK-003 | 2026-03-24 | React Frontend Foundation | web/src | Specified |
-| TASK-004 | 2026-03-24 | Members API & Screens | internal/members | Specified |
-| TASK-005 | 2026-03-24 | XP Engine & Leaderboard | internal/xp | Specified |
-| TASK-006 | 2026-03-24 | Events API & QR Check-In | internal/events | Specified |
-| TASK-007 | 2026-03-24 | Dues & Stripe Integration | internal/dues, internal/platform | Specified |
-| TASK-008 | 2026-03-24 | Engagement Features | internal/announcements, internal/props, internal/notifications | Specified |
-| TASK-009 | 2026-03-24 | Service Log, Badges & Quests | internal/service, internal/xp (badge engine) | Specified |
-| TASK-010 | 2026-03-24 | Phase 4 Remaining Features | internal/intake, internal/votes, internal/mentorship, internal/minutes, internal/scholarships | Specified |
-| TASK-011 | 2026-03-24 | Admin Panel & Sysadmin Console | internal/platform | Specified |
-| TASK-012 | 2026-03-24 | Infrastructure & Production Deploy | Fly.io, R2, Sentry, Resend, CI | Specified |
+| TASK-001 | 2026-03-24 | Project Setup & DB Foundation | pkg/db, migrations | Built |
+| TASK-002 | 2026-03-24 | Authentication Service | internal/auth | Built |
+| TASK-003 | 2026-03-24 | React Frontend Foundation | web/src | Built |
+| TASK-004 | 2026-03-24 | Members API & Screens | internal/members | Built |
+| TASK-005 | 2026-03-24 | XP Engine & Leaderboard | internal/xp | Built |
+| TASK-006 | 2026-03-24 | Events API & QR Check-In | internal/events | Built |
+| TASK-007 | 2026-03-24 | Dues & Stripe Integration | internal/dues, internal/platform | Built |
+| TASK-008 | 2026-03-24 | Engagement Features | internal/announcements, internal/props, internal/notifications | Built |
+| TASK-009 | 2026-03-24 | Service Log, Badges & Quests | internal/servicelog, internal/xp (badge engine) | Built — missing /badges and /quests Go packages |
+| TASK-010 | 2026-03-24 | Phase 4 Remaining Features | internal/intake, internal/votes, internal/mentorship, internal/minutes, internal/scholarships | Built |
+| TASK-011 | 2026-03-24 | Admin Panel & Sysadmin Console | internal/platform | Built |
+| TASK-012 | 2026-03-24 | Infrastructure & Production Deploy | Fly.io, R2, Sentry, Resend, CI | Partial — Dockerfile/fly.toml done; CI/CD, Sentry, rate limit missing |
+| REVIEW-001 | 2026-03-25 | Phase 1 Build Review | All | Complete — see .claude/specs/jarvis-review-phase1.md |
+| TASK-AI | 2026-03-25 | AI Assistant Feature Spec | internal/assistant, web/src/features/assistant | Specified — see jarvis-review-phase1.md §6 |
 
 ---
 
@@ -359,6 +361,29 @@ Key differences dev vs prod:
 
 ---
 
+## Build Status (owned by JARVIS — updated 2026-03-25)
+
+### Overall Completion: ~68%
+
+| Layer | Status | Notes |
+|-------|--------|-------|
+| Migrations (20 files, 31 tables, RLS) | 95% | CRITICAL: duplicate `001_initial_schema` files — must delete before server start |
+| Go API — core packages (auth, members, xp, events, dues) | 100% | Real implementations |
+| Go API — engagement packages (announcements, props, notifications, servicelog, intake, votes, mentorship, minutes, scholarships, store, goals, messages, settings, health, platform) | 100% | Real implementations |
+| Go API — missing packages (badges/quests, committees, fundraising, resources, job-board, alumni, sbc) | 0% | 8 packages unbuilt; React pages exist and call API that doesn't respond |
+| Go API — middleware (rate limiter, subscription gate) | 20% | Rate limiter wired in config but not applied; subscription gate absent |
+| React routes | 78% | 44/~56 registered; 10 missing or misrouted (see review) |
+| React feature pages | 85% | All major features have real page implementations |
+| React API clients | 67% | 10 features using inline apiClient instead of dedicated file |
+| Infrastructure (Dockerfile, compose, fly.toml) | 60% | Built; not provisioned; no CI/CD; Sentry not wired |
+| Tests | 0% | Zero test files in Go or React |
+
+### Critical Blockers Before First Demo
+1. Delete `migrations/001_initial_schema.up.sql` and `.down.sql` (Eitri duplicate)
+2. Generate RSA keypair (`make gen-keys` or openssl manual)
+3. Run `go mod tidy` to populate `go.sum`
+4. Build `internal/badges` and `internal/quests` packages (visible in demo nav)
+
 ## Drift Log
 
 | Date | Agent | Note |
@@ -367,3 +392,4 @@ Key differences dev vs prod:
 | 2026-03-24 | jarvis | SaaS architecture spec generated. Target stack defined: Go + Echo + PostgreSQL (RLS) + React + Fly.io. 12 tasks specified across 6 phases. ~280-340 hrs estimated. See .claude/specs/saas-architecture.md |
 | 2026-03-24 | nebula | Full migration suite written: 20 migrations (001-020), 40 files. 31 tables. golang-migrate format. RLS enabled on all tenant tables. Roles: blue_ledger_app + blue_ledger_admin. seed_default_point_economy() function included. See .claude/nebula/migration-log.md |
 | 2026-03-24 | eitri | Full application scaffold built. Go API: all core packages (auth, members, xp, events, dues, notifications), migrations, Dockerfile, docker-compose, fly.toml. React SPA: 47 routes, 4 feature pages (dashboard, directory, member profile, leaderboard), auth flow, full CSS port from prototype, .env.example files. See .claude/eitri/build-report.md |
+| 2026-03-25 | jarvis | Phase 1 review complete. Overall: ~68%. 5 critical blockers identified (duplicate migration 001, no RSA keys, stale go.sum, missing badges/quests Go packages, rate limiter not wired). 8 Go packages unbuilt (committees, fundraising, resources, job-board, alumni, sbc, badges, quests). 10 React routes missing. Zero tests. AI Assistant feature fully specced in .claude/specs/jarvis-review-phase1.md §6. |
