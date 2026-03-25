@@ -10,17 +10,31 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/ces1231/blue-ledger-api/internal/announcements"
 	"github.com/ces1231/blue-ledger-api/internal/auth"
 	"github.com/ces1231/blue-ledger-api/internal/dues"
 	"github.com/ces1231/blue-ledger-api/internal/events"
+	"github.com/ces1231/blue-ledger-api/internal/goals"
+	"github.com/ces1231/blue-ledger-api/internal/health"
+	"github.com/ces1231/blue-ledger-api/internal/intake"
 	"github.com/ces1231/blue-ledger-api/internal/members"
+	"github.com/ces1231/blue-ledger-api/internal/mentorship"
+	"github.com/ces1231/blue-ledger-api/internal/messages"
+	"github.com/ces1231/blue-ledger-api/internal/minutes"
 	"github.com/ces1231/blue-ledger-api/internal/notifications"
+	"github.com/ces1231/blue-ledger-api/internal/platform"
+	"github.com/ces1231/blue-ledger-api/internal/props"
+	"github.com/ces1231/blue-ledger-api/internal/scholarships"
+	"github.com/ces1231/blue-ledger-api/internal/servicelog"
+	"github.com/ces1231/blue-ledger-api/internal/settings"
+	"github.com/ces1231/blue-ledger-api/internal/store"
+	"github.com/ces1231/blue-ledger-api/internal/votes"
 	"github.com/ces1231/blue-ledger-api/internal/xp"
 	"github.com/ces1231/blue-ledger-api/pkg/config"
 	appdb "github.com/ces1231/blue-ledger-api/pkg/db"
-	appredis "github.com/ces1231/blue-ledger-api/pkg/redis"
 	"github.com/ces1231/blue-ledger-api/pkg/email"
 	"github.com/ces1231/blue-ledger-api/pkg/logger"
+	appredis "github.com/ces1231/blue-ledger-api/pkg/redis"
 	"github.com/ces1231/blue-ledger-api/pkg/validator"
 
 	"github.com/golang-migrate/migrate/v4"
@@ -57,7 +71,7 @@ func main() {
 	} else {
 		log.Info().Msg("redis connected")
 	}
-	_ = redisClient // used by rate limiter in future tasks
+	_ = redisClient
 
 	// ── Run Migrations ────────────────────────────────────────────────────────
 	if err := runMigrations(cfg.DatabaseURL); err != nil {
@@ -65,7 +79,7 @@ func main() {
 	}
 	log.Info().Msg("migrations applied")
 
-	// ── Services ──────────────────────────────────────────────────────────────
+	// ── Core services ─────────────────────────────────────────────────────────
 	tokenManager, err := auth.NewTokenManager(
 		cfg.JWTPrivateKeyPath, cfg.JWTPublicKeyPath,
 		cfg.JWTAccessExpiry, cfg.JWTRefreshExpiry,
@@ -84,13 +98,45 @@ func main() {
 	duesSvc := dues.NewDuesService(pool, cfg.StripeSecretKey, cfg.StripeWebhookSecret)
 	notifSvc := notifications.NewNotificationsService(pool)
 
+	// ── New domain services ───────────────────────────────────────────────────
+	announcementsSvc := announcements.NewService(pool)
+	propsSvc := props.NewService(pool, xpSvc)
+	servicelogSvc := servicelog.NewService(pool, xpSvc)
+	intakeSvc := intake.NewService(pool)
+	votesSvc := votes.NewService(pool)
+	mentorshipSvc := mentorship.NewService(pool, xpSvc)
+	minutesSvc := minutes.NewService(pool)
+	scholarshipsSvc := scholarships.NewService(pool)
+	storeSvc := store.NewService(pool)
+	goalsSvc := goals.NewService(pool)
+	messagesSvc := messages.NewService(pool)
+	platformSvc := platform.NewSysService(pool)
+	healthSvc := health.NewService(pool)
+	settingsSvc := settings.NewService(pool)
+
 	// ── Handlers ──────────────────────────────────────────────────────────────
 	authHandler := auth.NewHandler(authSvc)
 	membersHandler := members.NewHandler(membersSvc)
 	xpHandler := xp.NewHandler(xpSvc)
-	eventsHandler := events.NewHandler(eventsSvc, cfg.MagicLinkHMACSecret) // reusing HMAC secret for QR
+	eventsHandler := events.NewHandler(eventsSvc, cfg.MagicLinkHMACSecret)
 	duesHandler := dues.NewHandler(duesSvc, cfg.StripeWebhookSecret)
 	notifHandler := notifications.NewHandler(notifSvc)
+
+	announcementsHandler := announcements.NewHandler(announcementsSvc)
+	propsHandler := props.NewHandler(propsSvc)
+	servicelogHandler := servicelog.NewHandler(servicelogSvc)
+	intakeHandler := intake.NewHandler(intakeSvc)
+	votesHandler := votes.NewHandler(votesSvc)
+	mentorshipHandler := mentorship.NewHandler(mentorshipSvc)
+	minutesHandler := minutes.NewHandler(minutesSvc)
+	scholarshipsHandler := scholarships.NewHandler(scholarshipsSvc)
+	storeHandler := store.NewHandler(storeSvc)
+	goalsHandler := goals.NewHandler(goalsSvc)
+	messagesHandler := messages.NewHandler(messagesSvc)
+	sysHandler := platform.NewSysHandler(platformSvc)
+	billingHandler := platform.NewBillingHandler(cfg.StripeSecretKey, cfg.APIBaseURL)
+	healthHandler := health.NewHandler(healthSvc)
+	settingsHandler := settings.NewHandler(settingsSvc)
 
 	// ── Echo Setup ────────────────────────────────────────────────────────────
 	e := echo.New()
@@ -139,11 +185,30 @@ func main() {
 	webhookGroup := v1.Group("/webhooks")
 	duesHandler.RegisterRoutes(v1.Group("/dues"), webhookGroup, jwtMW)
 
-	// Protected routes
+	// Core protected routes
 	membersHandler.RegisterRoutes(v1.Group("/members"), jwtMW)
 	xpHandler.RegisterRoutes(v1, jwtMW)
 	eventsHandler.RegisterRoutes(v1.Group("/events"), jwtMW)
 	notifHandler.RegisterRoutes(v1.Group("/notifications"), jwtMW)
+
+	// New domain routes
+	announcementsHandler.RegisterRoutes(v1.Group("/announcements"), jwtMW)
+	propsHandler.RegisterRoutes(v1.Group("/props"), jwtMW)
+	servicelogHandler.RegisterRoutes(v1.Group("/service"), jwtMW)
+	intakeHandler.RegisterRoutes(v1.Group("/intake"), jwtMW)
+	votesHandler.RegisterRoutes(v1.Group("/votes"), jwtMW)
+	mentorshipHandler.RegisterRoutes(v1.Group("/mentorship"), jwtMW)
+	minutesHandler.RegisterRoutes(v1.Group("/minutes"), jwtMW)
+	scholarshipsHandler.RegisterRoutes(v1.Group("/scholarships"), jwtMW)
+	storeHandler.RegisterRoutes(v1.Group("/store"), jwtMW)
+	goalsHandler.RegisterRoutes(v1.Group("/goals"), jwtMW)
+	messagesHandler.RegisterRoutes(v1.Group("/messages"), jwtMW)
+	healthHandler.RegisterRoutes(v1.Group("/health"), jwtMW)
+	settingsHandler.RegisterRoutes(v1.Group("/settings"), jwtMW)
+
+	// Platform / sysadmin routes
+	sysHandler.RegisterSysRoutes(v1, jwtMW)
+	billingHandler.RegisterBillingRoutes(v1, jwtMW)
 
 	// ── Error handler ─────────────────────────────────────────────────────────
 	e.HTTPErrorHandler = func(err error, c echo.Context) {
