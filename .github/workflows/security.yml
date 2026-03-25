@@ -1,6 +1,6 @@
 # .github/workflows/security.yml
 # Security scanning: govulncheck (Go CVEs) + TruffleHog (secrets)
-# Runs on PRs to master.
+# Runs on PRs to master and on pushes to master.
 
 name: Security Scan
 
@@ -11,6 +11,7 @@ on:
     branches: [master]
 
 jobs:
+  # ── Go Vulnerability Scan ─────────────────────────────────────────────
   govulncheck:
     name: Go Vulnerability Scan
     runs-on: ubuntu-latest
@@ -36,6 +37,9 @@ jobs:
       - name: Run govulncheck
         run: govulncheck ./...
 
+  # ── Secrets Detection ─────────────────────────────────────────────────
+  # Pinned to @v3 (not @main) to protect against supply chain attacks.
+  # A compromised @main tag could execute arbitrary code in CI.
   secrets-scan:
     name: Secrets Detection (TruffleHog)
     runs-on: ubuntu-latest
@@ -47,7 +51,7 @@ jobs:
           fetch-depth: 0
 
       - name: Run TruffleHog
-        uses: trufflesecurity/trufflehog@main
+        uses: trufflesecurity/trufflehog@v3
         with:
           path: ./
           base: ${{ github.event.repository.default_branch }}
