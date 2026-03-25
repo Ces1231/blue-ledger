@@ -37,7 +37,7 @@ describe('streamChat', () => {
     await streamChat('Hello', [], vi.fn(), vi.fn(), vi.fn())
 
     expect(globalThis.fetch).toHaveBeenCalledWith(
-      '/api/v1/ai/chat',
+      '/api/ai/chat',
       expect.objectContaining({
         method: 'POST',
         headers: expect.objectContaining({

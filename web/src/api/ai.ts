@@ -50,7 +50,7 @@ export async function streamChat(
   onError: (err: string) => void
 ): Promise<void> {
   const token = localStorage.getItem('access_token')
-  const response = await fetch('/api/v1/ai/chat', {
+  const response = await fetch('/api/ai/chat', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

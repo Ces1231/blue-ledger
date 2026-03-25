@@ -1,6 +1,7 @@
 version: "3.9"
 
 services:
+  # ── PostgreSQL ────────────────────────────────────────────────────────────
   postgres:
     image: postgres:16-alpine
     environment:
@@ -17,6 +18,7 @@ services:
       timeout: 3s
       retries: 10
 
+  # ── Redis ─────────────────────────────────────────────────────────────────
   redis:
     image: redis:7-alpine
     ports:
@@ -27,6 +29,51 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+
+  # ── Go API ────────────────────────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      APP_ENV: development
+      PORT: "8080"
+      DATABASE_URL: postgres://blue_ledger:localpassword@postgres:5432/blue_ledger?sslmode=disable
+      REDIS_URL: redis://redis:6379
+      JWT_PRIVATE_KEY_PATH: /app/keys/private.pem
+      JWT_PUBLIC_KEY_PATH: /app/keys/public.pem
+      ALLOWED_ORIGINS: http://localhost:3001,http://localhost:80
+      # Set these in a .env file or override at runtime:
+      # MAGIC_LINK_HMAC_SECRET: changeme
+      # RESEND_API_KEY: re_xxx
+      # STRIPE_SECRET_KEY: sk_test_xxx
+      # ANTHROPIC_API_KEY: sk-ant-xxx
+      # OPENAI_API_KEY: sk-xxx
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      # Mount RSA keys for JWT (generate once with: make keys)
+      - ./keys:/app/keys:ro
+    restart: unless-stopped
+
+  # ── React Web App ─────────────────────────────────────────────────────────
+  web:
+    build:
+      context: ../web
+      dockerfile: Dockerfile
+    ports:
+      - "3001:80"
+    depends_on:
+      - api
+    restart: unless-stopped
 
 volumes:
   postgres_data:
