@@ -7,7 +7,7 @@
 ## TASK-001 · Write `sbc_log` migration
 **Gap:** GAP-001  
 **Priority:** P0 — CRASH  
-**Status:** `[ ] not started`  
+**Status:** `[x] done 2026-03-26`  
 **Effort:** ~15 min  
 
 **What to do:**
@@ -27,7 +27,7 @@
 ## TASK-002 · Generate local dev RSA keys + create `.env`
 **Gap:** GAP-005  
 **Priority:** P0 — Server will not start  
-**Status:** `[ ] not started`  
+**Status:** `[x] done 2026-03-26`  
 **Effort:** ~5 min  
 
 **What to do:**
@@ -109,7 +109,7 @@
 ## TASK-005 · Build `milestones` frontend page
 **Gap:** GAP-002  
 **Priority:** P1 — depends on TASK-003  
-**Status:** `[ ] not started (blocked by TASK-003)`  
+**Status:** `[x] done 2026-03-26`  
 **Effort:** ~1h  
 
 **What to do:**
@@ -140,7 +140,7 @@ birthday → 🎂  graduation → 🎓  new_job → 💼  engagement → 💍  o
 ## TASK-006 · Build `study-groups` frontend page
 **Gap:** GAP-003  
 **Priority:** P1 — depends on TASK-004  
-**Status:** `[ ] not started (blocked by TASK-004)`  
+**Status:** `[x] done 2026-03-26`  
 **Effort:** ~1h  
 
 **What to do:**
@@ -257,7 +257,7 @@ birthday → 🎂  graduation → 🎓  new_job → 💼  engagement → 💍  o
 ## TASK-012 · Verify `study-groups.ts` API client content
 **Gap:** GAP-007  
 **Priority:** P3  
-**Status:** `[ ] not started`  
+**Status:** `[x] done 2026-03-26`  
 **Effort:** 5 min  
 
 **What to do:**
@@ -275,14 +275,14 @@ birthday → 🎂  graduation → 🎓  new_job → 💼  engagement → 💍  o
 | TASK-002 — RSA keys + `.env` | GAP-005 | 🔴 P0 | `[x] done 2026-03-26` |
 | TASK-003 — `milestones` Go package | GAP-002 | 🔴 P1 | `[x] done 2026-03-26` |
 | TASK-004 — `study-groups` Go package | GAP-003 | 🔴 P1 | `[x] done 2026-03-26` |
-| TASK-005 — `milestones` frontend | GAP-002 | 🔴 P1 | `[ ]` |
-| TASK-006 — `study-groups` frontend | GAP-003 | 🔴 P1 | `[ ]` |
+| TASK-005 — `milestones` frontend | GAP-002 | 🔴 P1 | `[x] done 2026-03-26` |
+| TASK-006 — `study-groups` frontend | GAP-003 | 🔴 P1 | `[x] done 2026-03-26` |
 | TASK-007 — `resources` frontend | GAP-004 | 🟡 P2 | `[ ]` |
 | TASK-008 — `job-board` frontend | GAP-004 | 🟡 P2 | `[ ]` |
 | TASK-009 — `fundraising` frontend | GAP-004 | 🟡 P2 | `[ ]` |
 | TASK-010 — `committees` frontend | GAP-004 | 🟡 P2 | `[ ]` |
 | TASK-011 — `alumni` frontend | GAP-004 | 🟡 P2 | `[ ]` |
-| TASK-012 — verify `study-groups.ts` | GAP-007 | 🟢 P3 | `[ ]` |
+| TASK-012 — verify `study-groups.ts` | GAP-007 | 🟢 P3 | `[x] done 2026-03-26` |
 
 ---
 
