@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>The Blue Ledger — Week 7 — Quest Engine</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@0,400;0,500;0,600&display=swap');
+:root{--navy:#001A4D;--gold:#C9A84C;--gold-l:#F5E6C8;--gold-pale:#FDF8EE;--cream:#FAF8F3;--ink:#0D0D0D;--muted:#6B6B6B;--border:#E2DDD4;--success:#1A6B3A;--success-bg:#EAF5EE;--success-border:#A8D5BC;--info:#003087;--info-bg:#EAF0FB;--info-border:#BDD0F5;--warn:#7A4A00;--warn-bg:#FFF3DC;--warn-border:#F5D98A;--danger:#8B1A1A;--danger-bg:#FCE4EC;--danger-border:#F4C0D1;--phone-w:300px;--phone-h:600px;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Instrument Sans',sans-serif;background:var(--cream);color:var(--ink);}
+.hdr{background:var(--navy);padding:1.25rem 2rem;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid var(--gold);position:sticky;top:0;z-index:50;}
+.hdr-logo{font-family:'DM Serif Display',serif;font-size:1.15rem;color:var(--gold);}
+.hdr-sub{font-size:.68rem;color:rgba(255,255,255,.45);font-family:'DM Mono',monospace;letter-spacing:.1em;text-transform:uppercase;margin-top:2px;}
+.hdr-badge{background:var(--gold);color:var(--navy);font-size:.68rem;font-weight:600;padding:3px 10px;border-radius:4px;font-family:'DM Mono',monospace;text-transform:uppercase;}
+.layout{display:flex;min-height:calc(100vh - 64px);}
+.sidebar{width:225px;flex-shrink:0;background:#fff;border-right:1px solid var(--border);padding:1.5rem 0;position:sticky;top:64px;height:calc(100vh - 64px);overflow-y:auto;}
+.sl{font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding:0 1.25rem;margin:1.2rem 0 .4rem;font-family:'DM Mono',monospace;}
+.si{display:flex;align-items:center;gap:8px;padding:7px 1.25rem;font-size:.82rem;color:var(--muted);cursor:pointer;border-left:3px solid transparent;transition:all .15s;text-decoration:none;}
+.si:hover{background:var(--cream);color:var(--ink);}
+.si.active{background:var(--gold-pale);color:var(--navy);border-left-color:var(--gold);font-weight:600;}
+.si-dot{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:700;font-family:'DM Mono',monospace;flex-shrink:0;color:var(--muted);}
+.si.active .si-dot{background:var(--navy);border-color:var(--navy);color:#fff;}
+.main{flex:1;padding:2rem 2.5rem;max-width:840px;}
+.section{margin-bottom:3rem;scroll-margin-top:80px;}
+.week-tag{font-family:'DM Mono',monospace;font-size:.68rem;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px;}
+.sec-title{font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--navy);}
+.sec-desc{font-size:.88rem;color:var(--muted);margin-top:6px;line-height:1.6;max-width:580px;margin-bottom:1.25rem;}
+.g{background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:1.25rem;}
+.gt{background:var(--navy);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;}
+.gtt{font-size:.82rem;font-weight:600;color:var(--gold);}
+.gtp{font-size:.62rem;font-family:'DM Mono',monospace;background:rgba(201,168,76,.18);color:var(--gold);border:1px solid rgba(201,168,76,.3);border-radius:20px;padding:2px 8px;}
+.gb{padding:12px 14px;}
+.sr{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--border);}
+.sr:last-child{border:none;}
+.sn{width:22px;height:22px;border-radius:50%;background:var(--navy);color:#fff;font-size:.65rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'DM Mono',monospace;margin-top:1px;}
+.sn.gd{background:var(--gold);color:var(--navy);}
+.sn.gr{background:var(--success);color:#fff;}
+.sn.bx{background:var(--success-bg);border:1.5px solid var(--success);color:var(--success);}
+.st{font-size:.83rem;font-weight:600;color:var(--ink);}
+.sd{font-size:.76rem;color:var(--muted);margin-top:2px;line-height:1.55;}
+.cd{font-family:'DM Mono',monospace;font-size:.72rem;background:#F0EDE7;border:1px solid var(--border);border-radius:4px;padding:1px 5px;color:var(--navy);white-space:nowrap;}
+.cb{border-radius:8px;padding:9px 12px;font-size:.78rem;line-height:1.55;margin:8px 0;display:flex;gap:8px;align-items:flex-start;}
+.cb span{font-size:14px;flex-shrink:0;}
+.ct{background:var(--info-bg);border:1px solid var(--info-border);color:var(--info);}
+.cw{background:var(--warn-bg);border:1px solid var(--warn-border);color:var(--warn);}
+.co{background:var(--success-bg);border:1px solid var(--success-border);color:var(--success);}
+.cd2{background:var(--danger-bg);border:1px solid var(--danger-border);color:var(--danger);}
+.chk{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--border);}
+.chk:last-child{border:none;}
+.cb2{width:18px;height:18px;border:1.5px solid var(--border);border-radius:4px;flex-shrink:0;margin-top:1px;}
+.ct2{font-size:.83rem;font-weight:600;color:var(--ink);}
+.cs{font-size:.74rem;color:var(--muted);margin-top:2px;line-height:1.4;}
+.flow-r{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:0 0 10px;}
+.fb{font-size:.73rem;padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:#fff;white-space:nowrap;}
+.fb.s{background:var(--navy);color:var(--gold);border-color:var(--navy);font-weight:600;}
+.fb.e{background:var(--success-bg);color:var(--success);border-color:#A8D5BC;font-weight:600;}
+.fb.a{background:var(--info-bg);color:var(--info);border-color:#BDD0F5;}
+.fb.w{background:var(--warn-bg);color:var(--warn);border-color:#F5D98A;}
+.fa{font-size:.8rem;color:var(--muted);}
+.ptrak{height:6px;background:var(--border);border-radius:3px;margin:1rem 0;}
+.pfil{height:100%;border-radius:3px;background:var(--gold);}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:1.25rem;}
+.pcard{background:#fff;border:1px solid var(--border);border-radius:10px;padding:.85rem;text-align:center;}
+.pcard-num{font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--navy);}
+.pcard-lbl{font-size:.65rem;font-family:'DM Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:2px;}
+hr{border:none;border-top:1px solid var(--border);margin:2rem 0;}
+.badge{display:inline-flex;align-items:center;font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:20px;font-family:'DM Mono',monospace;white-space:nowrap;}
+.bs{background:var(--success-bg);color:var(--success);}
+.bw{background:var(--warn-bg);color:var(--warn);}
+.bi{background:var(--info-bg);color:var(--info);}
+.bg{background:var(--gold-pale);color:var(--warn);}
+.bd{background:var(--danger-bg);color:var(--danger);}
+.tbl{width:100%;border-collapse:collapse;font-size:.8rem;}
+.tbl th{background:var(--cream);padding:8px 10px;text-align:left;font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-family:'DM Mono',monospace;border-bottom:1px solid var(--border);}
+.tbl td{padding:8px 10px;border-bottom:1px solid var(--border);color:var(--ink);vertical-align:middle;}
+.tbl tr:last-child td{border:none;}
+.tbl tr:nth-child(even) td{background:var(--cream);}
+.hero{background:var(--navy);border-radius:14px;padding:1.75rem 2rem;margin-bottom:1.5rem;position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;top:-40px;right:-40px;width:160px;height:160px;border-radius:50%;background:rgba(201,168,76,.06);}
+.htag{font-family:'DM Mono',monospace;font-size:.65rem;color:rgba(255,255,255,.35);letter-spacing:.12em;text-transform:uppercase;margin-bottom:5px;}
+.htitle{font-family:'DM Serif Display',serif;font-size:1.6rem;color:var(--gold);margin-bottom:.5rem;}
+.hdesc{font-size:.86rem;color:rgba(255,255,255,.6);line-height:1.65;max-width:500px;}
+@media(max-width:700px){.sidebar{display:none;}.main{padding:1.25rem;}}
+</style>
+</head>
+<body>
+<header class="hdr">
+  <div><div class="hdr-logo">The Blue Ledger</div><div class="hdr-sub">Week 7 — Side Quest Quizzes</div></div>
+  <div class="hdr-badge">~3 hours</div>
+</header>
+<div class="layout">
+<nav class="sidebar"><div class="sl">Week 7</div><a href="#overview" class="si "><div class="si-dot">0</div> Overview</a><a href="#sheet" class="si "><div class="si-dot">1</div> New Sheet Tabs</a><a href="#glide" class="si "><div class="si-dot">2</div> Quiz Screens</a><a href="#make" class="si "><div class="si-dot">3</div> Scoring Automation</a><a href="#checklist" class="si "><div class="si-dot">✓</div> Checklist</a></nav>
+<main class="main"><div class="hero">
+<div class="htag">Week 7 · Gamification</div>
+<div class="htitle">The Quest Engine</div>
+<div class="hdesc">Side Quest quizzes go live this week. Brothers can now earn bonus XP by passing Fraternity History and Chapter Constitution quizzes — up to 3 attempts per quiz per semester. Perfect scores trigger the Scholar badge automatically.</div>
+</div><div class="ptrak"><div class="pfil" style="width:58%"></div></div><div style="font-size:.75rem;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:1.25rem;">Week 7 of 12 · 58% complete</div><div class="section" id="overview">
+<div class="week-tag">Week 7</div>
+<div class="sec-title">What Gets Built</div>
+<div class="sec-desc">Two new Google Sheet tabs, one quiz list screen, one quiz-taking screen, and one Make.com scoring scenario. Estimated build time: 3 hours.</div>
+<div class="pgrid"><div class="pcard"><div class="pcard-num">2</div><div class="pcard-lbl">New sheet tabs</div></div><div class="pcard"><div class="pcard-num">40</div><div class="pcard-lbl">Questions ready</div></div><div class="pcard"><div class="pcard-num">3</div><div class="pcard-lbl">Retakes/semester</div></div><div class="pcard"><div class="pcard-num">75</div><div class="pcard-lbl">Max XP per question</div></div></div><div class="flow-r"><div class="fb s">Member opens Quizzes</div><div class="fa">→</div><div class="fb ">Selects a quiz</div><div class="fa">→</div><div class="fb ">Answers 5 questions</div><div class="fa">→</div><div class="fb ">Submits</div><div class="fa">→</div><div class="fb a">Make.com scores</div><div class="fa">→</div><div class="fb e">XP awarded if ≥80%</div></div>
+</div><div class="section" id="sheet">
+<div class="week-tag">Google Sheets</div>
+<div class="sec-title">New Sheet Tabs for Week 7</div>
+<div class="sec-desc">Add these two tabs to your Master Sheet. The quiz question data is already in QuizBank.xlsx — copy those rows here.</div>
+<div class="g"><div class="gt"><div class="gtt">Tab 1: 📝 Quizzes (master list)</div><div class="gtp">Copy from QuizBank.xlsx</div></div><div class="gb"><div class="sr"><div class="sn ">S</div><div><div class="st">Copy tabs from QuizBank.xlsx</div><div class="sd">Open <span class='cd'>data/QuizBank.xlsx</span> → copy all rows from '📚 History Quiz' and '📜 Constitution Quiz' into a single tab in your Master Sheet called <span class='cd'>📝 Quiz Bank</span>. Column structure: Quiz ID, Category, Difficulty, Question, Option A, Option B, Option C, Option D, Correct Answer, XP Award.</div></div></div><div class="sr"><div class="sn ">S</div><div><div class="st">Add Quiz Attempts tab</div><div class="sd">New tab: <span class='cd'>📝 Quiz Attempts</span>. Columns: Attempt ID, Member #, Member Name, Quiz ID, Question ID, Selected Answer, Is Correct, Score (%), Date Taken, XP Awarded, Pass/Fail, Badge Triggered.</div></div></div><div class="sr"><div class="sn ">S</div><div><div class="st">Add Quiz Sessions tab</div><div class="sd">New tab: <span class='cd'>📝 Quiz Sessions</span>. Columns: Session ID, Member #, Quiz Category, Date, Questions Attempted, Score (%), Pass/Fail, XP Awarded, Attempts This Semester. This aggregates per-session results for the retake limit logic.</div></div></div></div></div>
+</div><div class="section" id="glide">
+<div class="week-tag">Glide Build</div>
+<div class="sec-title">Quiz Screens in Glide</div>
+
+<div class="g"><div class="gt"><div class="gtt">Screen 1 — Quiz selection list</div><div class="gtp">~45 min</div></div><div class="gb"><div class="sr"><div class="sn ">1</div><div><div class="st">Add Screen → List → source: 📝 Quiz Bank</div><div class="sd">Filter to show unique categories only (History and Constitution). Each row shows: Quiz name, category badge, XP available, difficulty distribution. Tap → Quiz Taking screen.</div></div></div><div class="sr"><div class="sn ">2</div><div><div class="st">Add 'Attempts remaining' computed column</div><div class="sd">In Data Editor → 📝 Quiz Sessions → Add Column → Rollup → Count rows where Member # = current user AND Category = this quiz AND Date is in current semester. Display 'X/3 attempts used' on the list item.</div></div></div><div class="sr"><div class="sn ">3</div><div><div class="st">Hide quiz when attempts exhausted</div><div class="sd">Quiz item → Visibility condition: IF 'Attempts This Semester' < 3 → show. ELSE → show a 'No attempts remaining' locked state. Don't remove the row — show it grayed out so brothers know it exists.</div></div></div><div class="sr"><div class="sn ">4</div><div><div class="st">Add to nav bar</div><div class="sd">Add Quizzes as a sub-section within the existing Quests & Badges tab. Or add as its own nav tab with a book icon. Visible to all roles.</div></div></div></div></div><div class="g"><div class="gt"><div class="gtt">Screen 2 — Quiz taking</div><div class="gtp">~60 min</div></div><div class="gb"><div class="sr"><div class="sn ">1</div><div><div class="st">Create a Form screen with 5 Choice components</div><div class="sd">New Screen → Form → source: 📝 Quiz Attempts. Add 5 Choice fields, each mapping to a question from the selected quiz. Use 'Single select' type — only one answer per question. Label each field with the question text.</div></div></div><div class="sr"><div class="sn ">2</div><div><div class="st">Pre-fill question text using Lookup columns</div><div class="sd">In Data Editor → Add Lookup columns that pull Question 1–5 text and Options A–D from the 📝 Quiz Bank based on the selected quiz category and a randomized or sequential question index.</div></div></div><div class="sr"><div class="sn ">3</div><div><div class="st">Configure Submit action</div><div class="sd">Submit → Action chain: (1) Add Row to 📝 Quiz Sessions with all 5 answers. (2) Set Session ID = ROW template. (3) Call Make.com webhook with Member #, Quiz Category, and all 5 answers. (4) Show notification 'Quiz submitted — results incoming!' (5) Navigate to Quests & Badges screen.</div></div></div><div class="sr"><div class="sn ">4</div><div><div class="st">Add a retake countdown</div><div class="sd">Below the start button on the quiz intro screen, show: 'Attempts this semester: X/3'. Disable the Start Quiz button if attempts = 3. Add a 'retakes reset each semester' note.</div></div></div></div></div>
+</div><div class="section" id="make">
+<div class="week-tag">Make.com</div>
+<div class="sec-title">Quiz Scoring Scenario</div>
+
+<div class="g"><div class="gt"><div class="gtt">Scenario: Quiz submitted → score → XP → badge</div><div class="gtp">~30 min to build</div></div><div class="gb"><div class="sr"><div class="sn ">T</div><div><div class="st">Trigger: Webhook (called from Glide submit action)</div><div class="sd">Receives: Member #, Member Name, Quiz Category, Answer 1–5. Immediately available as variables in the scenario.</div></div></div><div class="sr"><div class="sn ">1</div><div><div class="st">Look up correct answers from Quiz Bank</div><div class="sd">Google Sheets → Search Rows → 📝 Quiz Bank where Category = received category. Pull the 5 correct answers into variables.</div></div></div><div class="sr"><div class="sn ">2</div><div><div class="st">Score the answers (Router)</div><div class="sd">Compare each of the 5 submitted answers against the correct answers. Count matches. Calculate score: (correct / 5) × 100.</div></div></div><div class="sr"><div class="sn ">3</div><div><div class="st">Determine Pass/Fail</div><div class="sd">IF score ≥ 80 → Pass. ELSE → Fail. Route to two branches.</div></div></div><div class="sr"><div class="sn gd">4</div><div><div class="st">Pass branch: Award XP</div><div class="sd">Calculate XP: sum the XP Award value for each correct question answered. Add Row to 📋 Engagement Log: Activity = 'Quiz Pass ({category})', XP = calculated amount, Member #, date.</div></div></div><div class="sr"><div class="sn gd">5</div><div><div class="st">Pass branch: Update Total XP</div><div class="sd">Google Sheets → Update Row in 👥 Users where Member # matches. Total XP = current Total XP + calculated quiz XP.</div></div></div><div class="sr"><div class="sn gd">6</div><div><div class="st">Perfect score check</div><div class="sd">IF score = 100 AND 'Scholar' NOT in Earned Badges → append 'Scholar' to Earned Badges field. Also add a 150 XP bonus row to Engagement Log: Activity = 'Perfect Quiz Score'.</div></div></div><div class="sr"><div class="sn ">7</div><div><div class="st">Update Quiz Sessions row</div><div class="sd">Update the 📝 Quiz Sessions row with the final Score %, Pass/Fail, XP Awarded, and Badge Triggered. This is what Glide reads to show 'Attempts this semester'.</div></div></div></div></div><div class="cb ct"><span>💡</span><div>The retake limit is enforced in Glide (via computed column) — not in Make.com. Make.com scores every submission it receives. Glide prevents the 4th submission from ever reaching Make.com by hiding the Start Quiz button.</div></div>
+</div><div class="section" id="checklist">
+<div class="week-tag">Checklist</div>
+<div class="sec-title">Week 7 Completion Checklist</div>
+
+<div class="g"><div class="gt"><div class="gtt">Before moving to Week 8</div><div class="gtp">5 items</div></div><div class="gb"><div class="chk"><div class="cb2"></div><div><div class="ct2">📝 Quiz Bank tab copied into Master Sheet — all 40 questions present</div><div class="cs">Open the tab, confirm 40 rows (20 History + 20 Constitution) with all columns populated.</div></div></div><div class="chk"><div class="cb2"></div><div><div class="ct2">📝 Quiz Sessions tab created with correct columns</div><div class="cs">Tab exists. Attempt counter formula working — test by manually adding a row and checking the count.</div></div></div><div class="chk"><div class="cb2"></div><div><div class="ct2">Quiz list screen shows both categories with attempt counters</div><div class="cs">Sign in as a member, open Quizzes — History and Constitution visible, each showing 0/3 attempts.</div></div></div><div class="chk"><div class="cb2"></div><div><div class="ct2">Take a quiz end-to-end — XP fires correctly</div><div class="cs">Complete a 5-question quiz with ≥80% correct. Check Engagement Log for the XP row. Check Total XP — it should increase by the correct amount within 5 minutes.</div></div></div><div class="chk"><div class="cb2"></div><div><div class="ct2">Retake limit enforced — 4th attempt blocked</div><div class="cs">Manually set a member's Attempts This Semester to 3 in the Quiz Sessions tab. Open the quiz in the app — Start Quiz button should be disabled or hidden.</div></div></div></div></div>
+</div></main>
+</div>
+<script>
+const secs=document.querySelectorAll('.section[id]');
+const navs=document.querySelectorAll('.si');
+const obs=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting){navs.forEach(l=>{l.classList.remove('active');if(l.getAttribute('href')==='#'+x.target.id)l.classList.add('active');});}});},{rootMargin:'-20% 0px -65% 0px'});
+secs.forEach(s=>obs.observe(s));
+</script>
+</body>
+</html>

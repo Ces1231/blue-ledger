@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>The Blue Ledger — Year 1 Enhancements</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@0,400;0,500;0,600&display=swap');
+:root{--navy:#001A4D;--gold:#C9A84C;--gold-l:#F5E6C8;--gold-pale:#FDF8EE;--cream:#FAF8F3;--ink:#0D0D0D;--muted:#6B6B6B;--border:#E2DDD4;--success:#1A6B3A;--success-bg:#EAF5EE;--success-border:#A8D5BC;--info:#003087;--info-bg:#EAF0FB;--info-border:#BDD0F5;--warn:#7A4A00;--warn-bg:#FFF3DC;--warn-border:#F5D98A;--danger:#8B1A1A;--danger-bg:#FCE4EC;--danger-border:#F4C0D1;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Instrument Sans',sans-serif;background:var(--cream);color:var(--ink);}
+.hdr{background:var(--navy);padding:1.25rem 2rem;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid var(--gold);position:sticky;top:0;z-index:50;}
+.hdr-logo{font-family:'DM Serif Display',serif;font-size:1.15rem;color:var(--gold);}
+.hdr-sub{font-size:.68rem;color:rgba(255,255,255,.45);font-family:'DM Mono',monospace;letter-spacing:.1em;text-transform:uppercase;margin-top:2px;}
+.hdr-badge{background:var(--gold);color:var(--navy);font-size:.68rem;font-weight:600;padding:3px 10px;border-radius:4px;font-family:'DM Mono',monospace;text-transform:uppercase;}
+.layout{display:flex;min-height:calc(100vh - 64px);}
+.sidebar{width:230px;flex-shrink:0;background:#fff;border-right:1px solid var(--border);padding:1.5rem 0;position:sticky;top:64px;height:calc(100vh - 64px);overflow-y:auto;}
+.sl{font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding:0 1.25rem;margin:1.2rem 0 .4rem;font-family:'DM Mono',monospace;}
+.sl:first-child{margin-top:0;}
+.si{display:flex;align-items:center;gap:8px;padding:7px 1.25rem;font-size:.82rem;color:var(--muted);cursor:pointer;border-left:3px solid transparent;transition:all .15s;text-decoration:none;}
+.si:hover{background:var(--cream);color:var(--ink);}
+.si.active{background:var(--gold-pale);color:var(--navy);border-left-color:var(--gold);font-weight:600;}
+.si-dot{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;font-family:'DM Mono',monospace;flex-shrink:0;color:var(--muted);}
+.si.active .si-dot{background:var(--navy);border-color:var(--navy);color:#fff;}
+.main{flex:1;padding:2rem 2.5rem;max-width:900px;}
+.section{margin-bottom:3.5rem;scroll-margin-top:80px;}
+.etag{font-family:'DM Mono',monospace;font-size:.68rem;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px;}
+.etitle{font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--navy);}
+.edesc{font-size:.88rem;color:var(--muted);margin-top:6px;line-height:1.6;max-width:600px;margin-bottom:1.25rem;}
+.hero{background:var(--navy);border-radius:16px;padding:2rem 2.5rem;margin-bottom:2rem;position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;top:-50px;right:-50px;width:200px;height:200px;border-radius:50%;background:rgba(201,168,76,.06);}
+.htag{font-family:'DM Mono',monospace;font-size:.65rem;color:rgba(255,255,255,.35);letter-spacing:.14em;text-transform:uppercase;margin-bottom:6px;}
+.htitle{font-family:'DM Serif Display',serif;font-size:1.9rem;color:var(--gold);margin-bottom:.6rem;}
+.hdesc{font-size:.88rem;color:rgba(255,255,255,.6);line-height:1.7;max-width:560px;}
+.hstats{display:flex;gap:2rem;margin-top:1.25rem;flex-wrap:wrap;}
+.hstat-num{font-family:'DM Serif Display',serif;font-size:1.6rem;color:var(--gold);display:block;}
+.hstat-lbl{font-size:.62rem;font-family:'DM Mono',monospace;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.1em;}
+.g{background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:1.25rem;}
+.gt{background:var(--navy);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;}
+.gtt{font-size:.82rem;font-weight:600;color:var(--gold);}
+.gtp{font-size:.62rem;font-family:'DM Mono',monospace;background:rgba(201,168,76,.18);color:var(--gold);border:1px solid rgba(201,168,76,.3);border-radius:20px;padding:2px 8px;}
+.gb{padding:12px 14px;}
+.sr{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--border);}
+.sr:last-child{border:none;}
+.sn{width:22px;height:22px;border-radius:50%;background:var(--navy);color:#fff;font-size:.65rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'DM Mono',monospace;margin-top:1px;}
+.sn.gd{background:var(--gold);color:var(--navy);}
+.sn.gr{background:var(--success);color:#fff;}
+.sn.re{background:var(--danger);color:#fff;}
+.st{font-size:.83rem;font-weight:600;color:var(--ink);}
+.sd{font-size:.76rem;color:var(--muted);margin-top:2px;line-height:1.55;}
+.cd{font-family:'DM Mono',monospace;font-size:.72rem;background:#F0EDE7;border:1px solid var(--border);border-radius:4px;padding:1px 5px;color:var(--navy);white-space:nowrap;}
+.cb{border-radius:8px;padding:9px 12px;font-size:.78rem;line-height:1.55;margin:8px 0;display:flex;gap:8px;align-items:flex-start;}
+.cb span{font-size:14px;flex-shrink:0;}
+.ct{background:var(--info-bg);border:1px solid var(--info-border);color:var(--info);}
+.cw{background:var(--warn-bg);border:1px solid var(--warn-border);color:var(--warn);}
+.co{background:var(--success-bg);border:1px solid var(--success-border);color:var(--success);}
+.flow-r{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:0 0 12px;}
+.fb{font-size:.73rem;padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:#fff;white-space:nowrap;}
+.fb.s{background:var(--navy);color:var(--gold);border-color:var(--navy);font-weight:600;}
+.fb.e{background:var(--success-bg);color:var(--success);border-color:#A8D5BC;font-weight:600;}
+.fb.a{background:var(--info-bg);color:var(--info);border-color:#BDD0F5;}
+.fb.w{background:var(--warn-bg);color:var(--warn);border-color:#F5D98A;}
+.fa{font-size:.8rem;color:var(--muted);}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.25rem;}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1.25rem;}
+.ecard{background:#fff;border:1px solid var(--border);border-radius:12px;padding:1.1rem;}
+.ecard-icon{font-size:1.5rem;margin-bottom:.5rem;}
+.ecard-title{font-size:.88rem;font-weight:600;color:var(--ink);margin-bottom:4px;}
+.ecard-desc{font-size:.76rem;color:var(--muted);line-height:1.5;}
+.ecard-badge{display:inline-block;margin-top:.5rem;font-size:.62rem;font-weight:700;padding:2px 8px;border-radius:20px;font-family:'DM Mono',monospace;}
+.tbl{width:100%;border-collapse:collapse;font-size:.8rem;}
+.tbl th{background:var(--cream);padding:8px 10px;text-align:left;font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-family:'DM Mono',monospace;border-bottom:1px solid var(--border);}
+.tbl td{padding:8px 10px;border-bottom:1px solid var(--border);color:var(--ink);vertical-align:middle;}
+.tbl tr:last-child td{border:none;}
+.tbl tr:nth-child(even) td{background:var(--cream);}
+.badge{display:inline-flex;font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:20px;font-family:'DM Mono',monospace;}
+.bs{background:var(--success-bg);color:var(--success);}
+.bw{background:var(--warn-bg);color:var(--warn);}
+.bi{background:var(--info-bg);color:var(--info);}
+.bg2{background:var(--gold-pale);color:var(--warn);}
+.divider{border:none;border-top:1px solid var(--border);margin:2.5rem 0;}
+.phase-strip{display:flex;gap:0;border-radius:10px;overflow:hidden;border:1px solid var(--border);margin-bottom:2rem;}
+.phase-block{flex:1;padding:.75rem .5rem;text-align:center;border-right:1px solid var(--border);background:#fff;}
+.phase-block:last-child{border-right:none;}
+.phase-block.active{background:var(--gold-pale);}
+.phase-num{font-family:'DM Mono',monospace;font-size:.65rem;font-weight:700;color:var(--gold);display:block;}
+.phase-lbl{font-size:.72rem;font-weight:600;color:var(--ink);margin-top:2px;}
+.phase-when{font-size:.62rem;color:var(--muted);font-family:'DM Mono',monospace;margin-top:2px;}
+.schema-table{width:100%;border-collapse:collapse;font-size:.78rem;margin-bottom:10px;}
+.schema-table th{background:var(--navy);color:var(--gold);padding:7px 10px;text-align:left;font-size:.65rem;font-family:'DM Mono',monospace;letter-spacing:.07em;text-transform:uppercase;}
+.schema-table td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:top;}
+.schema-table tr:last-child td{border:none;}
+.schema-table tr:nth-child(even) td{background:var(--cream);}
+.col-name{font-family:'DM Mono',monospace;font-weight:600;color:var(--navy);}
+@media(max-width:700px){.sidebar{display:none;}.main{padding:1.25rem;}.grid2,.grid3{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<header class="hdr">
+  <div><div class="hdr-logo">The Blue Ledger</div><div class="hdr-sub">Year 1 Post-Launch · 6 Enhancements</div></div>
+  <div class="hdr-badge">Enhanced Edition</div>
+</header>
+<div class="layout">
+<nav class="sidebar">
+  <div class="sl">6 Enhancements</div>
+  <a href="#e1" class="si"><div class="si-dot">E1</div> Event RSVP</a><a href="#e2" class="si"><div class="si-dot">E2</div> Dues Reminder</a><a href="#e3" class="si"><div class="si-dot">E3</div> Stripe Payment</a><a href="#e4" class="si"><div class="si-dot">E4</div> Give Props</a><a href="#e5" class="si"><div class="si-dot">E5</div> Announcements</a><a href="#e6" class="si"><div class="si-dot">E6</div> Multi-Chapter</a>
+  <div class="sl">Planning</div>
+  <a href="#roadmap" class="si"><div class="si-dot">→</div> Implementation Order</a>
+</nav>
+<main class="main">
+<div class="hero">
+  <div class="htag">Year 1 Post-Launch · 6 Enhancements</div>
+  <div class="htitle">The Blue Ledger — Enhanced Edition</div>
+  <div class="hdesc">Six features that transform the app from a check-in tool into the chapter's operating system. All built on the same Glide + Google Sheets stack — no new tools required for features 1–5. Stripe adds one paid service (~2.9% + 30¢ per transaction).</div>
+  <div class="hstats">
+    <div><span class="hstat-num">6</span><span class="hstat-lbl">New features</span></div>
+    <div><span class="hstat-num">4</span><span class="hstat-lbl">New sheet tabs</span></div>
+    <div><span class="hstat-num">8</span><span class="hstat-lbl">New Make.com flows</span></div>
+    <div><span class="hstat-num">$0</span><span class="hstat-lbl">Extra cost (ex. Stripe)</span></div>
+  </div>
+</div>
+
+<div class="phase-strip">
+  <div class="phase-block active"><span class="phase-num">E1</span><div class="phase-lbl">Event RSVP</div><div class="phase-when">Month 1–2</div></div>
+  <div class="phase-block active"><span class="phase-num">E2</span><div class="phase-lbl">Dues Reminder</div><div class="phase-when">Month 1</div></div>
+  <div class="phase-block active"><span class="phase-num">E3</span><div class="phase-lbl">Stripe Dues</div><div class="phase-when">Month 2–3</div></div>
+  <div class="phase-block active"><span class="phase-num">E4</span><div class="phase-lbl">Give Props</div><div class="phase-when">Month 1–2</div></div>
+  <div class="phase-block active"><span class="phase-num">E5</span><div class="phase-lbl">Announcements</div><div class="phase-when">Month 1</div></div>
+  <div class="phase-block active"><span class="phase-num">E6</span><div class="phase-lbl">Multi-Chapter</div><div class="phase-when">Month 4–6</div></div>
+</div>
+
+<div class="section" id="e1">
+<div class="etag">Enhancement 1 · Month 1–2</div>
+<div class="etitle">Event RSVP System</div>
+<div class="edesc">Brothers RSVP to events inside the app. Chairs see expected headcount before the event, scan confirms attendance, and no-shows are automatically flagged. Adds accountability without manual follow-up.</div>
+
+<div class="flow-r"><div class="fb s">Admin creates event</div><div class="fa">→</div><div class="fb ">Brothers see it on Home</div><div class="fa">→</div><div class="fb ">Tap RSVP Yes/No</div><div class="fa">→</div><div class="fb ">Chair sees headcount</div><div class="fa">→</div><div class="fb a">Scan at event</div><div class="fa">→</div><div class="fb e">No-show flagged</div></div>
+
+<div class="grid2">
+  <div class="ecard">
+    <div class="ecard-icon">📅</div>
+    <div class="ecard-title">Brother View</div>
+    <div class="ecard-desc">Upcoming events appear on the Home Dashboard. Tap to RSVP — Yes, No, or Maybe. Confirmed RSVP earns +10 XP (encourages early commitment). Day-of reminder sent via Make.com.</div>
+    <div class="ecard-badge" style="background:var(--info-bg);color:var(--info);">All members</div>
+  </div>
+  <div class="ecard">
+    <div class="ecard-icon">📋</div>
+    <div class="ecard-title">Chair View</div>
+    <div class="ecard-desc">Scanner screen shows live RSVP count before scanning starts — "14 RSVP'd, 8 checked in so far." After the event, no-shows (RSVP'd Yes but not scanned) are auto-flagged in the sheet.</div>
+    <div class="ecard-badge" style="background:#EDE7F6;color:#4A235A;">Chair + Admin</div>
+  </div>
+</div>
+
+<div class="g"><div class="gt"><div class="gtt">Google Sheet — new tab: 📅 Events</div><div class="gtp">Add to Master Sheet</div></div><div class="gb"><div class="sr"><div class="sn ">S</div><div><div class="st">Create tab '📅 Events' with these columns</div><div class="sd"></div></div></div></div></div>
+<table class="schema-table"><thead><tr><th>Column</th><th>Type / Values</th><th>Notes</th></tr></thead><tbody><tr><td class="col-name">Event ID</td><td>Text (EVT-001)</td><td style="color:var(--muted)">Auto-generated via Make.com or manual</td></tr><tr><td class="col-name">Event Name</td><td>Text</td><td style="color:var(--muted)">e.g. Fall Chapter Meeting</td></tr><tr><td class="col-name">Date</td><td>Date</td><td style="color:var(--muted)">Event date</td></tr><tr><td class="col-name">Time</td><td>Text</td><td style="color:var(--muted)">e.g. 7:00 PM EST</td></tr><tr><td class="col-name">Location</td><td>Text</td><td style="color:var(--muted)">Address or 'Virtual'</td></tr><tr><td class="col-name">Event Type</td><td>Dropdown: Meeting / Service / Social / Conference</td><td style="color:var(--muted)">Used to auto-assign XP type on scan</td></tr><tr><td class="col-name">XP for Attending</td><td>Number</td><td style="color:var(--muted)">Default: 50 for meetings, 30/hr for service</td></tr><tr><td class="col-name">Created By</td><td>Text (Member #)</td><td style="color:var(--muted)">Admin who created the event</td></tr><tr><td class="col-name">RSVP Deadline</td><td>Date</td><td style="color:var(--muted)">Auto-reminder fires on this date</td></tr><tr><td class="col-name">Expected Count</td><td>Number (computed)</td><td style="color:var(--muted)">Count of Yes RSVPs from Responses tab</td></tr><tr><td class="col-name">Attended Count</td><td>Number (computed)</td><td style="color:var(--muted)">Count of confirmed scans for this event</td></tr><tr><td class="col-name">Active?</td><td>Yes/No</td><td style="color:var(--muted)">Toggle to show/hide on members' Home screen</td></tr></tbody></table><table class="schema-table"><thead><tr><th>Column</th><th>Type / Values</th><th>Notes</th></tr></thead><tbody></tbody></table>
+<div class="g"><div class="gt"><div class="gtt">Google Sheet — new tab: 📅 RSVP Responses</div><div class="gtp">Add to Master Sheet</div></div><div class="gb"><div class="sr"><div class="sn ">S</div><div><div class="st">Create tab '📅 RSVP Responses' with these columns</div><div class="sd"></div></div></div></div></div>
+<table class="schema-table"><thead><tr><th>Column</th><th>Type / Values</th><th>Notes</th></tr></thead><tbody><tr><td class="col-name">Response ID</td><td>Text</td><td style="color:var(--muted)">Auto-generated</td></tr><tr><td class="col-name">Event ID</td><td>Text (FK → Events)</td><td style="color:var(--muted)">Links to the Events tab</td></tr><tr><td class="col-name">Member #</td><td>Text</td><td style="color:var(--muted)">The member who responded</td></tr><tr><td class="col-name">Member Name</td><td>Text</td><td style="color:var(--muted)">Auto-filled from Users tab</td></tr><tr><td class="col-name">RSVP Status</td><td>Dropdown: Yes / No / Maybe</td><td style="color:var(--muted)">Member's response</td></tr><tr><td class="col-name">Responded At</td><td>DateTime</td><td style="color:var(--muted)">Timestamp of response</td></tr><tr><td class="col-name">Attended?</td><td>Yes/No</td><td style="color:var(--muted)">Set to Yes when scanned at event</td></tr><tr><td class="col-name">No-Show?</td><td>Yes/No (computed)</td><td style="color:var(--muted)">Yes if RSVP=Yes AND Attended=No after event date</td></tr><tr><td class="col-name">XP for RSVP</td><td>Number</td><td style="color:var(--muted)">10 XP awarded for any RSVP (encourages participation)</td></tr></tbody></table>
+<div class="g"><div class="gt"><div class="gtt">Glide — Event RSVP screens</div><div class="gtp">~2 hours build</div></div><div class="gb"><div class="sr"><div class="sn ">1</div><div><div class="st">Home Dashboard — 'Upcoming Events' section</div><div class="sd">Add Inline List component below the quick-action cards. Source: 📅 Events tab. Filter: Active? = Yes AND Date ≥ today. Sort: Date ascending. Each row shows: Event Name, Date, Time, Location, RSVP count badge.</div></div></div><div class="sr"><div class="sn ">2</div><div><div class="st">Event Detail screen (tap from list)</div><div class="sd">Details screen showing all event fields. At the bottom: 3 choice buttons — 'Yes I'll be there', 'Can't make it', 'Maybe'. Each taps to a Form that writes a row to 📅 RSVP Responses with the member's answer and current timestamp.</div></div></div><div class="sr"><div class="sn ">3</div><div><div class="st">RSVP confirmation + XP</div><div class="sd">Submit action: Add Row to RSVP Responses → call Make.com webhook → award +10 XP to Engagement Log → show notification: 'RSVP confirmed! +10 XP'. Update the button to show their current RSVP status ('You said: Yes ✓').</div></div></div><div class="sr"><div class="sn ">4</div><div><div class="st">Chair scanner — add event selector</div><div class="sd">Scanner screen → top dropdown changes from a static event name to a live picker from the 📅 Events tab (filter: Active? = Yes). When Chair selects an event, the Activity Type auto-fills from the Event Type column. RSVP count shows: 'X brothers confirmed — scan them in.'</div></div></div><div class="sr"><div class="sn ">5</div><div><div class="st">Admin — create event form</div><div class="sd">Admin Panel → 'Create Event' button → Form screen → source: 📅 Events. Fields: Event Name, Date, Time, Location, Event Type, XP for Attending, RSVP Deadline. Submit creates the row. Set Active? = Yes automatically.</div></div></div></div></div>
+
+<div class="g"><div class="gt"><div class="gtt">Make.com — RSVP automation flows</div><div class="gtp">2 scenarios</div></div><div class="gb"><div class="sr"><div class="sn ">T</div><div><div class="st">Scenario 1: RSVP deadline reminder</div><div class="sd">Trigger: Schedule — run daily at 8 AM. Filter: Events where RSVP Deadline = today. For each matching event, look up all members who haven't RSVP'd yet (no response in RSVP Responses for this Event ID). Send Gmail reminder to each: 'Don't forget to RSVP for [Event Name] tonight — tap here to confirm.'</div></div></div><div class="sr"><div class="sn ">T</div><div><div class="st">Scenario 2: Post-event no-show flag</div><div class="sd">Trigger: Schedule — run at midnight daily. Filter: Events where Date = yesterday AND Active? = Yes. For each RSVP Response where Status = 'Yes' AND Attended? = No → set No-Show? = 'Yes'. Send Gmail to member: 'You RSVP'd for [Event] but we didn't see you — was everything okay?' Set Active? = No on the event.</div></div></div><div class="sr"><div class="sn ">1</div><div><div class="st">Award RSVP XP</div><div class="sd">Triggered by webhook from Glide on RSVP submit. Writes +10 XP to Engagement Log. Uses the same XP update flow as the scanner scenario.</div></div></div></div></div>
+
+<div class="cb co"><span>✅</span><div>RSVP data becomes chapter intelligence over time. After a semester you can see which events have the highest commitment rate, which brothers habitually no-show, and whether RSVP'd brothers attend at a higher rate than walk-ins — all from a simple Google Sheet Rollup.</div></div>
+</div>
+
+<div class="section" id="e2">
+<div class="etag">Enhancement 2 · Month 1 · Quickest Win</div>
+<div class="etitle">Automated Dues Reminder</div>
+<div class="edesc">Make.com sends a personalized email to every member with an unpaid dues balance — 7 days before the deadline, on the deadline, and 3 days after. Zero admin work after setup. This alone typically recovers 15–20% of late dues.</div>
+
+<div class="flow-r"><div class="fb s">Dues deadline set in Config</div><div class="fa">→</div><div class="fb ">Make.com checks daily</div><div class="fa">→</div><div class="fb a">Unpaid members found</div><div class="fa">→</div><div class="fb ">Personalized email sent</div><div class="fa">→</div><div class="fb ">Member pays → Admin marks paid</div><div class="fa">→</div><div class="fb e">Reminder stops</div></div>
+
+<div class="g"><div class="gt"><div class="gtt">Make.com — 3 automated reminder scenarios</div><div class="gtp">~45 min build total</div></div><div class="gb"><div class="sr"><div class="sn gd">1</div><div><div class="st">7-Day Reminder</div><div class="sd">Trigger: Schedule daily 9 AM. Filter: Today = (Dues Deadline from ⚙️ Config tab) - 7 days. Find all Users where Dues Status ≠ 'Paid'. For each: Gmail → To: member email, Subject: 'Reminder: Chapter dues due in 7 days', Body: personalized with member name, amount owed, Zelle link, and current XP loss warning ('Pay on time to earn your +50 XP bonus').</div></div></div><div class="sr"><div class="sn gd">2</div><div><div class="st">Deadline Day Reminder</div><div class="sd">Trigger: Schedule daily 9 AM. Filter: Today = Dues Deadline from Config. Find all Users where Dues Status ≠ 'Paid'. Gmail → more urgent subject: 'Today is the dues deadline — pay now to avoid a late fee'. Include amount owed and Zelle link. CC to Treasurer.</div></div></div><div class="sr"><div class="sn re">3</div><div><div class="st">Grace Period Warning</div><div class="sd">Trigger: Schedule daily 9 AM. Filter: Today = Dues Deadline + 3 days. Find all Users where Dues Status = 'Late'. Gmail → Subject: 'Financial hold in {days} days — urgent'. Body: financial hold consequences (no voting, no officer eligibility). Treasurer CC'd. Forward to President if still unpaid after 7 days.</div></div></div><div class="sr"><div class="sn ">4</div><div><div class="st">Stop sending when paid</div><div class="sd">In each scenario: before sending, check if Dues Status has changed to 'Paid' since yesterday. Use a Filter module: only proceed if Dues Status ≠ 'Paid' AND Dues XP Awarded? ≠ 'Yes'. This prevents a paid member from getting a reminder the same day the Admin marks them paid.</div></div></div></div></div>
+
+<div class="g"><div class="gt"><div class="gtt">Email template — personalized reminder</div><div class="gtp">Copy this into Make.com Gmail module</div></div><div class="gb"><div class="sr"><div class="sn ">S</div><div><div class="st">Subject line</div><div class="sd">'[Action Required] Chapter Dues — {First Name}, {Amount} due by {Deadline}'</div></div></div><div class="sr"><div class="sn ">S</div><div><div class="st">Email body structure</div><div class="sd">Greeting with first name → current dues status (Paid/Late/Outstanding) → exact amount owed → Zelle link (clickable) → PayPal link → XP incentive reminder (+50 XP for on-time payment) → what happens if not paid (financial hold consequences) → contact info for questions → chapter signature block</div></div></div><div class="sr"><div class="sn ">S</div><div><div class="st">Personalization variables (Make.com)</div><div class="sd">First Name → split Full Name by space, take index [1]. Amount → Amount Owed column. Deadline → Dues Deadline from Config tab. Days remaining → date difference calculation using Make.com math functions.</div></div></div></div></div>
+
+<div class="cb ct"><span>💡</span><div>Update the <span class='cd'>Dues Deadline</span> and <span class='cd'>Current Semester</span> values in the ⚙️ Config tab each semester. The scenarios read these values dynamically — you never have to edit the Make.com scenarios again.</div></div>
+</div>
+
+<div class="section" id="e3">
+<div class="etag">Enhancement 3 · Month 2–3</div>
+<div class="etitle">Stripe In-App Dues Payment</div>
+<div class="edesc">Replace the Zelle/PayPal link with a real payment flow inside the app. Brother taps Pay, enters card, payment processes, Make.com auto-confirms, +50 XP fires instantly. Zero manual admin work on payment confirmation.</div>
+
+<div class="flow-r"><div class="fb s">Brother taps Pay Dues</div><div class="fa">→</div><div class="fb ">Stripe Checkout opens</div><div class="fa">→</div><div class="fb ">Card entered + processed</div><div class="fa">→</div><div class="fb ">Stripe webhook fires</div><div class="fa">→</div><div class="fb a">Make.com receives event</div><div class="fa">→</div><div class="fb e">Dues Status → Paid + XP</div></div>
+
+<div class="grid2">
+  <div class="ecard">
+    <div class="ecard-icon">💳</div>
+    <div class="ecard-title">What changes for members</div>
+    <div class="ecard-desc">The "Pay Dues" button opens a Stripe-hosted checkout page (mobile-optimized). They enter their card. Payment succeeds. They're redirected back to the app with a success screen. XP appears within 60 seconds. No Venmo usernames, no screenshots, no chasing the Treasurer.</div>
+    <div class="ecard-badge" style="background:var(--success-bg);color:var(--success);">Instant confirmation</div>
+  </div>
+  <div class="ecard">
+    <div class="ecard-icon">🏦</div>
+    <div class="ecard-title">What changes for Admin</div>
+    <div class="ecard-desc">Nothing. Stripe deposits directly to the chapter bank account. Make.com auto-marks dues paid in the sheet and awards XP. The Treasurer opens the sheet and all payments are already confirmed — no manual matching, no "did you send it?" texts.</div>
+    <div class="ecard-badge" style="background:var(--gold-pale);color:var(--warn);">2.9% + 30¢ per transaction</div>
+  </div>
+</div>
+
+<div class="g"><div class="gt"><div class="gtt">Stripe setup — one-time configuration</div><div class="gtp">~1 hour</div></div><div class="gb"><div class="sr"><div class="sn ">1</div><div><div class="st">Create Stripe account</div><div class="sd">Go to <span class='cd'>stripe.com</span> → create account → complete business verification (use the chapter's EIN or the Treasurer's personal account if no chapter EIN). Stripe requires identity verification before live payments.</div></div></div><div class="sr"><div class="sn ">2</div><div><div class="st">Create a Payment Link for chapter dues</div><div class="sd">Stripe Dashboard → Payment Links → Create → Product: 'Chapter Dues — Fall 2025' → Price: $85.00 (or your chapter's dues amount) → collect: customer email (required for Make.com matching). Copy the Payment Link URL.</div></div></div><div class="sr"><div class="sn ">3</div><div><div class="st">Update the Glide button</div><div class="sd">Financials screen → 'Pay Dues' button → Action: Open URL → replace old Zelle/PayPal URL with your Stripe Payment Link URL. Members tap → Stripe checkout opens in their browser → returns to app on completion.</div></div></div><div class="sr"><div class="sn ">4</div><div><div class="st">Add custom fields to Stripe checkout</div><div class="sd">Payment Link settings → Collect additional information → add: 'Member Number' (text field, required). This is how Make.com knows which sheet row to update — it reads the Member # from the Stripe charge metadata.</div></div></div><div class="sr"><div class="sn ">5</div><div><div class="st">Set up Stripe webhook in Make.com</div><div class="sd">Make.com → Create new scenario → Trigger: Stripe → Watch Events → select 'payment_intent.succeeded'. This fires every time a payment clears. Stripe sends all charge details including the customer email and Member Number to Make.com automatically.</div></div></div><div class="sr"><div class="sn gd">6</div><div><div class="st">Make.com action chain on payment success</div><div class="sd">(1) Extract Member # from Stripe charge metadata. (2) Google Sheets → Update Row in 👥 Users where Member # matches: set Dues Status = 'Paid', Dues Paid Date = today, Amount Owed = 0. (3) Add Row to 📋 Engagement Log: Activity = 'Dues Paid (On Time)', XP = 50. (4) Gmail → send confirmation email to member: 'Payment received — +50 XP awarded. You're all set for the semester.'</div></div></div></div></div>
+
+<div class="cb cw"><span>⚠️</span><div>Stripe charges 2.9% + 30¢ per transaction. On $85 dues that's ~$2.77 per payment. Decide whether the chapter absorbs this (treat it as an admin expense) or adds it to dues ($87.77 rounded). Most chapters absorb it — the time saved on manual confirmation is worth far more than $2.77 per member.</div></div>
+
+<div class="g"><div class="gt"><div class="gtt">Semester dues update</div><div class="gtp">Every semester — 5 minutes</div></div><div class="gb"><div class="sr"><div class="sn ">1</div><div><div class="st">Update the Stripe Payment Link price</div><div class="sd">Stripe Dashboard → Payment Links → edit the dues link → update price for the new semester. Or create a new link each semester for cleaner reporting.</div></div></div><div class="sr"><div class="sn ">2</div><div><div class="st">Update Config tab</div><div class="sd">⚙️ Config → Dues Amount → update to new value → Dues Deadline → update. Make.com reminder scenarios read from here — no other changes needed.</div></div></div><div class="sr"><div class="sn ">3</div><div><div class="st">Reset Dues Status in Users tab</div><div class="sd">At the start of each semester: set all members' Dues Status = 'Outstanding' and Dues XP Awarded? = 'No'. A simple Find + Replace in Google Sheets (Ctrl+H) handles this in 30 seconds.</div></div></div></div></div>
+</div>
+
+<div class="section" id="e4">
+<div class="etag">Enhancement 4 · Month 1–2</div>
+<div class="etitle">Give Props — Peer Recognition</div>
+<div class="edesc">Brothers can recognize each other in the app. A "Give Props" button on any member's profile lets you write a shoutout and award +10 XP. Props appear on both profiles and aggregate into a "Most Recognized" leaderboard metric. Creates community engagement between meetings.</div>
+
+<div class="flow-r"><div class="fb s">Open a brother's profile</div><div class="fa">→</div><div class="fb ">Tap 'Give Props'</div><div class="fa">→</div><div class="fb ">Write a shoutout (optional)</div><div class="fa">→</div><div class="fb ">Submit</div><div class="fa">→</div><div class="fb a">+10 XP for recipient</div><div class="fa">→</div><div class="fb e">Props visible on both profiles</div></div>
+
+<div class="g"><div class="gt"><div class="gtt">Google Sheet — new tab: 👏 Props</div><div class="gtp">Add to Master Sheet</div></div><div class="gb"><div class="sr"><div class="sn ">S</div><div><div class="st">Create tab '👏 Props' with these columns</div><div class="sd"></div></div></div></div></div>
+<table class="schema-table"><thead><tr><th>Column</th><th>Type / Values</th><th>Notes</th></tr></thead><tbody><tr><td class="col-name">Prop ID</td><td>Text (PROP-001)</td><td style="color:var(--muted)">Auto-generated</td></tr><tr><td class="col-name">Date</td><td>DateTime</td><td style="color:var(--muted)">Timestamp of the prop</td></tr><tr><td class="col-name">From Member #</td><td>Text</td><td style="color:var(--muted)">Giver's Member #</td></tr><tr><td class="col-name">From Name</td><td>Text</td><td style="color:var(--muted)">Giver's Full Name</td></tr><tr><td class="col-name">To Member #</td><td>Text</td><td style="color:var(--muted)">Recipient's Member #</td></tr><tr><td class="col-name">To Name</td><td>Text</td><td style="color:var(--muted)">Recipient's Full Name</td></tr><tr><td class="col-name">Category</td><td>Dropdown: Service / Leadership / Brotherhood / Academic / Other</td><td style="color:var(--muted)">Type of recognition</td></tr><tr><td class="col-name">Message</td><td>Text (optional)</td><td style="color:var(--muted)">Custom shoutout message (max 140 chars)</td></tr><tr><td class="col-name">XP Awarded</td><td>Number</td><td style="color:var(--muted)">Always 10 — awarded to recipient</td></tr><tr><td class="col-name">Public?</td><td>Yes/No</td><td style="color:var(--muted)">Whether it shows on chapter-wide feed</td></tr></tbody></table>
+<div class="g"><div class="gt"><div class="gtt">Glide — Give Props screens</div><div class="gtp">~1.5 hours build</div></div><div class="gb"><div class="sr"><div class="sn ">1</div><div><div class="st">Add 'Give Props' button to member directory cards</div><div class="sd">Chapter Directory → tap a member → detail view → at the bottom: 'Give Props' button. Visible to all members. Hidden when viewing your own profile (can't give yourself props).</div></div></div><div class="sr"><div class="sn ">2</div><div><div class="st">Props form screen</div><div class="sd">New Screen → Form → source: 👏 Props. Fields: Category (Choice: Service / Leadership / Brotherhood / Academic / Other), Message (Text area, optional, 140 char max). Hidden fields auto-fill: From Member # (current user), To Member # (selected member), Date (now), XP Awarded (10). Submit → Add Row + Make.com webhook.</div></div></div><div class="sr"><div class="sn ">3</div><div><div class="st">Props display on recipient's profile</div><div class="sd">Member profile → add Inline List section: source: 👏 Props, filtered where To Member # = this member, sorted newest first. Shows last 5 props. Each shows: From Name, Category badge, Message (if any), Date. Tap to see all props.</div></div></div><div class="sr"><div class="sn ">4</div><div><div class="st">Props given — on giver's profile</div><div class="sd">On the giver's profile, show 'Props Given: X' as a stat. This recognizes generosity — brothers who give lots of props are community builders.</div></div></div><div class="sr"><div class="sn ">5</div><div><div class="st">Rate limit — 3 props per member per day</div><div class="sd">Add computed column to Props: count rows where From Member # = current user AND Date = today. If count ≥ 3, hide the 'Give Props' button with visibility condition. Prevents gaming the system.</div></div></div><div class="sr"><div class="sn ">6</div><div><div class="st">Props feed on Home Dashboard</div><div class="sd">Home Dashboard → add a 'Chapter Props' section (collapsible). Source: 👏 Props where Public? = Yes, sorted newest first, limit 5. Shows recent recognitions across the chapter. Creates a positive social feed that brothers check daily.</div></div></div></div></div>
+
+<div class="g"><div class="gt"><div class="gtt">Make.com — Props automation</div><div class="gtp">1 scenario</div></div><div class="gb"><div class="sr"><div class="sn ">T</div><div><div class="st">Trigger: New row in 👏 Props tab</div><div class="sd">Fires whenever a prop is given.</div></div></div><div class="sr"><div class="sn ">1</div><div><div class="st">Award +10 XP to recipient</div><div class="sd">Google Sheets → Add Row to 📋 Engagement Log: Member # = To Member #, Activity = 'Props Received', XP = 10, Logged By = From Member #.</div></div></div><div class="sr"><div class="sn ">2</div><div><div class="st">Update recipient's Total XP</div><div class="sd">Google Sheets → Update Row in 👥 Users where Member # = To Member #: Total XP = Total XP + 10.</div></div></div><div class="sr"><div class="sn ">3</div><div><div class="st">Notify recipient (optional)</div><div class="sd">Gmail → To: recipient's email. Subject: '{From Name} gave you props! +10 XP'. Body: the category and message. Link to open the app. This drives re-engagement — a notification pulls them back into the app.</div></div></div></div></div>
+
+<div class="cb ct"><span>💡</span><div>Props data tells you things attendance data misses. A brother who shows up to every meeting but never receives props might be struggling socially. A brother who isn't attending much but gets props from everyone is still contributing — maybe through informal mentorship or referrals. Both insights help the President support the right people.</div></div>
+</div>
+
+<div class="section" id="e5">
+<div class="etag">Enhancement 5 · Month 1 · Easiest Build</div>
+<div class="etitle">Chapter Announcements Feed</div>
+<div class="edesc">The President and E-Board post announcements inside the app. Brothers see them on their Home Dashboard instead of having to scroll through a group chat. Pinned announcements stay at the top. Critical for reducing the "I didn't know about that" problem at every chapter.</div>
+
+<div class="g"><div class="gt"><div class="gtt">Google Sheet — new tab: 📢 Announcements</div><div class="gtp">Add to Master Sheet</div></div><div class="gb"><div class="sr"><div class="sn ">S</div><div><div class="st">Create tab '📢 Announcements' with these columns</div><div class="sd"></div></div></div></div></div>
+<table class="schema-table"><thead><tr><th>Column</th><th>Type / Values</th><th>Notes</th></tr></thead><tbody><tr><td class="col-name">Post ID</td><td>Text (POST-001)</td><td style="color:var(--muted)">Auto-generated</td></tr><tr><td class="col-name">Title</td><td>Text</td><td style="color:var(--muted)">Short headline (max 60 chars)</td></tr><tr><td class="col-name">Body</td><td>Text</td><td style="color:var(--muted)">Full announcement text (supports line breaks)</td></tr><tr><td class="col-name">Category</td><td>Dropdown: General / Event / Urgent / Financial / Achievement</td><td style="color:var(--muted)">Controls icon + color in the feed</td></tr><tr><td class="col-name">Posted By</td><td>Text (Member #)</td><td style="color:var(--muted)">Author — Admin/E-Board only</td></tr><tr><td class="col-name">Posted By Name</td><td>Text</td><td style="color:var(--muted)">Auto-filled from Users tab</td></tr><tr><td class="col-name">Date Posted</td><td>DateTime</td><td style="color:var(--muted)">Auto-filled on creation</td></tr><tr><td class="col-name">Pinned?</td><td>Yes/No</td><td style="color:var(--muted)">Pinned = always shows at top of feed</td></tr><tr><td class="col-name">Expires</td><td>Date</td><td style="color:var(--muted)">Post auto-hides after this date (optional)</td></tr><tr><td class="col-name">XP For Reading?</td><td>Number</td><td style="color:var(--muted)">Optional: award XP for tapping to read (encourages engagement)</td></tr><tr><td class="col-name">Active?</td><td>Yes/No</td><td style="color:var(--muted)">Toggle off to archive without deleting</td></tr></tbody></table>
+<div class="g"><div class="gt"><div class="gtt">Glide — Announcements screens</div><div class="gtp">~1 hour build</div></div><div class="gb"><div class="sr"><div class="sn ">1</div><div><div class="st">Home Dashboard — Announcements feed section</div><div class="sd">Below the quick-action cards: Inline List → source: 📢 Announcements → filter: Active? = Yes AND (Expires is empty OR Expires ≥ today) → sort: Pinned? descending, then Date Posted descending. Each row shows: category icon (emoji from a computed column), Title (bold), date, author. Pinned posts show a pin indicator.</div></div></div><div class="sr"><div class="sn ">2</div><div><div class="st">Announcement detail view (tap)</div><div class="sd">Details screen: full Title, Body text (supports multiple paragraphs), Posted By name, Date. Category-colored header bar. If the announcement links to an event, show a 'View Event' button linking to the Events tab.</div></div></div><div class="sr"><div class="sn ">3</div><div><div class="st">Create announcement — Admin/E-Board only</div><div class="sd">Admin Panel → 'Post Announcement' button → visibility: Role = Admin only. Form fields: Title, Body, Category (choice), Pinned? (toggle), Expires (date picker, optional). Submit creates the row in 📢 Announcements with Posted By = current user and Date = now.</div></div></div><div class="sr"><div class="sn ">4</div><div><div class="st">Unread indicator</div><div class="sd">Add a red dot or badge to the Home Dashboard 'Announcements' section header when there are posts newer than the member's last app open. Track last open time in the Users tab via a 'Last Seen' column updated on Home screen load.</div></div></div><div class="sr"><div class="sn ">5</div><div><div class="st">Category icons (computed column)</div><div class="sd">In Data Editor → 📢 Announcements → Add If-Then-Else column 'Category Icon': IF Category = 'Urgent' → '🚨', IF 'Financial' → '💰', IF 'Event' → '📅', IF 'Achievement' → '🏆', ELSE → '📢'. Display this column as the left icon in the list item.</div></div></div></div></div>
+
+<div class="g"><div class="gt"><div class="gtt">Make.com — Announcement notification</div><div class="gtp">Optional — 1 scenario</div></div><div class="gb"><div class="sr"><div class="sn ">T</div><div><div class="st">Trigger: New row in 📢 Announcements where Category = 'Urgent'</div><div class="sd">Only fires for urgent posts — don't email brothers for every announcement, that creates notification fatigue.</div></div></div><div class="sr"><div class="sn ">1</div><div><div class="st">Gmail → bulk send to all active members</div><div class="sd">Google Sheets → Get all rows from 👥 Users where Status = 'Active'. For each row: Gmail → send notification. Subject: '🚨 Chapter Alert: {Title}'. Body: announcement text + link to open app. This is the equivalent of a chapter blast — reserved for truly urgent comms.</div></div></div></div></div>
+
+<div class="cb co"><span>✅</span><div>The Announcements feed solves a real chapter pain point: critical information buried in group chats that people scroll past. With the app, pinned announcements are unavoidable — they're the first thing brothers see when they open The Blue Ledger.</div></div>
+</div>
+
+<div class="section" id="e6">
+<div class="etag">Enhancement 6 · Month 4–6 · Strategic</div>
+<div class="etitle">Multi-Chapter / National Expansion</div>
+<div class="edesc">When other chapters ask for The Blue Ledger (and they will), this is the architecture for scaling. Each chapter gets its own Google Sheet connected to one shared Glide app. A National Admin dashboard aggregates PIA data across all chapters. Built on the same free-tier stack.</div>
+
+<div class="grid3">
+  <div class="ecard">
+    <div class="ecard-icon">🏛️</div>
+    <div class="ecard-title">Chapter-level</div>
+    <div class="ecard-desc">Each chapter has its own Master Sheet. Their Glide app connects to their sheet only. Members only see their chapter's data. Completely isolated — one chapter's data never appears in another's app.</div>
+    <div class="ecard-badge" style="background:var(--info-bg);color:var(--info);">1 sheet per chapter</div>
+  </div>
+  <div class="ecard">
+    <div class="ecard-icon">🗺️</div>
+    <div class="ecard-title">Regional level</div>
+    <div class="ecard-desc">A Regional Sheet aggregates PIA export data from all chapter sheets. Make.com copies relevant PIA rows into the Regional Sheet on each export. Regional Directors see combined service hours and program impact across all chapters.</div>
+    <div class="ecard-badge" style="background:#EDE7F6;color:#4A235A;">1 sheet per district</div>
+  </div>
+  <div class="ecard">
+    <div class="ecard-icon">🌐</div>
+    <div class="ecard-title">National level</div>
+    <div class="ecard-desc">One National Dashboard Glide app reads from all Regional Sheets. National officers see total service hours, total members, and chapter-by-chapter engagement scores — without accessing any chapter's individual member data.</div>
+    <div class="ecard-badge" style="background:var(--gold-pale);color:var(--warn);">1 dashboard total</div>
+  </div>
+</div>
+
+<div class="g"><div class="gt"><div class="gtt">Deployment kit — share with other chapters</div><div class="gtp">Package once, deploy many</div></div><div class="gb"><div class="sr"><div class="sn ">1</div><div><div class="st">Create a Master Sheet template (shared copy)</div><div class="sd">Make a copy of your Master Sheet with all sample data cleared. Share it as a Google Sheets template (File → Make a copy → distribute link). New chapters duplicate it, fill in their roster, and connect to their own Glide app. Setup time for a new chapter: ~2 hours.</div></div></div><div class="sr"><div class="sn ">2</div><div><div class="st">Glide app — multi-chapter routing</div><div class="sd">The simplest approach: each chapter gets their own Glide app connected to their own sheet. All apps use the same template (Settings → Clone App in Glide). No code sharing required — just a new Glide project per chapter. Alternatively, use Glide's Organizations feature (paid tier) for a single app with multiple data sources routed by chapter ID.</div></div></div><div class="sr"><div class="sn ">3</div><div><div class="st">Chapter ID column</div><div class="sd">Add <span class='cd'>Chapter ID</span> to every tab in the Master Sheet (e.g. 'TAU-TAU-SIGMA', 'ALPHA-BETA'). When building the Regional aggregation, Make.com reads this column to know which chapter each row belongs to. This enables cross-chapter comparisons without data co-mingling.</div></div></div><div class="sr"><div class="sn ">4</div><div><div class="st">Regional PIA aggregation scenario</div><div class="sd">Each chapter's Make.com 'Export PIA' scenario (from Week 10) gains one extra action: after emailing the district, also append the chapter's PIA rows to the Regional Sheet. The Regional Sheet is a read-only aggregate — no one writes to it directly.</div></div></div><div class="sr"><div class="sn ">5</div><div><div class="st">National Dashboard Glide app</div><div class="sd">One Glide app connected to the Regional Sheet. Visible only to National Officers (email allowlist). Shows: total chapters enrolled, combined service hours YTD, top-performing chapters by hours and programs, PIA export status per chapter. Built as a read-only Details screen — no edit permissions.</div></div></div><div class="sr"><div class="sn gd">6</div><div><div class="st">Monetization option (Year 2+)</div><div class="sd">If other chapters adopt this, you've built real IP. Options: (1) free and open — builds goodwill and national org credibility. (2) $50–100/chapter/semester deployment fee — covers your Make.com Core upgrade + time. (3) Pitch to the national org as an official tool — they fund development, you run it. The HTML prototype in this repo is already your product demo.</div></div></div></div></div>
+
+<div class="g"><div class="gt"><div class="gtt">Rollout priority — which chapters to approach first</div><div class="gtp">Strategic sequence</div></div><div class="gb"><div class="sr"><div class="sn ">1</div><div><div class="st">Graduate chapters in your district first</div><div class="sd">Grad chapters typically have more stable leadership, better dues collection, and stronger appetite for professional tools. They're also more likely to pay for a turnkey solution.</div></div></div><div class="sr"><div class="sn ">2</div><div><div class="st">Chapters with active, tech-comfortable leadership</div><div class="sd">One engaged Vice President can deploy this in a weekend. Target chapters where you know the officers are motivated — one successful peer deployment is worth 10 cold pitches.</div></div></div><div class="sr"><div class="sn ">3</div><div><div class="st">Regional conference demo</div><div class="sd">Present at the next regional conference. Live-demo the scanner and leaderboard. Five minutes on stage reaches more potential chapter adopters than months of individual outreach.</div></div></div><div class="sr"><div class="sn ">4</div><div><div class="st">National org pilot pitch</div><div class="sd">After 3–5 chapters are live, compile a one-pager: chapters enrolled, total service hours tracked, PIA reports auto-delivered. The data tells the story. Submit to the national office as a pilot program proposal.</div></div></div></div></div>
+
+<div class="cb ct"><span>💡</span><div>The multi-chapter architecture doesn't require any new tools — it's just replication of the same Glide + Sheets stack you already have. The constraint is your time, not technology. Build the deployment kit first (the template + documentation), and let chapter leads deploy themselves with occasional support from you.</div></div>
+</div>
+
+<hr class="divider"/>
+<div class="section" id="roadmap">
+<div class="etag">Year 1 Post-Launch</div>
+<div class="etitle">Recommended Implementation Order</div>
+<div class="edesc">All 6 enhancements ordered by effort and impact — build them in this sequence for maximum chapter ROI.</div>
+
+<div class="g">
+<div class="gt"><div class="gtt">Year 1 enhancement roadmap</div><div class="gtp">Post-launch</div></div>
+<div class="gb">
+<table class="tbl">
+<thead><tr><th>Month</th><th>Enhancement</th><th>Build Time</th><th>Why Now</th></tr></thead>
+<tbody>
+<tr><td><span class="badge bi">Month 1</span></td><td><strong>E2 — Dues Reminder</strong></td><td>45 min</td><td>First dues cycle happens immediately post-launch. Automate before the deadline or you're chasing people manually again.</td></tr>
+<tr><td><span class="badge bi">Month 1</span></td><td><strong>E5 — Announcements</strong></td><td>1 hour</td><td>Easiest build. Immediate value — replaces the group chat chaos with something brothers actually read.</td></tr>
+<tr><td><span class="badge bg2">Month 2</span></td><td><strong>E4 — Give Props</strong></td><td>1.5 hours</td><td>Drive daily engagement between meetings. Brothers open the app to give and receive recognition, not just to check in at events.</td></tr>
+<tr><td><span class="badge bg2">Month 2</span></td><td><strong>E1 — Event RSVP</strong></td><td>2.5 hours</td><td>Chapter has rhythm by Month 2. RSVP data immediately improves event planning and no-show accountability.</td></tr>
+<tr><td><span class="badge bw">Month 3</span></td><td><strong>E3 — Stripe Dues</strong></td><td>1.5 hours</td><td>Spring dues cycle. Treasurer knows how painful manual confirmation is by now — this is the fix.</td></tr>
+<tr><td><span class="badge bs">Month 4–6</span></td><td><strong>E6 — Multi-Chapter</strong></td><td>4–6 hours</td><td>After a successful semester, you have the proof of concept. Regional conference is typically in this window — perfect timing for the pitch.</td></tr>
+</tbody></table>
+</div></div>
+
+<div class="g" style="margin-top:1.25rem;">
+<div class="gt"><div class="gtt">New Google Sheet tabs required</div><div class="gtp">Add to Master Sheet</div></div>
+<div class="gb">
+<table class="tbl">
+<thead><tr><th>Tab</th><th>Enhancement</th><th>Key Columns</th></tr></thead>
+<tbody>
+<tr><td><span class="badge bi">📅 Events</span></td><td>E1 — RSVP</td><td>Event ID, Name, Date, Type, XP, RSVP Deadline, Active?</td></tr>
+<tr><td><span class="badge bi">📅 RSVP Responses</span></td><td>E1 — RSVP</td><td>Response ID, Event ID, Member #, RSVP Status, Attended?, No-Show?</td></tr>
+<tr><td><span class="badge bg2">👏 Props</span></td><td>E4 — Give Props</td><td>Prop ID, From/To Member #, Category, Message, XP Awarded</td></tr>
+<tr><td><span class="badge bs">📢 Announcements</span></td><td>E5 — Announcements</td><td>Post ID, Title, Body, Category, Pinned?, Expires, Active?</td></tr>
+</tbody></table>
+</div></div>
+</div>
+</main>
+</div>
+<script>
+const secs=document.querySelectorAll('.section[id]');
+const navs=document.querySelectorAll('.si');
+const obs=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting){navs.forEach(l=>{l.classList.remove('active');if(l.getAttribute('href')==='#'+x.target.id)l.classList.add('active');});}});},{rootMargin:'-20% 0px -65% 0px'});
+secs.forEach(s=>obs.observe(s));
+</script>
+</body>
+</html>

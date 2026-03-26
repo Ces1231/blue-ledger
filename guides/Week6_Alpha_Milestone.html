@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>The Blue Ledger — Week 6 — Alpha Milestone</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@0,400;0,500;0,600&display=swap');
+:root{--navy:#001A4D;--gold:#C9A84C;--gold-l:#F5E6C8;--gold-pale:#FDF8EE;--cream:#FAF8F3;--ink:#0D0D0D;--muted:#6B6B6B;--border:#E2DDD4;--success:#1A6B3A;--success-bg:#EAF5EE;--success-border:#A8D5BC;--info:#003087;--info-bg:#EAF0FB;--info-border:#BDD0F5;--warn:#7A4A00;--warn-bg:#FFF3DC;--warn-border:#F5D98A;--danger:#8B1A1A;--danger-bg:#FCE4EC;--danger-border:#F4C0D1;--phone-w:300px;--phone-h:600px;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Instrument Sans',sans-serif;background:var(--cream);color:var(--ink);}
+.hdr{background:var(--navy);padding:1.25rem 2rem;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid var(--gold);position:sticky;top:0;z-index:50;}
+.hdr-logo{font-family:'DM Serif Display',serif;font-size:1.15rem;color:var(--gold);}
+.hdr-sub{font-size:.68rem;color:rgba(255,255,255,.45);font-family:'DM Mono',monospace;letter-spacing:.1em;text-transform:uppercase;margin-top:2px;}
+.hdr-badge{background:var(--gold);color:var(--navy);font-size:.68rem;font-weight:600;padding:3px 10px;border-radius:4px;font-family:'DM Mono',monospace;text-transform:uppercase;}
+.layout{display:flex;min-height:calc(100vh - 64px);}
+.sidebar{width:225px;flex-shrink:0;background:#fff;border-right:1px solid var(--border);padding:1.5rem 0;position:sticky;top:64px;height:calc(100vh - 64px);overflow-y:auto;}
+.sl{font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding:0 1.25rem;margin:1.2rem 0 .4rem;font-family:'DM Mono',monospace;}
+.si{display:flex;align-items:center;gap:8px;padding:7px 1.25rem;font-size:.82rem;color:var(--muted);cursor:pointer;border-left:3px solid transparent;transition:all .15s;text-decoration:none;}
+.si:hover{background:var(--cream);color:var(--ink);}
+.si.active{background:var(--gold-pale);color:var(--navy);border-left-color:var(--gold);font-weight:600;}
+.si-dot{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:700;font-family:'DM Mono',monospace;flex-shrink:0;color:var(--muted);}
+.si.active .si-dot{background:var(--navy);border-color:var(--navy);color:#fff;}
+.main{flex:1;padding:2rem 2.5rem;max-width:840px;}
+.section{margin-bottom:3rem;scroll-margin-top:80px;}
+.week-tag{font-family:'DM Mono',monospace;font-size:.68rem;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px;}
+.sec-title{font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--navy);}
+.sec-desc{font-size:.88rem;color:var(--muted);margin-top:6px;line-height:1.6;max-width:580px;margin-bottom:1.25rem;}
+.g{background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:1.25rem;}
+.gt{background:var(--navy);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;}
+.gtt{font-size:.82rem;font-weight:600;color:var(--gold);}
+.gtp{font-size:.62rem;font-family:'DM Mono',monospace;background:rgba(201,168,76,.18);color:var(--gold);border:1px solid rgba(201,168,76,.3);border-radius:20px;padding:2px 8px;}
+.gb{padding:12px 14px;}
+.sr{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--border);}
+.sr:last-child{border:none;}
+.sn{width:22px;height:22px;border-radius:50%;background:var(--navy);color:#fff;font-size:.65rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'DM Mono',monospace;margin-top:1px;}
+.sn.gd{background:var(--gold);color:var(--navy);}
+.sn.gr{background:var(--success);color:#fff;}
+.sn.bx{background:var(--success-bg);border:1.5px solid var(--success);color:var(--success);}
+.st{font-size:.83rem;font-weight:600;color:var(--ink);}
+.sd{font-size:.76rem;color:var(--muted);margin-top:2px;line-height:1.55;}
+.cd{font-family:'DM Mono',monospace;font-size:.72rem;background:#F0EDE7;border:1px solid var(--border);border-radius:4px;padding:1px 5px;color:var(--navy);white-space:nowrap;}
+.cb{border-radius:8px;padding:9px 12px;font-size:.78rem;line-height:1.55;margin:8px 0;display:flex;gap:8px;align-items:flex-start;}
+.cb span{font-size:14px;flex-shrink:0;}
+.ct{background:var(--info-bg);border:1px solid var(--info-border);color:var(--info);}
+.cw{background:var(--warn-bg);border:1px solid var(--warn-border);color:var(--warn);}
+.co{background:var(--success-bg);border:1px solid var(--success-border);color:var(--success);}
+.cd2{background:var(--danger-bg);border:1px solid var(--danger-border);color:var(--danger);}
+.chk{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--border);}
+.chk:last-child{border:none;}
+.cb2{width:18px;height:18px;border:1.5px solid var(--border);border-radius:4px;flex-shrink:0;margin-top:1px;}
+.ct2{font-size:.83rem;font-weight:600;color:var(--ink);}
+.cs{font-size:.74rem;color:var(--muted);margin-top:2px;line-height:1.4;}
+.flow-r{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:0 0 10px;}
+.fb{font-size:.73rem;padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:#fff;white-space:nowrap;}
+.fb.s{background:var(--navy);color:var(--gold);border-color:var(--navy);font-weight:600;}
+.fb.e{background:var(--success-bg);color:var(--success);border-color:#A8D5BC;font-weight:600;}
+.fb.a{background:var(--info-bg);color:var(--info);border-color:#BDD0F5;}
+.fb.w{background:var(--warn-bg);color:var(--warn);border-color:#F5D98A;}
+.fa{font-size:.8rem;color:var(--muted);}
+.ptrak{height:6px;background:var(--border);border-radius:3px;margin:1rem 0;}
+.pfil{height:100%;border-radius:3px;background:var(--gold);}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:1.25rem;}
+.pcard{background:#fff;border:1px solid var(--border);border-radius:10px;padding:.85rem;text-align:center;}
+.pcard-num{font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--navy);}
+.pcard-lbl{font-size:.65rem;font-family:'DM Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:2px;}
+hr{border:none;border-top:1px solid var(--border);margin:2rem 0;}
+.badge{display:inline-flex;align-items:center;font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:20px;font-family:'DM Mono',monospace;white-space:nowrap;}
+.bs{background:var(--success-bg);color:var(--success);}
+.bw{background:var(--warn-bg);color:var(--warn);}
+.bi{background:var(--info-bg);color:var(--info);}
+.bg{background:var(--gold-pale);color:var(--warn);}
+.bd{background:var(--danger-bg);color:var(--danger);}
+.tbl{width:100%;border-collapse:collapse;font-size:.8rem;}
+.tbl th{background:var(--cream);padding:8px 10px;text-align:left;font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-family:'DM Mono',monospace;border-bottom:1px solid var(--border);}
+.tbl td{padding:8px 10px;border-bottom:1px solid var(--border);color:var(--ink);vertical-align:middle;}
+.tbl tr:last-child td{border:none;}
+.tbl tr:nth-child(even) td{background:var(--cream);}
+.hero{background:var(--navy);border-radius:14px;padding:1.75rem 2rem;margin-bottom:1.5rem;position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;top:-40px;right:-40px;width:160px;height:160px;border-radius:50%;background:rgba(201,168,76,.06);}
+.htag{font-family:'DM Mono',monospace;font-size:.65rem;color:rgba(255,255,255,.35);letter-spacing:.12em;text-transform:uppercase;margin-bottom:5px;}
+.htitle{font-family:'DM Serif Display',serif;font-size:1.6rem;color:var(--gold);margin-bottom:.5rem;}
+.hdesc{font-size:.86rem;color:rgba(255,255,255,.6);line-height:1.65;max-width:500px;}
+@media(max-width:700px){.sidebar{display:none;}.main{padding:1.25rem;}}
+</style>
+</head>
+<body>
+<header class="hdr">
+  <div><div class="hdr-logo">The Blue Ledger</div><div class="hdr-sub">Week 6 — Alpha Milestone · Live Event Test</div></div>
+  <div class="hdr-badge">No new screens</div>
+</header>
+<div class="layout">
+<nav class="sidebar"><div class="sl">Week 6</div><a href="#goals" class="si "><div class="si-dot">0</div> Goals</a><a href="#prep" class="si "><div class="si-dot">1</div> Pre-Event Setup</a><a href="#event" class="si "><div class="si-dot">2</div> Live Event Runbook</a><a href="#checks" class="si "><div class="si-dot">3</div> 7 Alpha Checks</a><a href="#feedback" class="si "><div class="si-dot">4</div> Post-Alpha Debrief</a></nav>
+<main class="main"><div class="hero">
+<div class="htag">Week 6 · Alpha Milestone</div>
+<div class="htitle">Go Live at a Real Event</div>
+<div class="hdesc">No new screens this week. Week 6 is entirely about testing the live app at a real chapter event. A Chair scans brothers in, XP fires, leaderboard updates — that's the milestone. Pass all 7 checks and you're cleared for the gamification phase.</div>
+</div><div class="ptrak"><div class="pfil" style="width:50%"></div></div><div style="font-size:.75rem;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:1.25rem;">Week 6 of 12 · 50% complete · Halfway there</div><div class="section" id="goals">
+<div class="week-tag">Week 6</div>
+<div class="sec-title">Alpha Goals</div>
+<div class="sec-desc">Three objectives: (1) Prove the scanner works in a real room. (2) Prove XP flows end-to-end. (3) Get E-Board hands-on with the app before the full chapter sees it.</div>
+<div class="flow-r"><div class="fb s">Chapter event</div><div class="fa">→</div><div class="fb ">Chair scans QR</div><div class="fa">→</div><div class="fb ">Engagement Log row written</div><div class="fa">→</div><div class="fb ">Make.com fires</div><div class="fa">→</div><div class="fb a">XP updated</div><div class="fa">→</div><div class="fb e">Leaderboard re-ranks</div></div><div class="cb ct"><span>💡</span><div>This is the most important test in the entire build. If the scanner works at a live event, every other feature is just polish. If it doesn't, you have two weeks to fix it before Week 8. Either outcome is fine — that's what Alpha is for.</div></div>
+</div><div class="section" id="prep">
+<div class="week-tag">Preparation</div>
+<div class="sec-title">Pre-Event Setup Checklist</div>
+<div class="sec-desc">Complete all of these before the event — not on the day of.</div>
+<div class="g"><div class="gt"><div class="gtt">48 hours before</div><div class="gtp">Do this now</div></div><div class="gb"><div class="chk"><div class="cb2"></div><div><div class="ct2">All E-Board members added to Glide allowlist</div><div class="cs">Go to Glide Settings → Sign In → paste all E-Board emails. They must sign in before the event — not in the parking lot.</div></div></div><div class="chk"><div class="cb2"></div><div><div class="ct2">Assign roles in Users tab</div><div class="cs">Open Master Sheet → 👥 Users tab → fill Role column for all E-Board members: Admin for President, Chair for any Committee Chairs attending.</div></div></div><div class="chk"><div class="cb2"></div><div><div class="ct2">Pre-populate all E-Board profiles</div><div class="cs">Add their Name, Member #, Induction Year, and Email to the Users tab so QR codes generate automatically on first sign-in.</div></div></div><div class="chk"><div class="cb2"></div><div><div class="ct2">Test scan from your own phone</div><div class="cs">Open Digital ID on one phone. Open Scanner on a second phone. Scan — member name should appear. Confirm Check-In — verify Engagement Log row in the sheet.</div></div></div><div class="chk"><div class="cb2"></div><div><div class="ct2">Brief the Chair running the scanner</div><div class="cs">15-minute walkthrough: open Scanner tab, select activity, scan, confirm, repeat. Practice until it feels fast.</div></div></div></div></div>
+</div><div class="section" id="event">
+<div class="week-tag">At the Event</div>
+<div class="sec-title">Live Event Runbook</div>
+
+<div class="g"><div class="gt"><div class="gtt">During the event — scanner flow</div><div class="gtp">~2 hours</div></div><div class="gb"><div class="sr"><div class="sn ">1</div><div><div class="st">Chair opens scanner, sets activity type</div><div class="sd">Select 'Chapter Meeting (on time)' from the dropdown before anyone walks in. Don't change activity mid-scan — finish all check-ins for one type before switching.</div></div></div><div class="sr"><div class="sn ">2</div><div><div class="st">Each brother opens Digital ID on their phone</div><div class="sd">They tap their ID card tab and show the QR code. Make sure they're signed in before arriving — first-time sign-in takes 2 minutes.</div></div></div><div class="sr"><div class="sn ">3</div><div><div class="st">Chair scans, confirms, moves immediately to next</div><div class="sd">The confirmation screen shows for ~2 seconds. Tap 'Scan Next' — ready for the next person. Target: under 10 seconds per person.</div></div></div><div class="sr"><div class="sn ">4</div><div><div class="st">Monitor sheet in real time on a laptop</div><div class="sd">Open 📋 Engagement Log in Google Sheets on a second device. Watch rows appear as each brother gets scanned. This is your sanity check.</div></div></div><div class="sr"><div class="sn ">5</div><div><div class="st">After the meeting — check the leaderboard</div><div class="sd">Pull up the Leaderboard screen. It should now reflect updated XP for everyone scanned. Screenshot it and post in the chapter group chat — first viral moment.</div></div></div></div></div>
+</div><div class="section" id="checks">
+<div class="week-tag">Alpha Checks</div>
+<div class="sec-title">The 7 Alpha Checks</div>
+<div class="sec-desc">All 7 must pass. If any fail, document what happened and fix before Week 7.</div>
+<div class="g"><div class="gt"><div class="gtt">Alpha checklist — required to proceed</div><div class="gtp">All 7 must pass</div></div><div class="gb"><div class="chk"><div class="cb2"></div><div><div class="ct2">Sign in on a real phone using chapter email PIN</div><div class="cs">Full PIN flow: enter email → receive 6-digit code → enter code → land on Home Dashboard with your name and XP.</div></div></div><div class="chk"><div class="cb2"></div><div><div class="ct2">Profile setup completes and triggers +100 XP + Architect badge</div><div class="cs">New account completes 3-step profile → Digital ID reveals → Engagement Log shows +100 XP row → Earned Badges shows 'Architect'.</div></div></div><div class="chk"><div class="cb2"></div><div><div class="ct2">Digital ID QR code scans from a second phone</div><div class="cs">Open ID on Phone A. Open Scanner on Phone B. Scan → correct member name appears in confirmation screen.</div></div></div><div class="chk"><div class="cb2"></div><div><div class="ct2">Role restriction working</div><div class="cs">Sign in as a Member-role account. Scanner tab must be invisible. Sign in as Chair — Scanner tab appears. Sign in as Member again — it disappears.</div></div></div><div class="chk"><div class="cb2"></div><div><div class="ct2">Live scan at real event: row written to Engagement Log</div><div class="cs">Scan a real brother at the event. Open Google Sheets → 📋 Engagement Log. New row present with correct Member #, Activity, XP, timestamp.</div></div></div><div class="chk"><div class="cb2"></div><div><div class="ct2">Scanned member's XP updates on Leaderboard within 60 seconds</div><div class="cs">After a confirmed scan, the scanned member's XP total on the Leaderboard reflects the new points within one Glide sync cycle (~60 sec on free tier).</div></div></div><div class="chk"><div class="cb2"></div><div><div class="ct2">E-Board walkthrough: 3+ officers complete full onboarding</div><div class="cs">President + at least 2 others: sign in, complete profile, view their ID, check the leaderboard. Collect verbal feedback on anything confusing.</div></div></div></div></div>
+</div><div class="section" id="feedback">
+<div class="week-tag">Post-Alpha</div>
+<div class="sec-title">Feedback & Fixes</div>
+
+<div class="g"><div class="gt"><div class="gtt">What to ask E-Board after the event</div><div class="gtp">10-min debrief</div></div><div class="gb"><div class="sr"><div class="sn ">?</div><div><div class="st">Was sign-in confusing?</div><div class="sd">If yes: add clearer instructions to the splash screen. Consider a 'First time? Tap here' help text below the sign-in button.</div></div></div><div class="sr"><div class="sn ">?</div><div><div class="st">Did the scanner feel fast enough?</div><div class="sd">If slow: check your Make.com automation timing. The scan itself is instant — any lag is the sheet sync. Acceptable is under 60 seconds for XP to appear.</div></div></div><div class="sr"><div class="sn ">?</div><div><div class="st">Was anything missing on the Home Dashboard?</div><div class="sd">Common feedback: brothers want to see their rank number prominently. Add a 'Chapter Rank: #X' stat card to the home hero section.</div></div></div><div class="sr"><div class="sn ">?</div><div><div class="st">Did anyone have trouble with the QR code?</div><div class="sd">Lighting matters. Dim venues make QR scanning harder. Solution: maximum brightness on the member's phone. Note this for the full launch briefing.</div></div></div><div class="sr"><div class="sn ">?</div><div><div class="st">Any data show up wrong?</div><div class="sd">Check for duplicate rows in Engagement Log (Make.com fired twice), wrong XP values (Point Economy lookup issue), or missing member names (QR Data template column not set up correctly).</div></div></div></div></div><div class="cb co"><span>✅</span><div>Alpha complete = green light for Week 7. If you had issues, spend a few hours fixing them before proceeding — it's much easier to fix now than after the full chapter is using it.</div></div>
+</div></main>
+</div>
+<script>
+const secs=document.querySelectorAll('.section[id]');
+const navs=document.querySelectorAll('.si');
+const obs=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting){navs.forEach(l=>{l.classList.remove('active');if(l.getAttribute('href')==='#'+x.target.id)l.classList.add('active');});}});},{rootMargin:'-20% 0px -65% 0px'});
+secs.forEach(s=>obs.observe(s));
+</script>
+</body>
+</html>

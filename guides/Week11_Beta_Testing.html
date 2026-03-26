@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>The Blue Ledger — Week 11 — Beta Testing</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@0,400;0,500;0,600&display=swap');
+:root{--navy:#001A4D;--gold:#C9A84C;--gold-l:#F5E6C8;--gold-pale:#FDF8EE;--cream:#FAF8F3;--ink:#0D0D0D;--muted:#6B6B6B;--border:#E2DDD4;--success:#1A6B3A;--success-bg:#EAF5EE;--success-border:#A8D5BC;--info:#003087;--info-bg:#EAF0FB;--info-border:#BDD0F5;--warn:#7A4A00;--warn-bg:#FFF3DC;--warn-border:#F5D98A;--danger:#8B1A1A;--danger-bg:#FCE4EC;--danger-border:#F4C0D1;--phone-w:300px;--phone-h:600px;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Instrument Sans',sans-serif;background:var(--cream);color:var(--ink);}
+.hdr{background:var(--navy);padding:1.25rem 2rem;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid var(--gold);position:sticky;top:0;z-index:50;}
+.hdr-logo{font-family:'DM Serif Display',serif;font-size:1.15rem;color:var(--gold);}
+.hdr-sub{font-size:.68rem;color:rgba(255,255,255,.45);font-family:'DM Mono',monospace;letter-spacing:.1em;text-transform:uppercase;margin-top:2px;}
+.hdr-badge{background:var(--gold);color:var(--navy);font-size:.68rem;font-weight:600;padding:3px 10px;border-radius:4px;font-family:'DM Mono',monospace;text-transform:uppercase;}
+.layout{display:flex;min-height:calc(100vh - 64px);}
+.sidebar{width:225px;flex-shrink:0;background:#fff;border-right:1px solid var(--border);padding:1.5rem 0;position:sticky;top:64px;height:calc(100vh - 64px);overflow-y:auto;}
+.sl{font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding:0 1.25rem;margin:1.2rem 0 .4rem;font-family:'DM Mono',monospace;}
+.si{display:flex;align-items:center;gap:8px;padding:7px 1.25rem;font-size:.82rem;color:var(--muted);cursor:pointer;border-left:3px solid transparent;transition:all .15s;text-decoration:none;}
+.si:hover{background:var(--cream);color:var(--ink);}
+.si.active{background:var(--gold-pale);color:var(--navy);border-left-color:var(--gold);font-weight:600;}
+.si-dot{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:700;font-family:'DM Mono',monospace;flex-shrink:0;color:var(--muted);}
+.si.active .si-dot{background:var(--navy);border-color:var(--navy);color:#fff;}
+.main{flex:1;padding:2rem 2.5rem;max-width:840px;}
+.section{margin-bottom:3rem;scroll-margin-top:80px;}
+.week-tag{font-family:'DM Mono',monospace;font-size:.68rem;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px;}
+.sec-title{font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--navy);}
+.sec-desc{font-size:.88rem;color:var(--muted);margin-top:6px;line-height:1.6;max-width:580px;margin-bottom:1.25rem;}
+.g{background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:1.25rem;}
+.gt{background:var(--navy);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;}
+.gtt{font-size:.82rem;font-weight:600;color:var(--gold);}
+.gtp{font-size:.62rem;font-family:'DM Mono',monospace;background:rgba(201,168,76,.18);color:var(--gold);border:1px solid rgba(201,168,76,.3);border-radius:20px;padding:2px 8px;}
+.gb{padding:12px 14px;}
+.sr{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--border);}
+.sr:last-child{border:none;}
+.sn{width:22px;height:22px;border-radius:50%;background:var(--navy);color:#fff;font-size:.65rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'DM Mono',monospace;margin-top:1px;}
+.sn.gd{background:var(--gold);color:var(--navy);}
+.sn.gr{background:var(--success);color:#fff;}
+.sn.bx{background:var(--success-bg);border:1.5px solid var(--success);color:var(--success);}
+.st{font-size:.83rem;font-weight:600;color:var(--ink);}
+.sd{font-size:.76rem;color:var(--muted);margin-top:2px;line-height:1.55;}
+.cd{font-family:'DM Mono',monospace;font-size:.72rem;background:#F0EDE7;border:1px solid var(--border);border-radius:4px;padding:1px 5px;color:var(--navy);white-space:nowrap;}
+.cb{border-radius:8px;padding:9px 12px;font-size:.78rem;line-height:1.55;margin:8px 0;display:flex;gap:8px;align-items:flex-start;}
+.cb span{font-size:14px;flex-shrink:0;}
+.ct{background:var(--info-bg);border:1px solid var(--info-border);color:var(--info);}
+.cw{background:var(--warn-bg);border:1px solid var(--warn-border);color:var(--warn);}
+.co{background:var(--success-bg);border:1px solid var(--success-border);color:var(--success);}
+.cd2{background:var(--danger-bg);border:1px solid var(--danger-border);color:var(--danger);}
+.chk{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--border);}
+.chk:last-child{border:none;}
+.cb2{width:18px;height:18px;border:1.5px solid var(--border);border-radius:4px;flex-shrink:0;margin-top:1px;}
+.ct2{font-size:.83rem;font-weight:600;color:var(--ink);}
+.cs{font-size:.74rem;color:var(--muted);margin-top:2px;line-height:1.4;}
+.flow-r{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:0 0 10px;}
+.fb{font-size:.73rem;padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:#fff;white-space:nowrap;}
+.fb.s{background:var(--navy);color:var(--gold);border-color:var(--navy);font-weight:600;}
+.fb.e{background:var(--success-bg);color:var(--success);border-color:#A8D5BC;font-weight:600;}
+.fb.a{background:var(--info-bg);color:var(--info);border-color:#BDD0F5;}
+.fb.w{background:var(--warn-bg);color:var(--warn);border-color:#F5D98A;}
+.fa{font-size:.8rem;color:var(--muted);}
+.ptrak{height:6px;background:var(--border);border-radius:3px;margin:1rem 0;}
+.pfil{height:100%;border-radius:3px;background:var(--gold);}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:1.25rem;}
+.pcard{background:#fff;border:1px solid var(--border);border-radius:10px;padding:.85rem;text-align:center;}
+.pcard-num{font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--navy);}
+.pcard-lbl{font-size:.65rem;font-family:'DM Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:2px;}
+hr{border:none;border-top:1px solid var(--border);margin:2rem 0;}
+.badge{display:inline-flex;align-items:center;font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:20px;font-family:'DM Mono',monospace;white-space:nowrap;}
+.bs{background:var(--success-bg);color:var(--success);}
+.bw{background:var(--warn-bg);color:var(--warn);}
+.bi{background:var(--info-bg);color:var(--info);}
+.bg{background:var(--gold-pale);color:var(--warn);}
+.bd{background:var(--danger-bg);color:var(--danger);}
+.tbl{width:100%;border-collapse:collapse;font-size:.8rem;}
+.tbl th{background:var(--cream);padding:8px 10px;text-align:left;font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-family:'DM Mono',monospace;border-bottom:1px solid var(--border);}
+.tbl td{padding:8px 10px;border-bottom:1px solid var(--border);color:var(--ink);vertical-align:middle;}
+.tbl tr:last-child td{border:none;}
+.tbl tr:nth-child(even) td{background:var(--cream);}
+.hero{background:var(--navy);border-radius:14px;padding:1.75rem 2rem;margin-bottom:1.5rem;position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;top:-40px;right:-40px;width:160px;height:160px;border-radius:50%;background:rgba(201,168,76,.06);}
+.htag{font-family:'DM Mono',monospace;font-size:.65rem;color:rgba(255,255,255,.35);letter-spacing:.12em;text-transform:uppercase;margin-bottom:5px;}
+.htitle{font-family:'DM Serif Display',serif;font-size:1.6rem;color:var(--gold);margin-bottom:.5rem;}
+.hdesc{font-size:.86rem;color:rgba(255,255,255,.6);line-height:1.65;max-width:500px;}
+@media(max-width:700px){.sidebar{display:none;}.main{padding:1.25rem;}}
+</style>
+</head>
+<body>
+<header class="hdr">
+  <div><div class="hdr-logo">The Blue Ledger</div><div class="hdr-sub">Week 11 — E-Board Stress Test</div></div>
+  <div class="hdr-badge">Real event test</div>
+</header>
+<div class="layout">
+<nav class="sidebar"><div class="sl">Week 11</div><a href="#who" class="si "><div class="si-dot">0</div> Who's Involved</a><a href="#protocol" class="si "><div class="si-dot">1</div> Test Protocol</a><a href="#common_bugs" class="si "><div class="si-dot">2</div> Common Bugs & Fixes</a><a href="#checklist11" class="si "><div class="si-dot">✓</div> Checklist</a></nav>
+<main class="main"><div class="hero">
+<div class="htag">Week 11 · Beta Testing</div>
+<div class="htitle">E-Board Stress Test</div>
+<div class="hdesc">The full Executive Board and all Committee Chairs test the complete app at a real chapter event. Every feature is live. This week finds the edge cases before all 28+ brothers are onboarded. One week left after this.</div>
+</div><div class="ptrak"><div class="pfil" style="width:92%"></div></div><div style="font-size:.75rem;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:1.25rem;">Week 11 of 12 · 92% complete · Final stretch</div><div class="section" id="who">
+<div class="week-tag">Beta Test</div>
+<div class="sec-title">Who's Involved</div>
+
+<div class="g"><div class="gt"><div class="gtt">Beta test participants</div><div class="gtp">E-Board + Chairs</div></div><div class="gb">
+    <table class="tbl">
+    <thead><tr><th>Role</th><th>What They Test</th><th>What Could Break</th></tr></thead>
+    <tbody>
+    <tr><td><strong>President (Admin)</strong></td><td>Full admin panel, role changes, XP awards, PIA export</td><td>Role permissions, Make.com webhook timeouts</td></tr>
+    <tr><td><strong>VP / Secretary</strong></td><td>Full onboarding, profile, Digital ID, quizzes</td><td>Profile completion trigger, quiz retake logic</td></tr>
+    <tr><td><strong>Treasurer</strong></td><td>Financials screen, mark dues paid, expense form</td><td>Dues XP automation firing twice</td></tr>
+    <tr><td><strong>Committee Chairs</strong></td><td>QR Scanner end-to-end at a live event</td><td>Scanner camera in low light, scan speed under load</td></tr>
+    <tr><td><strong>PIA Analyst</strong></td><td>PIA Builder, add program, export PDF</td><td>PDF generation Make.com scenario, email delivery</td></tr>
+    </tbody></table>
+    </div></div>
+</div><div class="section" id="protocol">
+<div class="week-tag">Protocol</div>
+<div class="sec-title">Beta Test Protocol</div>
+<div class="sec-desc">Run this at a real chapter event — not a dry run in someone's living room.</div>
+<div class="g"><div class="gt"><div class="gtt">Before the event — setup checklist</div><div class="gtp">48 hours prior</div></div><div class="gb"><div class="sr"><div class="sn ">1</div><div><div class="st">Add all E-Board + Chair emails to the allowlist</div><div class="sd">Every beta tester must be in the Glide allowlist AND have a row in the Users tab with their correct role assigned. Test sign-in before the event — don't troubleshoot in the parking lot.</div></div></div><div class="sr"><div class="sn ">2</div><div><div class="st">Seed all beta tester profiles</div><div class="sd">Pre-populate Name, Email, Member #, Induction Year, Role for all beta testers. They'll fill in professional info themselves — but they need the seed data to sign in successfully.</div></div></div><div class="sr"><div class="sn ">3</div><div><div class="st">Set up a 'Beta Test' event in PIA Builder</div><div class="sd">Add a row to 📊 PIA Builder for the event you're using as the beta test. This gives the PIA Analyst real data to work with during testing.</div></div></div><div class="sr"><div class="sn ">4</div><div><div class="st">Prepare a feedback form</div><div class="sd">Create a simple Google Form: 5 questions. (1) What role did you sign in as? (2) Did sign-in work? (3) What was the most confusing part? (4) What feature impressed you most? (5) What would you change? Share the link in the group chat after the meeting.</div></div></div></div></div><div class="g"><div class="gt"><div class="gtt">During the event — structured test sequence</div><div class="gtp">~90 minutes</div></div><div class="gb"><div class="sr"><div class="sn gd">1</div><div><div class="st">Minute 0–20: Everyone signs in and completes profile</div><div class="sd">All beta testers sign in for the first time. Complete the 3-step profile setup. Verify Digital ID shows up with QR code. Note: first sign-in takes 2–3 min per person — run this before the meeting officially starts.</div></div></div><div class="sr"><div class="sn gd">2</div><div><div class="st">Minute 20–45: Live scan by all Chairs</div><div class="sd">Each Committee Chair opens Scanner and practices scanning at least 3 members. Confirm check-ins write to the sheet. Switch between activity types (Meeting vs Service) mid-session.</div></div></div><div class="sr"><div class="sn gd">3</div><div><div class="st">Minute 45–60: Leaderboard goes live</div><div class="sd">After scanning, project or share the Leaderboard. Ranks have shifted. Brothers check their position. This is the social validation moment — does it spark conversation? That's the real test.</div></div></div><div class="sr"><div class="sn gd">4</div><div><div class="st">Minute 60–75: Admin and PIA tasks</div><div class="sd">President: change one member's role in the Admin Panel, award manual XP. Treasurer: mark one member's dues as paid — verify +50 XP fires. PIA Analyst: export the PIA PDF — verify it arrives in the district email.</div></div></div><div class="sr"><div class="sn gd">5</div><div><div class="st">Minute 75–90: Quiz testing</div><div class="sd">2–3 brothers take the Fraternity History quiz. Verify scores are logged. Test the retake limit: take the same quiz 3 times — 4th attempt should be blocked.</div></div></div></div></div>
+</div><div class="section" id="common_bugs">
+<div class="week-tag">Debugging</div>
+<div class="sec-title">Common Beta Issues & Fixes</div>
+
+<div class="g"><div class="gt"><div class="gtt">Most common Week 11 issues</div><div class="gtp">Fix before Week 12</div></div><div class="gb">
+    <table class="tbl">
+    <thead><tr><th>Issue</th><th>Root Cause</th><th>Fix</th></tr></thead>
+    <tbody>
+    <tr><td>Scanner doesn't recognize QR code</td><td>QR Data column template not set up correctly</td><td>Check <span class="cd">QR Data</span> column value in sheet. Should read <span class="cd">MEMBER:ΤΤΣ-001</span> format. Re-generate on the member's profile view.</td></tr>
+    <tr><td>XP doesn't update after scan</td><td>Make.com scenario not triggered or errored</td><td>Open Make.com → Scenario history → find the failed run → check the error. Common: Google Sheets permission issue or row not found (Member # mismatch).</td></tr>
+    <tr><td>Badge not awarded after threshold crossed</td><td>Badge name in Earned Badges doesn't match exactly</td><td>String matching is case-sensitive. Verify the badge name in the 🎖️ Quests & Badges tab matches exactly what Make.com appends.</td></tr>
+    <tr><td>Profile completion XP fires twice</td><td>Glide re-triggers on every profile save</td><td>The <span class="cd">Profile XP Awarded?</span> flag in the Users tab prevents this. If it fired twice, the flag column wasn't checked correctly in Make.com — add an explicit filter.</td></tr>
+    <tr><td>PIA export email not received</td><td>Gmail module auth expired in Make.com</td><td>Make.com → Connections → Gmail → re-authorize. Webhook connections expire after 30 days of inactivity.</td></tr>
+    <tr><td>Role restrictions not working</td><td>Role column has typos or extra spaces</td><td>Open sheet → Role column → check for 'Admin ' (trailing space) vs 'Admin'. Glide's role matching is exact. Clean up with TRIM() formula.</td></tr>
+    </tbody></table>
+    </div></div>
+</div><div class="section" id="checklist11">
+<div class="week-tag">Checklist</div>
+<div class="sec-title">Week 11 Completion Checklist</div>
+
+<div class="g"><div class="gt"><div class="gtt">Beta complete — ready for full chapter launch</div><div class="gtp">6 items</div></div><div class="gb"><div class="chk"><div class="cb2"></div><div><div class="ct2">All E-Board + Chair members successfully onboarded</div><div class="cs">Signed in, profile complete, Digital ID showing, QR code scans correctly.</div></div></div><div class="chk"><div class="cb2"></div><div><div class="ct2">Scanner tested at real event by at least 2 Chairs</div><div class="cs">Both Chairs can scan independently without assistance. Each scan writes correctly to Engagement Log.</div></div></div><div class="chk"><div class="cb2"></div><div><div class="ct2">All Make.com scenarios running without errors</div><div class="cs">Open Make.com → each scenario → last 3 run logs → all green. No failed operations.</div></div></div><div class="chk"><div class="cb2"></div><div><div class="ct2">Feedback form completed by all beta testers</div><div class="cs">At least 80% response rate. Review all responses before Week 12. Address anything rated 'confusing' or 'broken'.</div></div></div><div class="chk"><div class="cb2"></div><div><div class="ct2">PIA export successfully received by district contact</div><div class="cs">The district or regional contact confirms receipt of the PDF. Or test with a personal email — PDF opens correctly, all data accurate.</div></div></div><div class="chk"><div class="cb2"></div><div><div class="ct2">App announcement message drafted</div><div class="cs">See Week 12 guide for the chapter announcement template. Draft it now, don't wait until the day of launch.</div></div></div></div></div>
+</div></main>
+</div>
+<script>
+const secs=document.querySelectorAll('.section[id]');
+const navs=document.querySelectorAll('.si');
+const obs=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting){navs.forEach(l=>{l.classList.remove('active');if(l.getAttribute('href')==='#'+x.target.id)l.classList.add('active');});}});},{rootMargin:'-20% 0px -65% 0px'});
+secs.forEach(s=>obs.observe(s));
+</script>
+</body>
+</html>

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>The Blue Ledger — Week 8 — Avatar & Drip</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@0,400;0,500;0,600&display=swap');
+:root{--navy:#001A4D;--gold:#C9A84C;--gold-l:#F5E6C8;--gold-pale:#FDF8EE;--cream:#FAF8F3;--ink:#0D0D0D;--muted:#6B6B6B;--border:#E2DDD4;--success:#1A6B3A;--success-bg:#EAF5EE;--success-border:#A8D5BC;--info:#003087;--info-bg:#EAF0FB;--info-border:#BDD0F5;--warn:#7A4A00;--warn-bg:#FFF3DC;--warn-border:#F5D98A;--danger:#8B1A1A;--danger-bg:#FCE4EC;--danger-border:#F4C0D1;--phone-w:300px;--phone-h:600px;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Instrument Sans',sans-serif;background:var(--cream);color:var(--ink);}
+.hdr{background:var(--navy);padding:1.25rem 2rem;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid var(--gold);position:sticky;top:0;z-index:50;}
+.hdr-logo{font-family:'DM Serif Display',serif;font-size:1.15rem;color:var(--gold);}
+.hdr-sub{font-size:.68rem;color:rgba(255,255,255,.45);font-family:'DM Mono',monospace;letter-spacing:.1em;text-transform:uppercase;margin-top:2px;}
+.hdr-badge{background:var(--gold);color:var(--navy);font-size:.68rem;font-weight:600;padding:3px 10px;border-radius:4px;font-family:'DM Mono',monospace;text-transform:uppercase;}
+.layout{display:flex;min-height:calc(100vh - 64px);}
+.sidebar{width:225px;flex-shrink:0;background:#fff;border-right:1px solid var(--border);padding:1.5rem 0;position:sticky;top:64px;height:calc(100vh - 64px);overflow-y:auto;}
+.sl{font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding:0 1.25rem;margin:1.2rem 0 .4rem;font-family:'DM Mono',monospace;}
+.si{display:flex;align-items:center;gap:8px;padding:7px 1.25rem;font-size:.82rem;color:var(--muted);cursor:pointer;border-left:3px solid transparent;transition:all .15s;text-decoration:none;}
+.si:hover{background:var(--cream);color:var(--ink);}
+.si.active{background:var(--gold-pale);color:var(--navy);border-left-color:var(--gold);font-weight:600;}
+.si-dot{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:700;font-family:'DM Mono',monospace;flex-shrink:0;color:var(--muted);}
+.si.active .si-dot{background:var(--navy);border-color:var(--navy);color:#fff;}
+.main{flex:1;padding:2rem 2.5rem;max-width:840px;}
+.section{margin-bottom:3rem;scroll-margin-top:80px;}
+.week-tag{font-family:'DM Mono',monospace;font-size:.68rem;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px;}
+.sec-title{font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--navy);}
+.sec-desc{font-size:.88rem;color:var(--muted);margin-top:6px;line-height:1.6;max-width:580px;margin-bottom:1.25rem;}
+.g{background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:1.25rem;}
+.gt{background:var(--navy);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;}
+.gtt{font-size:.82rem;font-weight:600;color:var(--gold);}
+.gtp{font-size:.62rem;font-family:'DM Mono',monospace;background:rgba(201,168,76,.18);color:var(--gold);border:1px solid rgba(201,168,76,.3);border-radius:20px;padding:2px 8px;}
+.gb{padding:12px 14px;}
+.sr{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--border);}
+.sr:last-child{border:none;}
+.sn{width:22px;height:22px;border-radius:50%;background:var(--navy);color:#fff;font-size:.65rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'DM Mono',monospace;margin-top:1px;}
+.sn.gd{background:var(--gold);color:var(--navy);}
+.sn.gr{background:var(--success);color:#fff;}
+.sn.bx{background:var(--success-bg);border:1.5px solid var(--success);color:var(--success);}
+.st{font-size:.83rem;font-weight:600;color:var(--ink);}
+.sd{font-size:.76rem;color:var(--muted);margin-top:2px;line-height:1.55;}
+.cd{font-family:'DM Mono',monospace;font-size:.72rem;background:#F0EDE7;border:1px solid var(--border);border-radius:4px;padding:1px 5px;color:var(--navy);white-space:nowrap;}
+.cb{border-radius:8px;padding:9px 12px;font-size:.78rem;line-height:1.55;margin:8px 0;display:flex;gap:8px;align-items:flex-start;}
+.cb span{font-size:14px;flex-shrink:0;}
+.ct{background:var(--info-bg);border:1px solid var(--info-border);color:var(--info);}
+.cw{background:var(--warn-bg);border:1px solid var(--warn-border);color:var(--warn);}
+.co{background:var(--success-bg);border:1px solid var(--success-border);color:var(--success);}
+.cd2{background:var(--danger-bg);border:1px solid var(--danger-border);color:var(--danger);}
+.chk{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--border);}
+.chk:last-child{border:none;}
+.cb2{width:18px;height:18px;border:1.5px solid var(--border);border-radius:4px;flex-shrink:0;margin-top:1px;}
+.ct2{font-size:.83rem;font-weight:600;color:var(--ink);}
+.cs{font-size:.74rem;color:var(--muted);margin-top:2px;line-height:1.4;}
+.flow-r{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:0 0 10px;}
+.fb{font-size:.73rem;padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:#fff;white-space:nowrap;}
+.fb.s{background:var(--navy);color:var(--gold);border-color:var(--navy);font-weight:600;}
+.fb.e{background:var(--success-bg);color:var(--success);border-color:#A8D5BC;font-weight:600;}
+.fb.a{background:var(--info-bg);color:var(--info);border-color:#BDD0F5;}
+.fb.w{background:var(--warn-bg);color:var(--warn);border-color:#F5D98A;}
+.fa{font-size:.8rem;color:var(--muted);}
+.ptrak{height:6px;background:var(--border);border-radius:3px;margin:1rem 0;}
+.pfil{height:100%;border-radius:3px;background:var(--gold);}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:1.25rem;}
+.pcard{background:#fff;border:1px solid var(--border);border-radius:10px;padding:.85rem;text-align:center;}
+.pcard-num{font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--navy);}
+.pcard-lbl{font-size:.65rem;font-family:'DM Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:2px;}
+hr{border:none;border-top:1px solid var(--border);margin:2rem 0;}
+.badge{display:inline-flex;align-items:center;font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:20px;font-family:'DM Mono',monospace;white-space:nowrap;}
+.bs{background:var(--success-bg);color:var(--success);}
+.bw{background:var(--warn-bg);color:var(--warn);}
+.bi{background:var(--info-bg);color:var(--info);}
+.bg{background:var(--gold-pale);color:var(--warn);}
+.bd{background:var(--danger-bg);color:var(--danger);}
+.tbl{width:100%;border-collapse:collapse;font-size:.8rem;}
+.tbl th{background:var(--cream);padding:8px 10px;text-align:left;font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-family:'DM Mono',monospace;border-bottom:1px solid var(--border);}
+.tbl td{padding:8px 10px;border-bottom:1px solid var(--border);color:var(--ink);vertical-align:middle;}
+.tbl tr:last-child td{border:none;}
+.tbl tr:nth-child(even) td{background:var(--cream);}
+.hero{background:var(--navy);border-radius:14px;padding:1.75rem 2rem;margin-bottom:1.5rem;position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;top:-40px;right:-40px;width:160px;height:160px;border-radius:50%;background:rgba(201,168,76,.06);}
+.htag{font-family:'DM Mono',monospace;font-size:.65rem;color:rgba(255,255,255,.35);letter-spacing:.12em;text-transform:uppercase;margin-bottom:5px;}
+.htitle{font-family:'DM Serif Display',serif;font-size:1.6rem;color:var(--gold);margin-bottom:.5rem;}
+.hdesc{font-size:.86rem;color:rgba(255,255,255,.6);line-height:1.65;max-width:500px;}
+@media(max-width:700px){.sidebar{display:none;}.main{padding:1.25rem;}}
+</style>
+</head>
+<body>
+<header class="hdr">
+  <div><div class="hdr-logo">The Blue Ledger</div><div class="hdr-sub">Week 8 — Avatar Unlock System</div></div>
+  <div class="hdr-badge">~2 hours</div>
+</header>
+<div class="layout">
+<nav class="sidebar"><div class="sl">Week 8</div><a href="#overview" class="si "><div class="si-dot">0</div> Overview</a><a href="#cloudinary" class="si "><div class="si-dot">1</div> Upload to Cloudinary</a><a href="#glide" class="si "><div class="si-dot">2</div> Computed Columns</a><a href="#screens" class="si "><div class="si-dot">3</div> Wire to 4 Screens</a><a href="#unlock" class="si "><div class="si-dot">4</div> Unlock Experience</a><a href="#checklist8" class="si "><div class="si-dot">✓</div> Checklist</a></nav>
+<main class="main"><div class="hero">
+<div class="htag">Week 8 · Gamification</div>
+<div class="htitle">Avatar & Drip Unlock System</div>
+<div class="hdesc">The visual reward system goes live. Every member's avatar now reflects their XP tier in real time. Bronze polo at 500 XP, silver pin and cap at 1,000, gold blazer at 1,500, full crown and frame at 2,500. The leaderboard transforms from a number list into a visual showcase.</div>
+</div><div class="ptrak"><div class="pfil" style="width:67%"></div></div><div style="font-size:.75rem;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:1.25rem;">Week 8 of 12 · 67% complete</div><div class="section" id="overview">
+<div class="week-tag">Week 8</div>
+<div class="sec-title">What Gets Built</div>
+<div class="sec-desc">Upload 5 avatars to Cloudinary, add If-Then-Else columns in Glide, wire avatar images to 4 screens. Estimated time: 2 hours.</div>
+<div class="g"><div class="gt"><div class="gtt">Avatar level thresholds — reference</div><div class="gtp">Used in every If-Then-Else formula</div></div><div class="gb"><div class="sr"><div class="sn ">◌</div><div><div class="st">Neophyte: 0–499 XP</div><div class="sd">File: <span class='cd'>avatar-base.png</span> · Base silhouette, white shirt, no accessories.</div></div></div><div class="sr"><div class="sn ">◌</div><div><div class="st">Bronze Varsity: 500–999 XP</div><div class="sd">File: <span class='cd'>avatar-bronze.png</span> · Blue chapter polo + bronze pin on left chest.</div></div></div><div class="sr"><div class="sn ">◌</div><div><div class="st">Silver Elite: 1,000–1,499 XP</div><div class="sd">File: <span class='cd'>avatar-silver.png</span> · Blue polo + cap + silver pin.</div></div></div><div class="sr"><div class="sn ">◌</div><div><div class="st">Gold Legend: 1,500–2,499 XP</div><div class="sd">File: <span class='cd'>avatar-gold.png</span> · Navy blazer + gold pin + cap.</div></div></div><div class="sr"><div class="sn ">◌</div><div><div class="st">Chapter Icon: 2,500+ XP</div><div class="sd">File: <span class='cd'>avatar-icon.png</span> · Full blazer + gold crown + decorative legend frame.</div></div></div></div></div>
+</div><div class="section" id="cloudinary">
+<div class="week-tag">Step 1</div>
+<div class="sec-title">Upload Avatars to Cloudinary</div>
+
+<div class="g"><div class="gt"><div class="gtt">Cloudinary setup — one-time, 10 minutes</div><div class="gtp">Free tier</div></div><div class="gb"><div class="sr"><div class="sn ">1</div><div><div class="st">Create free account</div><div class="sd">Go to <span class='cd'>cloudinary.com</span> → Sign Up (free). No credit card needed for the free tier (25GB storage, more than enough for 5 PNGs).</div></div></div><div class="sr"><div class="sn ">2</div><div><div class="st">Upload all 5 PNGs</div><div class="sd">Dashboard → Media Library → Upload → select all 5 files from <span class='cd'>assets/avatars/</span>. Cloudinary assigns each a permanent public URL automatically.</div></div></div><div class="sr"><div class="sn ">3</div><div><div class="st">Copy each direct URL</div><div class="sd">Click each uploaded image → copy the 'Secure URL' (starts with <span class='cd'>https://res.cloudinary.com/...</span>). You need all 5 URLs for the next step. Save them in a notes file temporarily.</div></div></div><div class="sr"><div class="sn gd">4</div><div><div class="st">Alternative: Use Glide's built-in storage</div><div class="sd">If you prefer not to use Cloudinary: in Glide Data Editor → 👥 Users → click any row's avatar cell → upload the PNG directly. Glide hosts it automatically. The URL is auto-filled. Repeat for each avatar level using a template row, then the If-Then-Else formula points to those Glide-hosted URLs.</div></div></div></div></div>
+</div><div class="section" id="glide">
+<div class="week-tag">Step 2</div>
+<div class="sec-title">Glide Computed Columns</div>
+<div class="sec-desc">Add two If-Then-Else columns to the Users table.</div>
+<div class="g"><div class="gt"><div class="gtt">Column 1: Avatar Image URL</div><div class="gtp">Data Editor → If-Then-Else</div></div><div class="gb"><div class="sr"><div class="sn ">1</div><div><div class="st">Add Column → If-Then-Else → name: Avatar Image URL</div><div class="sd">Data Editor → 👥 Users → + Add Column → If-Then-Else.</div></div></div><div class="sr"><div class="sn ">2</div><div><div class="st">Build the 5-tier formula</div><div class="sd">IF Total XP ≥ 2500 → paste Chapter Icon URL<br>ELSE IF Total XP ≥ 1500 → paste Gold Legend URL<br>ELSE IF Total XP ≥ 1000 → paste Silver Elite URL<br>ELSE IF Total XP ≥ 500 → paste Bronze Varsity URL<br>ELSE → paste Base (Neophyte) URL</div></div></div><div class="sr"><div class="sn ">3</div><div><div class="st">Test immediately</div><div class="sd">In the Data Editor, manually change a test member's Total XP to 600. The Avatar Image URL column should instantly show the Bronze URL. Change to 1200 — should show Silver URL. Verify all 5 thresholds.</div></div></div></div></div><div class="g"><div class="gt"><div class="gtt">Column 2: Avatar Level Label (if not already set)</div><div class="gtp">Data Editor → If-Then-Else</div></div><div class="gb"><div class="sr"><div class="sn ">1</div><div><div class="st">Check if Avatar Level column already exists</div><div class="sd">If you built this in Week 2–3, it already exists. Skip this step. If not, add it now.</div></div></div><div class="sr"><div class="sn ">2</div><div><div class="st">Formula</div><div class="sd">IF Total XP ≥ 2500 → 'Chapter Icon'<br>ELSE IF Total XP ≥ 1500 → 'Gold Legend'<br>ELSE IF Total XP ≥ 1000 → 'Silver Elite'<br>ELSE IF Total XP ≥ 500 → 'Bronze Varsity'<br>ELSE → 'Neophyte'</div></div></div></div></div>
+</div><div class="section" id="screens">
+<div class="week-tag">Step 3</div>
+<div class="sec-title">Wire Avatars to Screens</div>
+<div class="sec-desc">Place the Avatar Image URL column on 4 screens.</div>
+<div class="g"><div class="gt"><div class="gtt">4 places the avatar appears</div><div class="gtp">~30 min total</div></div><div class="gb"><div class="sr"><div class="sn ">1</div><div><div class="st">Home Dashboard — hero image</div><div class="sd">Home screen → find the avatar placeholder (or add an Image component at the top). Source: <span class='cd'>Avatar Image URL</span> column. Size: Large (fills the card width). This is the most prominent placement — first thing a brother sees on open.</div></div></div><div class="sr"><div class="sn ">2</div><div><div class="st">Digital ID Card</div><div class="sd">Digital ID screen → replace the initials circle with an Image component. Source: <span class='cd'>Avatar Image URL</span>. Size: Medium (100px). Place above the member name.</div></div></div><div class="sr"><div class="sn ">3</div><div><div class="st">Leaderboard list rows</div><div class="sd">Leaderboard → list item configuration → Left image: <span class='cd'>Avatar Image URL</span> (small, circular crop). This replaces the plain initials circle with the actual avatar PNG — the leaderboard instantly becomes more visual.</div></div></div><div class="sr"><div class="sn ">4</div><div><div class="st">Chapter Directory</div><div class="sd">Directory → list item → Left image: <span class='cd'>Avatar Image URL</span>. Same as leaderboard — each member row shows their level avatar, making high-XP brothers immediately recognizable at a glance.</div></div></div></div></div><div class="cb cw"><span>⚠️</span><div>Make sure the Image components are set to 'Circle' crop on the Leaderboard and Directory — rectangular PNGs cropped to circles look clean. On the Home Dashboard and Digital ID, use 'Square with rounded corners' for the full portrait effect.</div></div>
+</div><div class="section" id="unlock">
+<div class="week-tag">Unlock Moment</div>
+<div class="sec-title">Making the Unlock Feel Like a Reward</div>
+<div class="sec-desc">The level-up itself should feel earned, not silent.</div>
+<div class="g"><div class="gt"><div class="gtt">Creating a satisfying level-up experience in Glide</div><div class="gtp">No code required</div></div><div class="gb"><div class="sr"><div class="sn ">1</div><div><div class="st">Add a 'Level Up!' notification via Make.com</div><div class="sd">In your XP update scenario (Week 4), add a check after updating Total XP: IF new XP crosses a threshold (500, 1000, 1500, 2500) → trigger a Glide notification (via webhook or direct app notification if available) saying 'Level Up! You're now a [Level Name].' This fires the moment a scan or quiz pushes them over a threshold.</div></div></div><div class="sr"><div class="sn ">2</div><div><div class="st">Add a level progress bar to the Home Dashboard</div><div class="sd">Below the XP number, add a progress bar component. Value = (Total XP - previous threshold) / (next threshold - previous threshold) × 100. Label: '340 XP to Gold Legend'. This creates constant visible momentum.</div></div></div><div class="sr"><div class="sn ">3</div><div><div class="st">Post the leaderboard screenshot in the chapter group chat after each event</div><div class="sd">After every chapter meeting scan, screenshot the Leaderboard — it now shows real avatars for high-tier members. Post in the group chat. Social proof drives app opens more than any in-app notification.</div></div></div></div></div>
+</div><div class="section" id="checklist8">
+<div class="week-tag">Checklist</div>
+<div class="sec-title">Week 8 Completion Checklist</div>
+
+<div class="g"><div class="gt"><div class="gtt">Before moving to Week 9</div><div class="gtp">5 items</div></div><div class="gb"><div class="chk"><div class="cb2"></div><div><div class="ct2">All 5 avatar PNGs uploaded to Cloudinary or Glide storage</div><div class="cs">Direct URLs accessible (start with https://). No 404s when pasting URLs in a browser.</div></div></div><div class="chk"><div class="cb2"></div><div><div class="ct2">Avatar Image URL column correctly resolves all 5 tiers</div><div class="cs">Test in Data Editor: manually set Total XP to 0, 600, 1100, 1600, 2600 for a test member. Verify the URL changes at each threshold.</div></div></div><div class="chk"><div class="cb2"></div><div><div class="ct2">Home Dashboard shows avatar image (not an initials circle)</div><div class="cs">Sign in — hero section shows actual avatar PNG, not a colored circle with initials.</div></div></div><div class="chk"><div class="cb2"></div><div><div class="ct2">Leaderboard shows avatar images in list rows</div><div class="cs">Open Leaderboard — each member has their level avatar visible on the left side of their row.</div></div></div><div class="chk"><div class="cb2"></div><div><div class="ct2">XP progress bar on Home Dashboard is accurate</div><div class="cs">Math check: a member with 1,200 XP should show ~20% progress toward Gold Legend (1,200 - 1,000 = 200 of 500 needed = 40%). Verify the formula.</div></div></div></div></div>
+</div></main>
+</div>
+<script>
+const secs=document.querySelectorAll('.section[id]');
+const navs=document.querySelectorAll('.si');
+const obs=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting){navs.forEach(l=>{l.classList.remove('active');if(l.getAttribute('href')==='#'+x.target.id)l.classList.add('active');});}});},{rootMargin:'-20% 0px -65% 0px'});
+secs.forEach(s=>obs.observe(s));
+</script>
+</body>
+</html>

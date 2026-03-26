@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>The Blue Ledger — Master Execution Plan</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Instrument+Sans:ital,wght@0,400;0,500;0,600&display=swap');
+:root{
+  --navy:#001A4D;--gold:#C9A84C;--gold-l:#F5E6C8;--gold-pale:#FDF8EE;
+  --cream:#FAF8F3;--ink:#0D0D0D;--muted:#6B6B6B;--border:#E2DDD4;
+  --success:#1A6B3A;--success-bg:#EAF5EE;--success-border:#A8D5BC;
+  --info:#003087;--info-bg:#EAF0FB;--info-border:#BDD0F5;
+  --warn:#7A4A00;--warn-bg:#FFF3DC;--warn-border:#F5D98A;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Instrument Sans',sans-serif;background:var(--cream);color:var(--ink);}
+
+/* HEADER */
+.hdr{background:var(--navy);padding:1.5rem 2.5rem;border-bottom:2px solid var(--gold);display:flex;align-items:center;justify-content:space-between;}
+.hdr-left{}
+.hdr-logo{font-family:'DM Serif Display',serif;font-size:1.3rem;color:var(--gold);}
+.hdr-sub{font-size:.68rem;font-family:'DM Mono',monospace;color:rgba(255,255,255,.35);letter-spacing:.12em;text-transform:uppercase;margin-top:2px;}
+.hdr-badge{background:var(--gold);color:var(--navy);font-size:.68rem;font-weight:700;padding:4px 12px;border-radius:4px;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.06em;}
+
+/* LAYOUT */
+.layout{display:flex;min-height:calc(100vh - 72px);}
+
+/* SIDEBAR */
+.sidebar{width:250px;flex-shrink:0;background:#fff;border-right:1px solid var(--border);padding:1.5rem 0;position:sticky;top:0;height:100vh;overflow-y:auto;}
+.sl{font-size:.6rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);padding:.9rem 1.25rem .3rem;font-family:'DM Mono',monospace;}
+.si{display:flex;align-items:center;gap:8px;padding:7px 1.25rem;font-size:.82rem;color:var(--muted);cursor:pointer;border-left:3px solid transparent;transition:all .15s;text-decoration:none;}
+.si:hover{background:var(--cream);color:var(--ink);}
+.si.active{background:var(--gold-pale);color:var(--navy);border-left-color:var(--gold);font-weight:600;}
+.si-num{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:700;font-family:'DM Mono',monospace;flex-shrink:0;color:var(--muted);}
+.si.active .si-num{background:var(--navy);border-color:var(--navy);color:#fff;}
+.si.done .si-num{background:var(--success);border-color:var(--success);color:#fff;}
+.si.done{color:var(--success);}
+
+/* MAIN */
+.main{flex:1;padding:2.5rem;max-width:860px;}
+
+/* HERO */
+.hero{background:var(--navy);border-radius:16px;padding:2.25rem 2.5rem;margin-bottom:2rem;position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;top:-60px;right:-60px;width:220px;height:220px;border-radius:50%;background:rgba(201,168,76,.06);}
+.hero-tag{font-family:'DM Mono',monospace;font-size:.65rem;color:rgba(255,255,255,.35);letter-spacing:.14em;text-transform:uppercase;margin-bottom:6px;}
+.hero-title{font-family:'DM Serif Display',serif;font-size:1.9rem;color:var(--gold);margin-bottom:.75rem;}
+.hero-desc{font-size:.88rem;color:rgba(255,255,255,.65);line-height:1.7;max-width:560px;}
+.hero-stats{display:flex;gap:2rem;margin-top:1.25rem;flex-wrap:wrap;}
+.hero-stat-num{font-family:'DM Serif Display',serif;font-size:1.6rem;color:var(--gold);display:block;}
+.hero-stat-lbl{font-size:.62rem;font-family:'DM Mono',monospace;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.1em;}
+
+/* PHASE STRIP */
+.phase-strip{display:flex;gap:0;margin-bottom:2rem;overflow-x:auto;border-radius:10px;overflow:hidden;border:1px solid var(--border);}
+.phase-block{flex:1;min-width:90px;padding:.75rem .5rem;text-align:center;border-right:1px solid var(--border);cursor:pointer;transition:background .15s;}
+.phase-block:last-child{border-right:none;}
+.phase-block:hover{background:var(--gold-pale);}
+.phase-block.done{background:var(--success-bg);}
+.phase-block.active{background:var(--gold-pale);}
+.phase-wk{font-family:'DM Mono',monospace;font-size:.6rem;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;}
+.phase-lbl{font-size:.72rem;font-weight:600;color:var(--ink);margin-top:2px;line-height:1.3;}
+.phase-dot{width:8px;height:8px;border-radius:50%;margin:.5rem auto 0;background:var(--border);}
+.phase-block.done .phase-dot{background:var(--success);}
+.phase-block.active .phase-dot{background:var(--gold);}
+
+/* SECTION */
+.section{margin-bottom:3rem;scroll-margin-top:80px;}
+.week-tag{font-family:'DM Mono',monospace;font-size:.65rem;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px;}
+.sec-title{font-family:'DM Serif Display',serif;font-size:1.4rem;color:var(--navy);margin-bottom:.5rem;}
+.sec-desc{font-size:.88rem;color:var(--muted);line-height:1.6;max-width:600px;margin-bottom:1.25rem;}
+
+/* STATUS BANNER */
+.status-banner{border-radius:10px;padding:10px 14px;font-size:.82rem;line-height:1.55;margin-bottom:1.25rem;display:flex;gap:10px;align-items:flex-start;}
+.status-banner span{font-size:16px;flex-shrink:0;}
+.s-done{background:var(--success-bg);border:1px solid var(--success-border);color:var(--success);}
+.s-now{background:var(--gold-pale);border:1px solid var(--gold-l);color:var(--warn);}
+.s-next{background:var(--info-bg);border:1px solid var(--info-border);color:var(--info);}
+.s-later{background:#fff;border:1px solid var(--border);color:var(--muted);}
+
+/* CARDS */
+.card{background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:1rem;}
+.card-hdr{background:var(--navy);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;}
+.card-hdr-title{font-size:.82rem;font-weight:600;color:var(--gold);}
+.card-hdr-pill{font-size:.6rem;font-family:'DM Mono',monospace;background:rgba(201,168,76,.2);color:var(--gold);border:1px solid rgba(201,168,76,.3);border-radius:20px;padding:2px 8px;}
+.card-body{padding:12px 14px;}
+.step-row{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--border);}
+.step-row:last-child{border:none;}
+.step-n{width:22px;height:22px;border-radius:50%;background:var(--navy);color:#fff;font-size:.65rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'DM Mono',monospace;margin-top:1px;}
+.step-n.gold{background:var(--gold);color:var(--navy);}
+.step-n.green{background:var(--success);color:#fff;}
+.step-n.check{background:var(--success-bg);border:1.5px solid var(--success);color:var(--success);}
+.step-title{font-size:.83rem;font-weight:600;color:var(--ink);}
+.step-detail{font-size:.76rem;color:var(--muted);margin-top:2px;line-height:1.55;}
+.code{font-family:'DM Mono',monospace;font-size:.72rem;background:#F0EDE7;border:1px solid var(--border);border-radius:4px;padding:1px 5px;color:var(--navy);}
+
+/* ASSET TABLE */
+.asset-grid{display:flex;flex-direction:column;gap:6px;}
+.asset-row{display:flex;align-items:center;gap:10px;background:var(--cream);border:1px solid var(--border);border-radius:8px;padding:8px 12px;}
+.asset-status{font-size:.68rem;font-weight:700;font-family:'DM Mono',monospace;padding:2px 8px;border-radius:20px;white-space:nowrap;}
+.as-done{background:var(--success-bg);color:var(--success);border:1px solid var(--success-border);}
+.as-ready{background:var(--gold-pale);color:var(--warn);border:1px solid var(--gold-l);}
+.as-next{background:var(--info-bg);color:var(--info);border:1px solid var(--info-border);}
+.asset-name{font-size:.83rem;font-weight:600;color:var(--ink);flex:1;}
+.asset-desc{font-size:.74rem;color:var(--muted);}
+
+/* WEEK ROWS */
+.week-list{display:flex;flex-direction:column;gap:8px;}
+.week-row{border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+.week-row-hdr{padding:10px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;background:#fff;transition:background .12s;}
+.week-row-hdr:hover{background:var(--cream);}
+.week-num{font-family:'DM Mono',monospace;font-size:.68rem;font-weight:700;width:54px;flex-shrink:0;color:var(--muted);}
+.week-phase{font-size:.72rem;font-weight:600;color:var(--ink);flex:1;}
+.week-focus{font-size:.72rem;color:var(--muted);}
+.week-tag-pill{font-size:.6rem;font-family:'DM Mono',monospace;padding:2px 8px;border-radius:20px;white-space:nowrap;}
+.wt-done{background:var(--success-bg);color:var(--success);}
+.wt-ready{background:var(--gold-pale);color:var(--warn);}
+.wt-later{background:var(--info-bg);color:var(--info);}
+.week-row-body{padding:10px 14px;background:var(--cream);border-top:1px solid var(--border);font-size:.78rem;color:var(--muted);line-height:1.6;display:none;}
+.week-row.open .week-row-body{display:block;}
+.week-row.open .week-row-hdr{background:var(--gold-pale);}
+
+/* LINKS */
+.link-block{background:var(--navy);border-radius:10px;padding:1rem 1.25rem;margin-bottom:.75rem;}
+.link-label{font-size:.62rem;font-family:'DM Mono',monospace;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px;}
+.link-url{font-family:'DM Mono',monospace;font-size:.82rem;color:var(--gold);word-break:break-all;}
+.link-desc{font-size:.74rem;color:rgba(255,255,255,.45);margin-top:4px;}
+
+/* COSTS */
+.cost-table{width:100%;border-collapse:collapse;font-size:.82rem;}
+.cost-table th{background:var(--cream);padding:8px 12px;text-align:left;font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-family:'DM Mono',monospace;border-bottom:1px solid var(--border);}
+.cost-table td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.cost-table tr:last-child td{border:none;}
+.price-free{color:var(--success);font-weight:700;font-family:'DM Mono',monospace;}
+.price-paid{color:var(--warn);font-weight:700;font-family:'DM Mono',monospace;}
+
+hr{border:none;border-top:1px solid var(--border);margin:2.5rem 0;}
+@media(max-width:700px){.sidebar{display:none;}.main{padding:1.25rem;}}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="hdr-left">
+    <div class="hdr-logo">The Blue Ledger</div>
+    <div class="hdr-sub">Master Execution Plan · Glide + Google Sheets</div>
+  </div>
+  <div class="hdr-badge">12 Weeks · Go-Live</div>
+</header>
+
+<div class="layout">
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sl">Foundation</div>
+  <a href="#assets" class="si done"><div class="si-num">✓</div> Deliverables Built</a>
+  <a href="#stack" class="si active"><div class="si-num">S</div> Tech Stack</a>
+  <a href="#costs" class="si"><div class="si-num">$</div> Cost Breakdown</a>
+
+  <div class="sl">Build Phases</div>
+  <a href="#wk1-2" class="si done"><div class="si-num">✓</div> Weeks 1–2 · Done</a>
+  <a href="#wk3" class="si done"><div class="si-num">✓</div> Week 3 · Onboarding</a>
+  <a href="#wk4" class="si done"><div class="si-num">✓</div> Week 4 · Scanner</a>
+  <a href="#wk5" class="si active"><div class="si-num">5</div> Week 5 · Financials</a>
+  <a href="#wk6" class="si"><div class="si-num">6</div> Week 6 · Alpha</a>
+  <a href="#wk7-9" class="si"><div class="si-num">7</div> Weeks 7–9 · Game</a>
+  <a href="#wk10-11" class="si"><div class="si-num">10</div> Weeks 10–11 · Auto</a>
+  <a href="#wk12" class="si"><div class="si-num">12</div> Week 12 · Launch</a>
+
+  <div class="sl">References</div>
+  <a href="#glide-tips" class="si"><div class="si-num">G</div> Glide Pro Tips</a>
+  <a href="#post-launch" class="si"><div class="si-num">→</div> Post-Launch</a>
+</nav>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-tag">Confirmed Path · Glide + Google Sheets</div>
+    <div class="hero-title">Your Build is Already 33% Done</div>
+    <div class="hero-desc">Weeks 1–4 are fully documented and ready to execute in Glide. This plan consolidates everything built so far and maps the full path from now to Week 12 Go-Live. Every deliverable, every step, every cost — in one place.</div>
+    <div class="hero-stats">
+      <div><span class="hero-stat-num">6</span><span class="hero-stat-lbl">Files ready to use</span></div>
+      <div><span class="hero-stat-num">12</span><span class="hero-stat-lbl">Screens mapped</span></div>
+      <div><span class="hero-stat-num">$0</span><span class="hero-stat-lbl">Cost to reach Alpha</span></div>
+      <div><span class="hero-stat-num">8 wks</span><span class="hero-stat-lbl">Remaining build time</span></div>
+    </div>
+  </div>
+
+  <!-- PHASE STRIP -->
+  <div class="phase-strip">
+    <div class="phase-block done"><div class="phase-wk">WK 1–2</div><div class="phase-lbl">Data &amp; Assets</div><div class="phase-dot"></div></div>
+    <div class="phase-block done"><div class="phase-wk">WK 3</div><div class="phase-lbl">Onboarding</div><div class="phase-dot"></div></div>
+    <div class="phase-block done"><div class="phase-wk">WK 4</div><div class="phase-lbl">Scanner</div><div class="phase-dot"></div></div>
+    <div class="phase-block active"><div class="phase-wk">WK 5</div><div class="phase-lbl">Financials</div><div class="phase-dot"></div></div>
+    <div class="phase-block"><div class="phase-wk">WK 6</div><div class="phase-lbl">Alpha</div><div class="phase-dot"></div></div>
+    <div class="phase-block"><div class="phase-wk">WK 7–9</div><div class="phase-lbl">Gamification</div><div class="phase-dot"></div></div>
+    <div class="phase-block"><div class="phase-wk">WK 10–11</div><div class="phase-lbl">Automation</div><div class="phase-dot"></div></div>
+    <div class="phase-block"><div class="phase-wk">WK 12</div><div class="phase-lbl">Go-Live 🚀</div><div class="phase-dot"></div></div>
+  </div>
+
+  <!-- DELIVERABLES BUILT -->
+  <div class="section" id="assets">
+    <div class="week-tag">Already Built</div>
+    <div class="sec-title">Everything Ready to Use Right Now</div>
+    <div class="sec-desc">Download all of these from this conversation. Every file feeds directly into the Glide build — nothing needs to be recreated.</div>
+    <div class="asset-grid">
+      <div class="asset-row"><div class="asset-status as-done">✓ Download</div><div><div class="asset-name">BlueLedger_MasterSheet.xlsx</div><div class="asset-desc">8-tab Google Sheet: Users, Point Economy, Engagement Log, Service Log, Quests & Badges, PIA Builder, Leaderboard, 12-Week Roadmap</div></div></div>
+      <div class="asset-row"><div class="asset-status as-done">✓ Download</div><div><div class="asset-name">BlueLedger_QuizBank.xlsx</div><div class="asset-desc">40 questions across Fraternity History + Chapter Constitution. Easy/Medium/Hard with XP values. Drop directly into Master Sheet.</div></div></div>
+      <div class="asset-row"><div class="asset-status as-done">✓ Download</div><div><div class="asset-name">avatar-base/bronze/silver/gold/icon.png</div><div class="asset-desc">5 avatar PNG files, 400×400px transparent background. Named exactly as the Glide If-Then-Else formula expects.</div></div></div>
+      <div class="asset-row"><div class="asset-status as-done">✓ Download</div><div><div class="asset-name">BlueLedger_Glide_Config_Guide.html</div><div class="asset-desc">Full screen-by-screen Glide configuration: all 12 screens, computed columns, role matrix, Make.com flows. Open in browser.</div></div></div>
+      <div class="asset-row"><div class="asset-status as-done">✓ Download</div><div><div class="asset-name">BlueLedger_Week3_Onboarding.html</div><div class="asset-desc">Phone mockups + step-by-step Glide build for all 5 onboarding screens. Includes Make.com profile completion automation.</div></div></div>
+      <div class="asset-row"><div class="asset-status as-done">✓ Download</div><div><div class="asset-name">BlueLedger_Week4_Scanner_Roles.html</div><div class="asset-desc">QR scanner screen, role access matrix, 5-step action chain, full Glide build order for Week 4.</div></div></div>
+      <div class="asset-row"><div class="asset-status as-done">✓ Download</div><div><div class="asset-name">BlueLedger_App.html</div><div class="asset-desc">Fully functional SaaS prototype. Working app with all 11 screens, live XP engine, scanner simulation. Demo-ready immediately.</div></div></div>
+    </div>
+  </div>
+
+  <!-- TECH STACK -->
+  <div class="section" id="stack">
+    <div class="week-tag">Tech Stack</div>
+    <div class="sec-title">Glide + Google Sheets + Make.com</div>
+    <div class="card">
+      <div class="card-hdr"><div class="card-hdr-title">Tools and what each one does</div></div>
+      <div class="card-body">
+        <div class="step-row"><div class="step-n green">G</div><div><div class="step-title">Glide — the app</div><div class="step-detail"><span class="code">glideapps.com</span> · Free tier handles everything through Week 12. Builds the mobile-first UI, handles QR scanner, manages user roles, and renders all screens. No code required. If the chapter grows beyond ~500 members or needs advanced automation, upgrade to Glide Maker ($49/mo) — but that's a problem for Year 2.</div></div></div>
+        <div class="step-row"><div class="step-n green">S</div><div><div class="step-title">Google Sheets — the database</div><div class="step-detail"><span class="code">sheets.google.com</span> · Free. The Master Sheet you already have is the entire backend. All 8 tabs are live. Glide reads and writes to it in real time. Brothers' XP, service hours, and profile data all live here — no server needed.</div></div></div>
+        <div class="step-row"><div class="step-n green">M</div><div><div class="step-title">Make.com — the automation</div><div class="step-detail"><span class="code">make.com</span> · Free tier (1,000 operations/mo) handles all automations: XP updates, badge awards, profile completion rewards, PIA export. 5 scenarios total. Build them in Weeks 5 and 10. If you exceed the free tier (unlikely before 50+ active members), the Core plan is $9/mo.</div></div></div>
+        <div class="step-row"><div class="step-n green">C</div><div><div class="step-title">Cloudinary — avatar hosting</div><div class="step-detail"><span class="code">cloudinary.com</span> · Free tier (25GB). Upload the 5 avatar PNGs once. Copy the permanent direct URLs into Glide's If-Then-Else column formula. You never touch it again — images just work.</div></div></div>
+        <div class="step-row" style="border:none;"><div class="step-n green">Z</div><div><div class="step-title">Zelle / PayPal.me — dues payments</div><div class="step-detail">No new account needed. The "Pay Dues" button in Glide is just a URL link to your chapter's existing Zelle or PayPal. Admin marks payment confirmed in the sheet manually. Week 5 setup takes 10 minutes.</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COSTS -->
+  <div class="section" id="costs">
+    <div class="week-tag">Budget</div>
+    <div class="sec-title">Full Cost Breakdown</div>
+    <div class="card">
+      <div class="card-hdr"><div class="card-hdr-title">What this costs to build and run</div><div class="card-hdr-pill">Year 1</div></div>
+      <div class="card-body" style="padding:0;">
+        <table class="cost-table">
+          <thead><tr><th>Tool</th><th>Plan</th><th>Monthly</th><th>Annual</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Glide</strong></td><td>Free</td><td class="price-free">$0</td><td class="price-free">$0</td><td>Up to 500 rows, 5 editors — enough for any single chapter</td></tr>
+            <tr><td><strong>Google Sheets</strong></td><td>Free (Google account)</td><td class="price-free">$0</td><td class="price-free">$0</td><td>Unlimited rows on free tier</td></tr>
+            <tr><td><strong>Make.com</strong></td><td>Free (1k ops/mo)</td><td class="price-free">$0</td><td class="price-free">$0</td><td>5 scenarios, runs fine for ≤50 active members</td></tr>
+            <tr><td><strong>Cloudinary</strong></td><td>Free (25GB)</td><td class="price-free">$0</td><td class="price-free">$0</td><td>5 avatar PNGs = trivial storage</td></tr>
+            <tr style="background:var(--success-bg);"><td colspan="2"><strong>Year 1 Total</strong></td><td class="price-free"><strong>$0/mo</strong></td><td class="price-free"><strong>$0</strong></td><td>Entire first year is free</td></tr>
+            <tr style="border-top:2px solid var(--border);background:var(--cream);"><td colspan="5" style="padding:8px 12px;font-size:.72rem;color:var(--muted);font-family:'DM Mono',monospace;">UPGRADE TRIGGERS (only if needed)</td></tr>
+            <tr><td>Glide Maker</td><td>If &gt;500 rows or 5+ editors</td><td class="price-paid">$49/mo</td><td class="price-paid">$588</td><td>Unlocks unlimited rows + custom domains</td></tr>
+            <tr><td>Make.com Core</td><td>If automations exceed 1k ops/mo</td><td class="price-paid">$9/mo</td><td class="price-paid">$108</td><td>10k ops/mo — handles hundreds of daily scans</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <hr/>
+
+  <!-- WEEKS 1-4 DONE -->
+  <div class="section" id="wk1-2">
+    <div class="week-tag">Weeks 1–4 · Complete</div>
+    <div class="sec-title">What's Already Done</div>
+    <div class="status-banner s-done"><span>✅</span><div>Weeks 1–4 are fully documented with step-by-step Glide guides. All files are downloaded. The only action needed: execute the steps in the guides you already have. The Master Sheet is your data backbone — it's built. The avatar PNGs are ready to upload to Cloudinary.</div></div>
+
+    <div class="week-list">
+      <div class="week-row"><div class="week-row-hdr" onclick="toggleWeek(this)"><div class="week-num">WK 1–2</div><div class="week-phase">Architecture &amp; Data</div><div class="week-focus">Master Sheet, Quiz Bank, Avatars</div><span class="week-tag-pill wt-done">Guide: MasterSheet.xlsx + QuizBank.xlsx</span></div><div class="week-row-body">Master Google Sheet built with all 8 tabs. 40 quiz questions across History + Constitution. 5 avatar PNGs at 400×400px. Upload avatars to Cloudinary and paste URLs into the If-Then-Else computed column in Glide's Data Editor.</div></div>
+      <div class="week-row"><div class="week-row-hdr" onclick="toggleWeek(this)"><div class="week-num">WK 3</div><div class="week-phase">Onboarding &amp; Profile</div><div class="week-focus">5 screens, email sign-in, Digital ID</div><span class="week-tag-pill wt-done">Guide: Week3_Onboarding.html</span></div><div class="week-row-body">Splash, Email PIN sign-in, 3-step Profile Setup, Digital ID reveal, Home Dashboard. QR Data template column. Profile Complete? computed column. Make.com scenario for +100 XP on profile completion. Estimated build time: 3–4 hours.</div></div>
+      <div class="week-row"><div class="week-row-hdr" onclick="toggleWeek(this)"><div class="week-num">WK 4</div><div class="week-phase">QR Scanner &amp; Roles</div><div class="week-focus">Barcode scanner, role gating, 5-step action chain</div><span class="week-tag-pill wt-done">Guide: Week4_Scanner_Roles.html</span></div><div class="week-row-body">Barcode Scanner component, Member Lookup computed column, Activity Type picker from Point Economy, 5-step Confirm action chain, success/reset state. Role visibility conditions for all 4 roles. Role Manager in Admin Panel. First live event test — the Week 4 milestone.</div></div>
+    </div>
+  </div>
+
+  <!-- WEEK 5 -->
+  <div class="section" id="wk5">
+    <div class="week-tag">Week 5 · Build Now</div>
+    <div class="sec-title">Financials &amp; Resources</div>
+    <div class="sec-desc">The shortest build week. Mostly external link configuration and one clean admin view. Estimated build time: 90 minutes.</div>
+    <div class="status-banner s-now"><span>⚡</span> This is your current build target. Complete it before Week 6 Alpha.</div>
+
+    <div class="card">
+      <div class="card-hdr"><div class="card-hdr-title">Week 5 — Glide build steps</div><div class="card-hdr-pill">~90 min</div></div>
+      <div class="card-body">
+        <div class="step-row"><div class="step-n">1</div><div><div class="step-title">Add dues columns to Users tab</div><div class="step-detail">Open Master Sheet → 👥 Users tab → add 3 columns: <span class="code">Dues Status</span> (text: Paid / Late / Outstanding), <span class="code">Dues Paid Date</span> (date), <span class="code">Amount Owed</span> (number). Fill in values for each member. Sync to Glide.</div></div></div>
+        <div class="step-row"><div class="step-n">2</div><div><div class="step-title">Build Member Dues screen (all roles)</div><div class="step-detail">New Screen → Details → 👥 Users (current user row). Add: Dues Status display (large text), Amount Owed field, "Pay Dues" button → Action: Open URL → your chapter Zelle or PayPal.me link. Add "Submit Expense Report" button → Open URL → a Google Form you create for expense submissions.</div></div></div>
+        <div class="step-row"><div class="step-n">3</div><div><div class="step-title">Build Admin Dues view (Admin only)</div><div class="step-detail">Admin Panel → add Inline List showing all members. Columns: Name, Dues Status (color-coded chip), Amount Owed. Tap row → edit screen with Dues Status dropdown (Paid / Late / Outstanding) + "Mark Paid" button that sets status to Paid and triggers Make.com to award +50 XP.</div></div></div>
+        <div class="step-row"><div class="step-n">4</div><div><div class="step-title">Create the expense report Google Form</div><div class="step-detail">Go to forms.google.com → New Form → fields: Name, Member #, Date, Expense Category, Amount, Description, Receipt Upload. Link form responses to a new tab in the Master Sheet: <span class="code">💸 Expense Reports</span>. Copy the form URL into the Glide button.</div></div></div>
+        <div class="step-row"><div class="step-n">5</div><div><div class="step-title">Add Chapter Website link to Home screen</div><div class="step-detail">Home Dashboard → Add Button component → label: "Chapter Website" → Action: Open URL → your chapter website URL. Place below the quick-action cards.</div></div></div>
+        <div class="step-row" style="border:none;"><div class="step-n">6</div><div><div class="step-title">Make.com: Dues paid → +50 XP</div><div class="step-detail">Trigger: Row updated in 👥 Users where Dues Status changes to "Paid". Action: Add row to 📋 Engagement Log — Activity: "Dues Paid (On Time)", XP: 50. Action 2: Update Total XP + 50 on that member's row. Add a <span class="code">Dues XP Awarded?</span> flag to prevent double-firing.</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WEEK 6 -->
+  <div class="section" id="wk6">
+    <div class="week-tag">Week 6 · Alpha Milestone</div>
+    <div class="sec-title">Alpha Review — Live Test</div>
+    <div class="sec-desc">The most important checkpoint in the entire build. By end of Week 6 you must have a functional app on your phone that you can demo live. This is not optional — it sets the tone for the full chapter launch.</div>
+    <div class="status-banner s-next"><span>🎯</span> Goal: A Chair scans a brother's QR code at a real event. The XP appears on the Leaderboard within 60 seconds. That's the Alpha milestone.</div>
+
+    <div class="card">
+      <div class="card-hdr"><div class="card-hdr-title">Alpha checklist — all 7 must pass</div></div>
+      <div class="card-body">
+        <div class="step-row"><div class="step-n check">□</div><div><div class="step-title">Sign in on a real phone using chapter email PIN</div></div></div>
+        <div class="step-row"><div class="step-n check">□</div><div><div class="step-title">Profile setup completes and triggers +100 XP + Architect badge</div></div></div>
+        <div class="step-row"><div class="step-n check">□</div><div><div class="step-title">Digital ID QR code scans correctly from a second phone</div></div></div>
+        <div class="step-row"><div class="step-n check">□</div><div><div class="step-title">Chair role sees Scanner tab; Member role does not</div></div></div>
+        <div class="step-row"><div class="step-n check">□</div><div><div class="step-title">Live scan at a real event: check-in writes row to Engagement Log</div></div></div>
+        <div class="step-row"><div class="step-n check">□</div><div><div class="step-title">Scanned member's XP updates on Leaderboard within 60 seconds</div></div></div>
+        <div class="step-row" style="border:none;"><div class="step-n check">□</div><div><div class="step-title">E-Board walkthrough: President and 2 officers complete full onboarding</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WEEKS 7-9 -->
+  <div class="section" id="wk7-9">
+    <div class="week-tag">Weeks 7–9 · Gamification</div>
+    <div class="sec-title">The Quest Engine, Avatars &amp; Leaderboard</div>
+    <div class="sec-desc">The "game" layer that turns the app from a utility into something brothers actually open every day. Build in three focused sprints.</div>
+    <div class="status-banner s-later"><span>📋</span> Build after Alpha milestone. Don't start gamification until the operational core (Weeks 3–6) is solid.</div>
+
+    <div class="week-list">
+      <div class="week-row"><div class="week-row-hdr" onclick="toggleWeek(this)"><div class="week-num">WK 7</div><div class="week-phase">Quest Engine</div><div class="week-focus">Side quest quizzes, point triggers, XP bonuses</div><span class="week-tag-pill wt-later">~3 hrs</span></div><div class="week-row-body"><strong>What to build:</strong> Add the 📝 Quizzes and 📝 Quiz Attempts tabs to the Master Sheet (columns from the QuizBank guide). Build the quiz list screen in Glide — List layout from the Quizzes tab. Each quiz item links to a Details screen showing 5 questions as Choice components. Submit button writes a row to Quiz Attempts. Build Make.com scenario: New Quiz Attempt row → calculate score → if ≥80% add XP to Engagement Log → if 100% append Scholar badge.<br/><br/><strong>Key Glide components:</strong> List screen (quiz selector), Choice components (answer options), Button with Add Row action, computed column for retake count (count Quiz Attempts where Member # matches and semester matches).</div></div>
+      <div class="week-row"><div class="week-row-hdr" onclick="toggleWeek(this)"><div class="week-num">WK 8</div><div class="week-phase">Avatar &amp; Drip</div><div class="week-focus">Unlock logic, PNG display, level progression</div><span class="week-tag-pill wt-later">~2 hrs</span></div><div class="week-row-body"><strong>What to build:</strong> Upload the 5 avatar PNGs to Cloudinary (or Glide's built-in image storage). In Data Editor → 👥 Users → Add Column → If-Then-Else → Avatar Image URL. Formula: IF XP ≥ 2500 → icon URL, IF XP ≥ 1500 → gold URL, IF XP ≥ 1000 → silver URL, IF XP ≥ 500 → bronze URL, ELSE → base URL. Add same logic for Avatar Level text label. Place Avatar Image URL as the hero image on the Home Dashboard and Digital ID screens. Test by manually bumping a test member's XP past each threshold — watch the avatar change in real time.<br/><br/><strong>Where avatars show:</strong> Home Dashboard hero, Digital ID card, Leaderboard rows, Chapter Directory.</div></div>
+      <div class="week-row"><div class="week-row-hdr" onclick="toggleWeek(this)"><div class="week-num">WK 9</div><div class="week-phase">Leaderboard &amp; Badges</div><div class="week-focus">Achievement gallery, full chapter ranking, badge detail views</div><span class="week-tag-pill wt-later">~2 hrs</span></div><div class="week-row-body"><strong>What to build:</strong> Leaderboard screen — List layout from 👥 Users, sorted by Total XP descending, filter Status = Active. Each row shows avatar image, name, level badge, XP number. Tap → member detail view (read-only profile). Quests &amp; Badges screen — List layout from 🎖️ Quests & Badges tab. Add a computed column "Earned?" that checks if badge name appears in the current user's Earned Badges field. Filter or style the list to show earned badges in green and locked badges in gray. Badge detail view on tap.<br/><br/><strong>Key Glide tips:</strong> For the "earned" logic, use a Rollup column counting matches between Earned Badges (text list) and Badge Name — or use a Relations column if your Glide plan supports it. The simplest approach: a computed If-Then-Else checking if the badge name text is contained in the Earned Badges string.</div></div>
+    </div>
+  </div>
+
+  <!-- WEEKS 10-11 -->
+  <div class="section" id="wk10-11">
+    <div class="week-tag">Weeks 10–11 · Automation &amp; Analytics</div>
+    <div class="sec-title">PIA Builder &amp; Beta Testing</div>
+    <div class="status-banner s-later"><span>📋</span> These weeks finalize the reporting layer and stress-test the whole system before the full chapter launch.</div>
+
+    <div class="week-list">
+      <div class="week-row"><div class="week-row-hdr" onclick="toggleWeek(this)"><div class="week-num">WK 10</div><div class="week-phase">PIA Builder</div><div class="week-focus">Analytics dashboard, automated export, district reporting</div><span class="week-tag-pill wt-later">~2 hrs</span></div><div class="week-row-body"><strong>What to build:</strong> PIA Builder screen (PIA + Admin only) — Details layout. Add Rollup computed columns to 📊 PIA Builder tab: Sum of "# Brothers Participated", Sum of "Total Hours Logged". Display as stat cards at the top. Inline List of all PIA Builder rows below. "Export PIA" button → Action: Open URL → Make.com webhook URL.<br/><br/><strong>Make.com PIA export scenario:</strong> Trigger: Webhook. Action 1: Google Sheets → Read range from 📊 PIA Builder tab. Action 2: Google Drive → Create file → export as PDF. Action 3: Gmail → Send to district email with PDF attached. Total setup: ~30 minutes in Make.com.</div></div>
+      <div class="week-row"><div class="week-row-hdr" onclick="toggleWeek(this)"><div class="week-num">WK 11</div><div class="week-phase">Beta Testing</div><div class="week-focus">E-Board + Chairs stress test at a real chapter event</div><span class="week-tag-pill wt-later">Event test</span></div><div class="week-row-body"><strong>Who participates:</strong> All Executive Board members + all Committee Chairs — typically 8–12 people. Full onboarding, live event scan, quiz completion, badge awards.<br/><br/><strong>What to check:</strong> (1) Can every person sign in without issues? (2) Does the scanner work reliably in a real room with real lighting? (3) Does XP update within 60 seconds of a scan? (4) Do role restrictions work — can a Chair access Admin screens? (they shouldn't be able to). (5) Does the leaderboard sort correctly after multiple scans?<br/><br/><strong>Feedback method:</strong> After the event, create a simple Google Form: "What didn't work?" + "What was confusing?" + "What would you add?" Review responses before Week 12.</div></div>
+    </div>
+  </div>
+
+  <!-- WEEK 12 -->
+  <div class="section" id="wk12">
+    <div class="week-tag">Week 12 · Go-Live 🚀</div>
+    <div class="sec-title">Full Chapter Launch</div>
+    <div class="status-banner s-later"><span>🚀</span> The goal: 85% chapter adoption rate within the first 30 days.</div>
+
+    <div class="card">
+      <div class="card-hdr"><div class="card-hdr-title">Launch day runbook</div></div>
+      <div class="card-body">
+        <div class="step-row"><div class="step-n gold">1</div><div><div class="step-title">Seed all member profiles before the meeting</div><div class="step-detail">Export your roster. Make sure every active member's Name, Email, Member #, and Induction Year is in the Users tab before they sign in. They fill in professional info themselves — you just seed the core identity fields.</div></div></div>
+        <div class="step-row"><div class="step-n gold">2</div><div><div class="step-title">Send the Glide app link 48 hours before</div><div class="step-detail">Glide generates a shareable URL (and optionally a PWA install link). Send it to the chapter group chat with a message: "We're launching The Blue Ledger at this week's meeting. Sign in before you arrive — use your chapter email."</div></div></div>
+        <div class="step-row"><div class="step-n gold">3</div><div><div class="step-title">Run a 10-minute demo at the meeting</div><div class="step-detail">Project your screen. Show: Home Dashboard → Digital ID (your QR code) → live scan by a Chair → XP appears on the Leaderboard → Quests screen. That's the whole pitch. Let brothers try the scanner in pairs immediately after.</div></div></div>
+        <div class="step-row"><div class="step-n gold">4</div><div><div class="step-title">Launch the first Quest: "100% Profile Completion"</div><div class="step-detail">Announce during the meeting: first 10 brothers to complete their profile earn 100 XP + the Architect badge. Creates immediate engagement momentum. Post the leaderboard in the group chat after the meeting showing who's already ranked.</div></div></div>
+        <div class="step-row" style="border:none;"><div class="step-n gold">5</div><div><div class="step-title">Track adoption at 7, 14, and 30 days</div><div class="step-detail">Count Profile Complete? = Yes rows in the Users tab at each milestone. 85% adoption at 30 days = successful launch. If you're below 60% at Day 14, add a dues discount incentive for completion or make it a chapter meeting requirement.</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <hr/>
+
+  <!-- GLIDE PRO TIPS -->
+  <div class="section" id="glide-tips">
+    <div class="week-tag">Glide Pro Tips</div>
+    <div class="sec-title">Things that trip up first-time Glide builders</div>
+    <div class="card">
+      <div class="card-hdr"><div class="card-hdr-title">Save yourself 2 hours of debugging</div></div>
+      <div class="card-body">
+        <div class="step-row"><div class="step-n">!</div><div><div class="step-title">Glide syncs Google Sheets every ~60 seconds on free tier</div><div class="step-detail">Don't panic if data doesn't appear instantly. If you need faster testing, use Glide's Data Editor to edit rows directly — changes there are instant. Google Sheets edits take up to 60 seconds to reflect.</div></div></div>
+        <div class="step-row"><div class="step-n">!</div><div><div class="step-title">Row Owners can make your own data disappear</div><div class="step-detail">If you turn on Row Owners on the Users table and your test account's email doesn't match any row, the table appears empty. Always test with an account that has a matching email row in the sheet.</div></div></div>
+        <div class="step-row"><div class="step-n">!</div><div><div class="step-title">If-Then-Else chains must be exhaustive</div><div class="step-detail">Always end your avatar level formula with a final ELSE clause (Neophyte / base avatar). If the chain has no catch-all, members with 0 XP see an empty image field and the Home Dashboard looks broken on first sign-in.</div></div></div>
+        <div class="step-row"><div class="step-n">!</div><div><div class="step-title">The Barcode Scanner component requires HTTPS</div><div class="step-detail">Camera access on mobile requires a secure connection. Glide's published app URL is always HTTPS, so this is automatic. Don't try to test the scanner in Glide's preview mode on desktop — it won't work. Publish the app and test on a real phone.</div></div></div>
+        <div class="step-row"><div class="step-n">!</div><div><div class="step-title">Computed columns don't write to the sheet</div><div class="step-detail">Avatar Level, Profile Complete?, QR Data — these are computed in Glide and only exist inside the app. They're invisible in the Google Sheet. That's correct behavior. If you need a value in the sheet (e.g. for Make.com to read), write it explicitly with a Set Column Values action.</div></div></div>
+        <div class="step-row" style="border:none;"><div class="step-n">!</div><div><div class="step-title">Test role switching without signing out</div><div class="step-detail">In Glide's builder, use the preview user dropdown at the top of the screen to switch between user rows. This lets you see exactly what a Chair sees vs a Member sees without creating separate sign-in sessions. Always verify every new screen in all 4 role contexts before moving on.</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- POST-LAUNCH -->
+  <div class="section" id="post-launch">
+    <div class="week-tag">Post-Launch · Year 2+</div>
+    <div class="sec-title">Where This Goes After Week 12</div>
+    <div class="card">
+      <div class="card-hdr"><div class="card-hdr-title">Natural evolution path</div></div>
+      <div class="card-body">
+        <div class="step-row"><div class="step-n">→</div><div><div class="step-title">Other chapters want it</div><div class="step-detail">When brothers from other chapters see this at a regional conference, they'll ask how to get it. At that point you have two options: (1) share the Master Sheet template and Glide configuration guide as a package other chapters can self-deploy, or (2) turn it into a proper multi-tenant SaaS with the HTML prototype as your developer spec. Either way, the asset you've built is real IP.</div></div></div>
+        <div class="step-row"><div class="step-n">→</div><div><div class="step-title">National org interest</div><div class="step-detail">The PIA Builder alone solves a real problem at the national level — chapters struggle to aggregate and report service data. If regional leadership sees your export working cleanly, there's a path to a national pilot. The data architecture is already built for it.</div></div></div>
+        <div class="step-row"><div class="step-n">→</div><div><div class="step-title">Upgrade triggers</div><div class="step-detail">Move to Glide Maker ($49/mo) when: you need more than 5 editors, you want a custom domain (bluyledger.com instead of the Glide URL), or your sheet exceeds 500 rows. Move to a custom React/Node app when: you want to charge other chapters for access, you need features Glide can't support (real-time push notifications, complex multi-chapter logic), or you want to own the infrastructure fully.</div></div></div>
+        <div class="step-row" style="border:none;"><div class="step-n">→</div><div><div class="step-title">The custom app is already built</div><div class="step-detail">The BlueLedger_App.html prototype you have is a pixel-perfect spec for any developer. It has all the screens, the data structures, the UX patterns, and the interaction logic already working. Handing that to a developer cuts their scoping time in half and ensures you get exactly what you designed — not what they assume you wanted.</div></div></div>
+      </div>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<script>
+const sections = document.querySelectorAll('.section[id]');
+const navLinks = document.querySelectorAll('.si');
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if(e.isIntersecting){
+      navLinks.forEach(l => {
+        l.classList.remove('active');
+        if(l.getAttribute('href') === '#' + e.target.id) l.classList.add('active');
+      });
+    }
+  });
+},{rootMargin:'-20% 0px -65% 0px'});
+sections.forEach(s => obs.observe(s));
+
+function toggleWeek(hdr){
+  const row = hdr.closest('.week-row');
+  row.classList.toggle('open');
+}
+</script>
+</body>
+</html>

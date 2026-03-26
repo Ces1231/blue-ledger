@@ -1,0 +1,36 @@
+app = "blue-ledger-api"
+primary_region = "iad"   # Washington DC — closest to Atlanta target market
+
+[build]
+  dockerfile = "Dockerfile"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [http_service.concurrency]
+    type = "requests"
+    hard_limit = 250
+    soft_limit = 200
+
+  [[http_service.checks]]
+    grace_period = "10s"
+    interval = "15s"
+    method = "GET"
+    path = "/v1/healthz"
+    timeout = "2s"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
+
+[env]
+  APP_ENV = "production"
+  PORT = "8080"
+  JWT_PRIVATE_KEY_PATH = "/app/keys/private.pem"
+  JWT_PUBLIC_KEY_PATH = "/app/keys/public.pem"
+
+

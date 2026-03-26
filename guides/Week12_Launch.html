@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>The Blue Ledger — Week 12 — Go-Live</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@0,400;0,500;0,600&display=swap');
+:root{--navy:#001A4D;--gold:#C9A84C;--gold-l:#F5E6C8;--gold-pale:#FDF8EE;--cream:#FAF8F3;--ink:#0D0D0D;--muted:#6B6B6B;--border:#E2DDD4;--success:#1A6B3A;--success-bg:#EAF5EE;--success-border:#A8D5BC;--info:#003087;--info-bg:#EAF0FB;--info-border:#BDD0F5;--warn:#7A4A00;--warn-bg:#FFF3DC;--warn-border:#F5D98A;--danger:#8B1A1A;--danger-bg:#FCE4EC;--danger-border:#F4C0D1;--phone-w:300px;--phone-h:600px;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Instrument Sans',sans-serif;background:var(--cream);color:var(--ink);}
+.hdr{background:var(--navy);padding:1.25rem 2rem;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid var(--gold);position:sticky;top:0;z-index:50;}
+.hdr-logo{font-family:'DM Serif Display',serif;font-size:1.15rem;color:var(--gold);}
+.hdr-sub{font-size:.68rem;color:rgba(255,255,255,.45);font-family:'DM Mono',monospace;letter-spacing:.1em;text-transform:uppercase;margin-top:2px;}
+.hdr-badge{background:var(--gold);color:var(--navy);font-size:.68rem;font-weight:600;padding:3px 10px;border-radius:4px;font-family:'DM Mono',monospace;text-transform:uppercase;}
+.layout{display:flex;min-height:calc(100vh - 64px);}
+.sidebar{width:225px;flex-shrink:0;background:#fff;border-right:1px solid var(--border);padding:1.5rem 0;position:sticky;top:64px;height:calc(100vh - 64px);overflow-y:auto;}
+.sl{font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding:0 1.25rem;margin:1.2rem 0 .4rem;font-family:'DM Mono',monospace;}
+.si{display:flex;align-items:center;gap:8px;padding:7px 1.25rem;font-size:.82rem;color:var(--muted);cursor:pointer;border-left:3px solid transparent;transition:all .15s;text-decoration:none;}
+.si:hover{background:var(--cream);color:var(--ink);}
+.si.active{background:var(--gold-pale);color:var(--navy);border-left-color:var(--gold);font-weight:600;}
+.si-dot{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:700;font-family:'DM Mono',monospace;flex-shrink:0;color:var(--muted);}
+.si.active .si-dot{background:var(--navy);border-color:var(--navy);color:#fff;}
+.main{flex:1;padding:2rem 2.5rem;max-width:840px;}
+.section{margin-bottom:3rem;scroll-margin-top:80px;}
+.week-tag{font-family:'DM Mono',monospace;font-size:.68rem;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px;}
+.sec-title{font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--navy);}
+.sec-desc{font-size:.88rem;color:var(--muted);margin-top:6px;line-height:1.6;max-width:580px;margin-bottom:1.25rem;}
+.g{background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:1.25rem;}
+.gt{background:var(--navy);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;}
+.gtt{font-size:.82rem;font-weight:600;color:var(--gold);}
+.gtp{font-size:.62rem;font-family:'DM Mono',monospace;background:rgba(201,168,76,.18);color:var(--gold);border:1px solid rgba(201,168,76,.3);border-radius:20px;padding:2px 8px;}
+.gb{padding:12px 14px;}
+.sr{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--border);}
+.sr:last-child{border:none;}
+.sn{width:22px;height:22px;border-radius:50%;background:var(--navy);color:#fff;font-size:.65rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'DM Mono',monospace;margin-top:1px;}
+.sn.gd{background:var(--gold);color:var(--navy);}
+.sn.gr{background:var(--success);color:#fff;}
+.sn.bx{background:var(--success-bg);border:1.5px solid var(--success);color:var(--success);}
+.st{font-size:.83rem;font-weight:600;color:var(--ink);}
+.sd{font-size:.76rem;color:var(--muted);margin-top:2px;line-height:1.55;}
+.cd{font-family:'DM Mono',monospace;font-size:.72rem;background:#F0EDE7;border:1px solid var(--border);border-radius:4px;padding:1px 5px;color:var(--navy);white-space:nowrap;}
+.cb{border-radius:8px;padding:9px 12px;font-size:.78rem;line-height:1.55;margin:8px 0;display:flex;gap:8px;align-items:flex-start;}
+.cb span{font-size:14px;flex-shrink:0;}
+.ct{background:var(--info-bg);border:1px solid var(--info-border);color:var(--info);}
+.cw{background:var(--warn-bg);border:1px solid var(--warn-border);color:var(--warn);}
+.co{background:var(--success-bg);border:1px solid var(--success-border);color:var(--success);}
+.cd2{background:var(--danger-bg);border:1px solid var(--danger-border);color:var(--danger);}
+.chk{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--border);}
+.chk:last-child{border:none;}
+.cb2{width:18px;height:18px;border:1.5px solid var(--border);border-radius:4px;flex-shrink:0;margin-top:1px;}
+.ct2{font-size:.83rem;font-weight:600;color:var(--ink);}
+.cs{font-size:.74rem;color:var(--muted);margin-top:2px;line-height:1.4;}
+.flow-r{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:0 0 10px;}
+.fb{font-size:.73rem;padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:#fff;white-space:nowrap;}
+.fb.s{background:var(--navy);color:var(--gold);border-color:var(--navy);font-weight:600;}
+.fb.e{background:var(--success-bg);color:var(--success);border-color:#A8D5BC;font-weight:600;}
+.fb.a{background:var(--info-bg);color:var(--info);border-color:#BDD0F5;}
+.fb.w{background:var(--warn-bg);color:var(--warn);border-color:#F5D98A;}
+.fa{font-size:.8rem;color:var(--muted);}
+.ptrak{height:6px;background:var(--border);border-radius:3px;margin:1rem 0;}
+.pfil{height:100%;border-radius:3px;background:var(--gold);}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:1.25rem;}
+.pcard{background:#fff;border:1px solid var(--border);border-radius:10px;padding:.85rem;text-align:center;}
+.pcard-num{font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--navy);}
+.pcard-lbl{font-size:.65rem;font-family:'DM Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:2px;}
+hr{border:none;border-top:1px solid var(--border);margin:2rem 0;}
+.badge{display:inline-flex;align-items:center;font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:20px;font-family:'DM Mono',monospace;white-space:nowrap;}
+.bs{background:var(--success-bg);color:var(--success);}
+.bw{background:var(--warn-bg);color:var(--warn);}
+.bi{background:var(--info-bg);color:var(--info);}
+.bg{background:var(--gold-pale);color:var(--warn);}
+.bd{background:var(--danger-bg);color:var(--danger);}
+.tbl{width:100%;border-collapse:collapse;font-size:.8rem;}
+.tbl th{background:var(--cream);padding:8px 10px;text-align:left;font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-family:'DM Mono',monospace;border-bottom:1px solid var(--border);}
+.tbl td{padding:8px 10px;border-bottom:1px solid var(--border);color:var(--ink);vertical-align:middle;}
+.tbl tr:last-child td{border:none;}
+.tbl tr:nth-child(even) td{background:var(--cream);}
+.hero{background:var(--navy);border-radius:14px;padding:1.75rem 2rem;margin-bottom:1.5rem;position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;top:-40px;right:-40px;width:160px;height:160px;border-radius:50%;background:rgba(201,168,76,.06);}
+.htag{font-family:'DM Mono',monospace;font-size:.65rem;color:rgba(255,255,255,.35);letter-spacing:.12em;text-transform:uppercase;margin-bottom:5px;}
+.htitle{font-family:'DM Serif Display',serif;font-size:1.6rem;color:var(--gold);margin-bottom:.5rem;}
+.hdesc{font-size:.86rem;color:rgba(255,255,255,.6);line-height:1.65;max-width:500px;}
+@media(max-width:700px){.sidebar{display:none;}.main{padding:1.25rem;}}
+</style>
+</head>
+<body>
+<header class="hdr">
+  <div><div class="hdr-logo">The Blue Ledger</div><div class="hdr-sub">Week 12 — Full Chapter Launch</div></div>
+  <div class="hdr-badge">Go-Live Day 🚀</div>
+</header>
+<div class="layout">
+<nav class="sidebar"><div class="sl">Week 12</div><a href="#prep12" class="si "><div class="si-dot">0</div> 48-Hour Prep</a><a href="#announcement" class="si "><div class="si-dot">1</div> Announcement Template</a><a href="#meeting" class="si "><div class="si-dot">2</div> Meeting Day Runbook</a><a href="#adoption" class="si "><div class="si-dot">3</div> Adoption Tracking</a><a href="#post" class="si "><div class="si-dot">4</div> Year 2 Roadmap</a></nav>
+<main class="main"><div class="hero">
+<div class="htag">Week 12 · Go-Live 🚀</div>
+<div class="htitle">Full Chapter Launch</div>
+<div class="hdesc">12 weeks of building. Today it goes to the full chapter. The goal: 85% adoption within 30 days. Here's exactly how to run the launch — the announcement, the meeting demo, the first Quest, and how to track adoption in the weeks that follow.</div>
+</div><div class="ptrak"><div class="pfil" style="width:100%"></div></div><div style="font-size:.75rem;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:1.25rem;">Week 12 of 12 · 100% built · Launch day 🚀</div><div class="section" id="prep12">
+<div class="week-tag">Launch Prep</div>
+<div class="sec-title">48 Hours Before</div>
+<div class="sec-desc">Everything that must be done before the launch meeting.</div>
+<div class="g"><div class="gt"><div class="gtt">Pre-launch checklist</div><div class="gtp">48 hours prior</div></div><div class="gb"><div class="sr"><div class="sn ">1</div><div><div class="st">Seed all member profiles in the sheet</div><div class="sd">Every active member's Name, Email, Member #, Induction Year must be in the 👥 Users tab before they sign in. Export your current roster. Copy-paste into the sheet. This is the one manual step that takes the most time — do it now, not on launch day.</div></div></div><div class="sr"><div class="sn ">2</div><div><div class="st">Add every member to the Glide allowlist</div><div class="sd">Settings → Sign In → Allowed Emails → paste all active member emails. Any email not on this list gets rejected at sign-in. Double-check for typos — a rejected sign-in at a chapter meeting is embarrassing.</div></div></div><div class="sr"><div class="sn ">3</div><div><div class="st">Send the app announcement in the group chat</div><div class="sd">Use the announcement template below. Send 48 hours before the meeting — not the morning of. Brothers need time to download and sign in before the meeting starts.</div></div></div><div class="sr"><div class="sn ">4</div><div><div class="st">Prepare a 10-minute demo slide or screen share</div><div class="sd">Plan your screen share: Home Dashboard → Digital ID → Leaderboard → Scanner demo. Practice it twice. Keep it under 10 minutes — brothers don't want a tutorial, they want to play with it themselves.</div></div></div><div class="sr"><div class="sn ">5</div><div><div class="st">Set up a 'First Quest' badge moment</div><div class="sd">Create a custom announcement in the chapter chat: 'First 10 brothers to complete their full profile earn 100 XP + the Architect badge + a shoutout at the next meeting.' This drives immediate engagement before anyone even opens the app.</div></div></div></div></div>
+</div><div class="section" id="announcement">
+<div class="week-tag">Announcement</div>
+<div class="sec-title">Chapter Announcement Template</div>
+<div class="sec-desc">Send this in your chapter group chat 48 hours before the launch meeting.</div>
+<div class="g" style="border-color:var(--gold);">
+    <div class="gt" style="background:linear-gradient(135deg,#001A4D,#002E7A);"><div class="gtt" style="font-size:.9rem;">Copy and send to chapter group chat</div><div class="gtp">48 hrs before launch</div></div>
+    <div class="gb">
+    <div style="background:var(--gold-pale);border:1px solid var(--gold-l);border-radius:10px;padding:1.25rem 1.5rem;font-size:.88rem;line-height:1.8;color:var(--ink);">
+    <p>Brothers —</p><br>
+    <p>After months of building, <strong>The Blue Ledger</strong> goes live at this week's chapter meeting.</p><br>
+    <p>The Blue Ledger is our chapter engagement platform. Every time you show up — to a meeting, a service event, pay your dues, pass a quiz — you earn XP and level up your avatar. The Leaderboard ranks every brother in real time. Your Digital ID card is your QR code for event check-in.</p><br>
+    <p><strong>Before the meeting:</strong></p>
+    <p>1. Open this link: [PASTE YOUR GLIDE APP URL]</p>
+    <p>2. Sign in with your chapter email</p>
+    <p>3. Complete your profile (takes 3 minutes)</p><br>
+    <p>First 10 brothers to complete their profile earn <strong>+100 XP + the Architect badge</strong>.</p><br>
+    <p>See you at the meeting. The grind starts now.</p><br>
+    <p>— [Your Name]<br>President, Tau Tau Sigma Chapter</p>
+    </div>
+    </div></div>
+</div><div class="section" id="meeting">
+<div class="week-tag">Launch Meeting</div>
+<div class="sec-title">Meeting Day Runbook</div>
+
+<div class="g"><div class="gt"><div class="gtt">10-minute launch demo — run at the chapter meeting</div><div class="gtp">Present this, then let them explore</div></div><div class="gb"><div class="sr"><div class="sn ">1</div><div><div class="st">Open with the Leaderboard (pre-populated with E-Board data)</div><div class="sd">First screen they see: the Leaderboard already has 8–12 brothers on it from the beta test week. Their XP and avatars are visible. This immediately shows brothers what they're competing for — not what they have to set up.</div></div></div><div class="sr"><div class="sn ">2</div><div><div class="st">Show your own Home Dashboard</div><div class="sd">Project your phone screen. Show: your name, XP, avatar, level progress bar. Navigate to Digital ID — show the QR code. Then hand the phone to the brother next to you and have them scan your ID using their phone's Scanner tab. Live demo of the core loop in under 90 seconds.</div></div></div><div class="sr"><div class="sn ">3</div><div><div class="st">Show the Leaderboard updating in real time</div><div class="sd">Have a Chair scan 3 brothers while projected. Everyone watches their XP appear on the Leaderboard in real time. This is the moment that makes the app feel magical — they see points arriving before their eyes.</div></div></div><div class="sr"><div class="sn ">4</div><div><div class="st">Announce the first Quest</div><div class="sd">'First 10 brothers to complete their full profile earn Architect badge + 100 XP. The clock starts now.' Pause the meeting for 5 minutes — let everyone sign in and complete profiles. Watch the Leaderboard shift in real time as points come in.</div></div></div><div class="sr"><div class="sn ">5</div><div><div class="st">Post the leaderboard screenshot to the group chat</div><div class="sd">Immediately after the meeting, screenshot the Leaderboard — it should now have most of the chapter on it with real XP. Post it to the group chat. Tag the top 3 brothers. This creates FOMO for anyone who didn't complete their profile.</div></div></div></div></div>
+</div><div class="section" id="adoption">
+<div class="week-tag">Adoption</div>
+<div class="sec-title">30-Day Adoption Tracking</div>
+<div class="sec-desc">Target: 85% of active members with a completed profile within 30 days.</div>
+<div class="g"><div class="gt"><div class="gtt">Adoption milestones to track</div><div class="gtp">Check these in the Users tab</div></div><div class="gb">
+    <table class="tbl">
+    <thead><tr><th>Day</th><th>Target</th><th>How to Check</th><th>If Below Target</th></tr></thead>
+    <tbody>
+    <tr><td class="cd">Day 1</td><td>40% profile complete</td><td>Count Profile Complete? = 'Yes' rows</td><td>Send personal DM to brothers not yet signed in. Mention by name at next meeting.</td></tr>
+    <tr><td class="cd">Day 7</td><td>65% profile complete</td><td>Same count — share the number in group chat</td><td>Add a dues incentive: 'Profile complete by Friday = dues deadline extended 3 days for those who haven't paid'</td></tr>
+    <tr><td class="cd">Day 14</td><td>75% profile complete</td><td>Screenshot Leaderboard — post publicly</td><td>Make profile completion a standing agenda item at the next chapter meeting</td></tr>
+    <tr><td class="cd">Day 30</td><td>85% profile complete</td><td>Final count — report to E-Board</td><td>If below 85%, implement a chapter policy: app required for event check-in starting next semester</td></tr>
+    </tbody></table>
+    </div></div><div class="cb co"><span>🏆</span><div>The 85% target at 30 days is the KPI that proves the launch succeeded. Anything above 70% is a successful launch. 85%+ means the app has genuine chapter buy-in and you're positioned for Year 2 growth.</div></div>
+</div><div class="section" id="post">
+<div class="week-tag">What's Next</div>
+<div class="sec-title">Post-Launch: Year 2 Roadmap</div>
+
+<div class="g"><div class="gt"><div class="gtt">Natural evolution after a successful launch</div><div class="gtp">Plan for this in Year 2</div></div><div class="gb"><div class="sr"><div class="sn ">→</div><div><div class="st">Spring semester: first full semester of live data</div><div class="sd">By Spring 2026 you'll have a complete Fall 2025 dataset — attendance patterns, XP distribution, service hour trends, quiz pass rates. Use this to identify which brothers need outreach and which programs drove the most engagement.</div></div></div><div class="sr"><div class="sn ">→</div><div><div class="st">Regional chapters want this</div><div class="sd">When brothers from other chapters see the app at regional events, they'll ask for it. Prepare a 'deployment kit': the Master Sheet template, this repository, and a link to the Glide config guide. You can share as a self-service package or help them set it up.</div></div></div><div class="sr"><div class="sn ">→</div><div><div class="st">National org interest</div><div class="sd">The PIA Builder's automated export solves a real pain point at every level of the organization. If regional leadership sees it working, there's a genuine path to a national pilot. Start documenting your export data from Day 1.</div></div></div><div class="sr"><div class="sn ">→</div><div><div class="st">Upgrade triggers</div><div class="sd">Move to Glide Maker ($49/mo) when: roster exceeds 500 rows, you need a custom domain, or you add a second chapter. Move to a custom React/Node app when: you want to charge other chapters, need real-time push notifications, or want full infrastructure ownership.</div></div></div><div class="sr"><div class="sn ">→</div><div><div class="st">The codebase is already built</div><div class="sd">The BlueLedger_App.html prototype in this repo is a pixel-perfect developer spec. Any developer can open it, understand every screen and interaction, and build a production version. When you're ready to scale, the spec work is done.</div></div></div></div></div>
+</div></main>
+</div>
+<script>
+const secs=document.querySelectorAll('.section[id]');
+const navs=document.querySelectorAll('.si');
+const obs=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting){navs.forEach(l=>{l.classList.remove('active');if(l.getAttribute('href')==='#'+x.target.id)l.classList.add('active');});}});},{rootMargin:'-20% 0px -65% 0px'});
+secs.forEach(s=>obs.observe(s));
+</script>
+</body>
+</html>
