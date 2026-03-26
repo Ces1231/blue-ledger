@@ -27,7 +27,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23'
+          go-version: '1.24'
           cache: true
           cache-dependency-path: blue-ledger-api/go.sum
 
@@ -38,8 +38,8 @@ jobs:
         run: govulncheck ./...
 
   # ── Secrets Detection ─────────────────────────────────────────────────
-  # Pinned to @v3 (not @main) to protect against supply chain attacks.
-  # A compromised @main tag could execute arbitrary code in CI.
+  # TruffleHog does not publish a stable floating @v3 tag — @main is the
+  # reference their documentation recommends for GitHub Actions.
   secrets-scan:
     name: Secrets Detection (TruffleHog)
     runs-on: ubuntu-latest
@@ -51,7 +51,7 @@ jobs:
           fetch-depth: 0
 
       - name: Run TruffleHog
-        uses: trufflesecurity/trufflehog@v3
+        uses: trufflesecurity/trufflehog@main
         with:
           path: ./
           base: ${{ github.event.repository.default_branch }}
