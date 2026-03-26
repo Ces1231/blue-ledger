@@ -43,6 +43,7 @@ import (
 	appdb "github.com/ces1231/blue-ledger-api/pkg/db"
 	"github.com/ces1231/blue-ledger-api/pkg/email"
 	"github.com/ces1231/blue-ledger-api/pkg/logger"
+	appmiddleware "github.com/ces1231/blue-ledger-api/pkg/middleware"
 	appredis "github.com/ces1231/blue-ledger-api/pkg/redis"
 	"github.com/ces1231/blue-ledger-api/pkg/validator"
 
@@ -79,7 +80,7 @@ func main() {
 	} else {
 		log.Info().Msg("redis connected")
 	}
-	_ = redisClient
+	rateLimitMW := appmiddleware.RateLimiter(redisClient)
 
 	// ── Run Migrations ────────────────────────────────────────────────────────
 	if err := runMigrations(cfg.DatabaseURL); err != nil {
@@ -186,6 +187,7 @@ func main() {
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Format: `{"time":"${time_rfc3339}","id":"${id}","method":"${method}","uri":"${uri}","status":${status},"latency_ms":${latency_ms}}` + "\n",
 	}))
+	e.Use(rateLimitMW) // 100 req/min per IP (no-op when Redis is unavailable)
 
 	jwtMW := auth.JWTMiddleware(tokenManager)
 
