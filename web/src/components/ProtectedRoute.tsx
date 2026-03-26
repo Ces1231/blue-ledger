@@ -3,7 +3,7 @@ import { useAuth } from '../hooks/useAuth'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
-  requiredRole?: string[]
+  requiredRole?: string | string[]
 }
 
 /**
@@ -19,8 +19,9 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 
-  if (requiredRole && requiredRole.length > 0) {
-    const hasRole = isSysadmin || requiredRole.includes(role)
+  if (requiredRole) {
+    const roles = Array.isArray(requiredRole) ? requiredRole : [requiredRole]
+    const hasRole = isSysadmin || roles.includes(role)
     if (!hasRole) {
       return <Navigate to="/dashboard" replace />
     }

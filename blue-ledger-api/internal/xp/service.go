@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -222,10 +223,7 @@ func (s *xpService) GetEngagementLog(ctx context.Context, chapterID string, page
 
 // updateMemberLevel recalculates and persists the member's level based on their current xp_total.
 // Level thresholds match the prototype constants.
-func updateMemberLevel(ctx context.Context, tx interface {
-	QueryRow(ctx context.Context, sql string, args ...any) interface{ Scan(...any) error }
-	Exec(ctx context.Context, sql string, args ...any) (interface{ RowsAffected() int64 }, error)
-}, memberID string) error {
+func updateMemberLevel(ctx context.Context, tx pgx.Tx, memberID string) error {
 	// Level thresholds
 	type levelDef struct {
 		key   string

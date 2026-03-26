@@ -3,6 +3,7 @@ import React from 'react'
 interface CardProps {
   children: React.ReactNode
   className?: string
+  style?: React.CSSProperties
 }
 
 interface CardHeaderProps {
@@ -10,9 +11,9 @@ interface CardHeaderProps {
   action?: React.ReactNode
 }
 
-export function Card({ children, className = '' }: CardProps) {
+export function Card({ children, className = '', style }: CardProps) {
   return (
-    <div className={`card ${className}`}>
+    <div className={`card ${className}`} style={style}>
       {children}
     </div>
   )
@@ -27,9 +28,9 @@ Card.Header = function CardHeader({ title, action }: CardHeaderProps) {
   )
 }
 
-Card.Body = function CardBody({ children, className = '' }: CardProps) {
+Card.Body = function CardBody({ children, className = '', style }: CardProps) {
   return (
-    <div className={`card-body ${className}`}>
+    <div className={`card-body ${className}`} style={style}>
       {children}
     </div>
   )

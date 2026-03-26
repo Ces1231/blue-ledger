@@ -18,7 +18,7 @@ export function AdminDuesPage() {
   })
 
   const markPaidMutation = useMutation({
-    mutationFn: (id: string) => markDuesPaid(id),
+    mutationFn: (id: string) => markDuesPaid(id, 'manual'),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['dues'] }),
   })
 

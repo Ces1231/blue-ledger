@@ -1,7 +1,7 @@
 import apiClient from './client'
 import type { DuesRecord, PaginatedResponse, APIResponse } from '../types'
 
-export async function getDues(params?: { semester?: string }): Promise<PaginatedResponse<DuesRecord>> {
+export async function getDues(params?: { semester?: string; per_page?: number }): Promise<PaginatedResponse<DuesRecord>> {
   const { data } = await apiClient.get<PaginatedResponse<DuesRecord>>('/dues', { params })
   return data
 }

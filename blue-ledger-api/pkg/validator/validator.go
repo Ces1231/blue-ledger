@@ -2,6 +2,7 @@ package validator
 
 import (
 	"net/http"
+	"reflect"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
@@ -17,8 +18,8 @@ func New() *CustomValidator {
 	v := validator.New()
 
 	// Register custom tag name function so validator uses JSON field names in error messages.
-	v.RegisterTagNameFunc(func(fld interface{ Tag(string) string }) string {
-		return fld.Tag("json")
+	v.RegisterTagNameFunc(func(fld reflect.StructField) string {
+		return fld.Tag.Get("json")
 	})
 
 	return &CustomValidator{v: v}

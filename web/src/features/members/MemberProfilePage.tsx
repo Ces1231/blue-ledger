@@ -137,11 +137,12 @@ export function MemberProfilePage() {
     enabled: !!id,
   })
 
-  const { data: xpHistory = [] } = useQuery({
+  const { data: xpHistoryPage } = useQuery({
     queryKey: ['member', id, 'xp-history'],
     queryFn: () => getMemberXPHistory(id!),
     enabled: !!id,
   })
+  const xpHistory = xpHistoryPage?.data ?? []
 
   const canEdit = member && (isAdmin || isSysadmin || memberID === member.id)
 

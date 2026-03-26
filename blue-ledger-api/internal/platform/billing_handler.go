@@ -6,8 +6,8 @@ import (
 
 	"github.com/ces1231/blue-ledger-api/internal/auth"
 	"github.com/labstack/echo/v4"
-	stripe "github.com/stripe/stripe-go/v76"
-	"github.com/stripe/stripe-go/v76/billingportal/session"
+	stripe "github.com/stripe/stripe-go/v78"
+	"github.com/stripe/stripe-go/v78/billingportal/session"
 )
 
 // BillingHandler handles Stripe billing-related endpoints.

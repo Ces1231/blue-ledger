@@ -106,7 +106,7 @@ export function DirectoryPage() {
       if (search) {
         const q = search.toLowerCase()
         const name = `${m.first_name} ${m.last_name}`.toLowerCase()
-        return name.includes(q) || m.display_id.toLowerCase().includes(q) || (m.employer ?? '').toLowerCase().includes(q)
+        return name.includes(q) || (m.display_id ?? m.member_display_id).toLowerCase().includes(q) || (m.employer ?? '').toLowerCase().includes(q)
       }
       return true
     })

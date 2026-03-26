@@ -6,15 +6,17 @@ import (
 	"net/http"
 
 	"github.com/stripe/stripe-go/v78"
+	"github.com/stripe/stripe-go/v78/customer"
+	"github.com/stripe/stripe-go/v78/subscription"
 	"github.com/stripe/stripe-go/v78/webhook"
 )
 
 // StripeWebhookEvent is a parsed Stripe event relevant to Blue Ledger.
 type StripeWebhookEvent struct {
-	Type            string
-	SubscriptionID  string
-	CustomerID      string
-	Status          string // subscription status
+	Type           string
+	SubscriptionID string
+	CustomerID     string
+	Status         string // subscription status
 }
 
 // VerifyStripeWebhook reads the raw request body and verifies the Stripe signature.
@@ -45,7 +47,7 @@ func CreateSubscription(secretKey, customerID, priceID string) (*stripe.Subscrip
 		TrialPeriodDays: stripe.Int64(30),
 	}
 
-	sub, err := stripe.NewSubscription(params)
+	sub, err := subscription.New(params)
 	if err != nil {
 		return nil, fmt.Errorf("create stripe subscription: %w", err)
 	}
@@ -62,10 +64,10 @@ func CreateCustomer(secretKey, email, chapterName string) (*stripe.Customer, err
 		Name:  stripe.String(chapterName),
 	}
 
-	customer, err := stripe.NewCustomer(params)
+	c, err := customer.New(params)
 	if err != nil {
 		return nil, fmt.Errorf("create stripe customer: %w", err)
 	}
 
-	return customer, nil
+	return c, nil
 }

@@ -49,10 +49,13 @@ export interface Member {
   chapter_id: string
   user_id: string
   member_display_id: string
+  display_id?: string
   first_name: string
   last_name: string
   display_name?: string
   email: string
+  phone?: string
+  bio?: string
   avatar_url?: string
   role: MemberRole
   status: MemberStatus
@@ -68,6 +71,8 @@ export interface Member {
   dues_status: DuesStatus
   avatar_bg?: string
   avatar_fg?: string
+  service_hours_total?: number
+  service_hours_semester?: number
   created_at: string
   updated_at: string
 }
@@ -188,6 +193,8 @@ export interface Announcement {
   created_at: string
   updated_at: string
   poster?: Pick<Member, 'first_name' | 'last_name'>
+  poster_first_name?: string
+  poster_last_name?: string
 }
 
 export interface Props {
@@ -223,6 +230,8 @@ export interface ServiceLogEntry {
   id: string
   chapter_id: string
   member_id: string
+  member_first_name?: string
+  member_last_name?: string
   event_name: string
   organization?: string
   service_date: string
