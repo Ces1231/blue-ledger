@@ -28,4 +28,7 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
   CMD wget -qO- http://localhost:8080/v1/healthz || exit 1
 
-CMD ["./blue-ledger-api"]
+# Write JWT keys from env vars to files at startup (production / Fly.io).
+# JWT_PRIVATE_KEY and JWT_PUBLIC_KEY are set as Fly.io secrets.
+# Falls back to existing files in dev (docker-compose mounts keys/).
+CMD ["sh", "-c", "if [ -n \"$JWT_PRIVATE_KEY\" ]; then mkdir -p /app/keys && printf '%s' \"$JWT_PRIVATE_KEY\" > /app/keys/private.pem && printf '%s' \"$JWT_PUBLIC_KEY\" > /app/keys/public.pem; fi && exec ./blue-ledger-api"]

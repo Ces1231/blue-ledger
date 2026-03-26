@@ -33,13 +33,4 @@ primary_region = "iad"   # Washington DC — closest to Atlanta target market
   JWT_PRIVATE_KEY_PATH = "/app/keys/private.pem"
   JWT_PUBLIC_KEY_PATH = "/app/keys/public.pem"
 
-# Mount RSA key secrets as files so the API can read them at the paths above.
-[[files]]
-  guest_path = "/app/keys/private.pem"
-  secret_name = "JWT_PRIVATE_KEY"
-
-[[files]]
-  guest_path = "/app/keys/public.pem"
-  secret_name = "JWT_PUBLIC_KEY"
-
 
