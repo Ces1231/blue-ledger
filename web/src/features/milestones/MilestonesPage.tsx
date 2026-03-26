@@ -31,7 +31,7 @@ export function MilestonesPage() {
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ['milestones'],
-    queryFn: getMilestones,
+    queryFn: () => getMilestones(),
   })
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<CreateMilestonePayload>({
