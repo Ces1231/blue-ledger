@@ -27,7 +27,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
+          go-version: '1.25'
           cache: true
           cache-dependency-path: blue-ledger-api/go.sum
 
@@ -40,6 +40,8 @@ jobs:
   # ── Secrets Detection ─────────────────────────────────────────────────
   # TruffleHog does not publish a stable floating @v3 tag — @main is the
   # reference their documentation recommends for GitHub Actions.
+  # base/head use event-specific SHAs so push-to-master doesn't produce
+  # base == HEAD (which causes TruffleHog to exit with an error).
   secrets-scan:
     name: Secrets Detection (TruffleHog)
     runs-on: ubuntu-latest
@@ -50,10 +52,20 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Run TruffleHog
+      - name: Run TruffleHog (push)
+        if: github.event_name == 'push'
         uses: trufflesecurity/trufflehog@main
         with:
           path: ./
-          base: ${{ github.event.repository.default_branch }}
+          base: ${{ github.event.before }}
+          head: ${{ github.sha }}
+          extra_args: --only-verified
+
+      - name: Run TruffleHog (PR)
+        if: github.event_name == 'pull_request'
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.base_ref }}
           head: HEAD
           extra_args: --only-verified
