@@ -21,6 +21,10 @@ WORKDIR /app
 COPY --from=builder /blue-ledger-api .
 COPY --from=builder /app/migrations ./migrations
 
+# Pre-create keys dir with correct ownership so the startup CMD can write
+# JWT key files from env vars when running in production (Fly.io).
+RUN mkdir -p /app/keys && chown -R appuser:appuser /app/keys
+
 USER appuser
 
 EXPOSE 8080
