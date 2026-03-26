@@ -153,11 +153,11 @@ export function AdminPage() {
                 transition: 'box-shadow 0.15s, border-color 0.15s',
               }}
               onMouseEnter={(e) => {
-                ;(e.currentTarget as HTMLElement).style.boxShadow = 'var(--shadow-md)'
+                (e.currentTarget as HTMLElement).style.boxShadow = 'var(--shadow-md)'
                 ;(e.currentTarget as HTMLElement).style.borderColor = 'var(--border2)'
               }}
               onMouseLeave={(e) => {
-                ;(e.currentTarget as HTMLElement).style.boxShadow = 'none'
+                (e.currentTarget as HTMLElement).style.boxShadow = 'none'
                 ;(e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'
               }}
             >

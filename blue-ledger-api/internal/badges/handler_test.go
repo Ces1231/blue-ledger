@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ces1231/blue-ledger-api/pkg/validator"
 	"github.com/labstack/echo/v4"
 )
 
@@ -67,6 +68,7 @@ func (m *mockService) Award(ctx context.Context, chapterID, badgeID, memberID, a
 // setupEcho creates an Echo instance and sets chapter/member context values.
 func setupEcho(method, path, body string) (echo.Context, *httptest.ResponseRecorder) {
 	e := echo.New()
+	e.Validator = validator.New()
 	var req *http.Request
 	if body != "" {
 		req = httptest.NewRequest(method, path, strings.NewReader(body))
