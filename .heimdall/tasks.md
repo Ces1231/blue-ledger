@@ -168,7 +168,7 @@ birthday → 🎂  graduation → 🎓  new_job → 💼  engagement → 💍  o
 ## TASK-007 · Build `resources` frontend page
 **Gap:** GAP-004  
 **Priority:** P2 — backend ready  
-**Status:** `[ ] not started`  
+**Status:** `[x] done 2026-03-26`  
 **Effort:** ~1h  
 
 **What to do:**
@@ -277,7 +277,7 @@ birthday → 🎂  graduation → 🎓  new_job → 💼  engagement → 💍  o
 | TASK-004 — `study-groups` Go package | GAP-003 | 🔴 P1 | `[x] done 2026-03-26` |
 | TASK-005 — `milestones` frontend | GAP-002 | 🔴 P1 | `[x] done 2026-03-26` |
 | TASK-006 — `study-groups` frontend | GAP-003 | 🔴 P1 | `[x] done 2026-03-26` |
-| TASK-007 — `resources` frontend | GAP-004 | 🟡 P2 | `[ ]` |
+| TASK-007 — `resources` frontend | GAP-004 | 🟡 P2 | `[x] done 2026-03-26` |
 | TASK-008 — `job-board` frontend | GAP-004 | 🟡 P2 | `[ ]` |
 | TASK-009 — `fundraising` frontend | GAP-004 | 🟡 P2 | `[ ]` |
 | TASK-010 — `committees` frontend | GAP-004 | 🟡 P2 | `[ ]` |
