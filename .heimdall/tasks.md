@@ -187,7 +187,7 @@ birthday → 🎂  graduation → 🎓  new_job → 💼  engagement → 💍  o
 ## TASK-008 · Build `job-board` frontend page
 **Gap:** GAP-004  
 **Priority:** P2 — backend ready  
-**Status:** `[ ] not started`  
+**Status:** `[x] done 2026-03-26`  
 **Effort:** ~1h  
 
 **What to do:**
@@ -205,7 +205,7 @@ birthday → 🎂  graduation → 🎓  new_job → 💼  engagement → 💍  o
 ## TASK-009 · Build `fundraising` frontend page
 **Gap:** GAP-004  
 **Priority:** P2 — backend ready  
-**Status:** `[ ] not started`  
+**Status:** `[x] done 2026-03-26`  
 **Effort:** ~1.5h  
 
 **What to do:**
@@ -223,7 +223,7 @@ birthday → 🎂  graduation → 🎓  new_job → 💼  engagement → 💍  o
 ## TASK-010 · Build `committees` frontend page
 **Gap:** GAP-004  
 **Priority:** P2 — backend ready  
-**Status:** `[ ] not started`  
+**Status:** `[x] done 2026-03-26`  
 **Effort:** ~45 min  
 
 **What to do:**
@@ -240,7 +240,7 @@ birthday → 🎂  graduation → 🎓  new_job → 💼  engagement → 💍  o
 ## TASK-011 · Build `alumni` frontend page
 **Gap:** GAP-004  
 **Priority:** P2 — backend ready  
-**Status:** `[ ] not started`  
+**Status:** `[x] done 2026-03-26`  
 **Effort:** ~45 min  
 
 **What to do:**
@@ -278,10 +278,10 @@ birthday → 🎂  graduation → 🎓  new_job → 💼  engagement → 💍  o
 | TASK-005 — `milestones` frontend | GAP-002 | 🔴 P1 | `[x] done 2026-03-26` |
 | TASK-006 — `study-groups` frontend | GAP-003 | 🔴 P1 | `[x] done 2026-03-26` |
 | TASK-007 — `resources` frontend | GAP-004 | 🟡 P2 | `[x] done 2026-03-26` |
-| TASK-008 — `job-board` frontend | GAP-004 | 🟡 P2 | `[ ]` |
-| TASK-009 — `fundraising` frontend | GAP-004 | 🟡 P2 | `[ ]` |
-| TASK-010 — `committees` frontend | GAP-004 | 🟡 P2 | `[ ]` |
-| TASK-011 — `alumni` frontend | GAP-004 | 🟡 P2 | `[ ]` |
+| TASK-008 — `job-board` frontend | GAP-004 | 🟡 P2 | `[x] done 2026-03-26` |
+| TASK-009 — `fundraising` frontend | GAP-004 | 🟡 P2 | `[x] done 2026-03-26` |
+| TASK-010 — `committees` frontend | GAP-004 | 🟡 P2 | `[x] done 2026-03-26` |
+| TASK-011 — `alumni` frontend | GAP-004 | 🟡 P2 | `[x] done 2026-03-26` |
 | TASK-012 — verify `study-groups.ts` | GAP-007 | 🟢 P3 | `[x] done 2026-03-26` |
 
 ---
