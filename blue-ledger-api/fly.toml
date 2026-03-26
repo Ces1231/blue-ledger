@@ -16,6 +16,13 @@ primary_region = "iad"   # Washington DC — closest to Atlanta target market
     hard_limit = 250
     soft_limit = 200
 
+  [[http_service.checks]]
+    grace_period = "10s"
+    interval = "15s"
+    method = "GET"
+    path = "/v1/healthz"
+    timeout = "2s"
+
 [[vm]]
   size = "shared-cpu-1x"
   memory = "256mb"
@@ -24,21 +31,4 @@ primary_region = "iad"   # Washington DC — closest to Atlanta target market
   APP_ENV = "production"
   PORT = "8080"
 
-[[services.ports]]
-  port = 443
-  handlers = ["tls", "http"]
 
-[[services.ports]]
-  port = 80
-  handlers = ["http"]
-
-[services.checks]
-  [services.checks.healthcheck]
-    grace_period = "10s"
-    interval = "15s"
-    method = "GET"
-    path = "/v1/healthz"
-    port = 8080
-    restart_limit = 0
-    timeout = "2s"
-    type = "http"
