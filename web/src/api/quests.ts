@@ -3,20 +3,22 @@ import type { APIResponse } from '../types'
 
 export interface Quest {
   id: string
-  name: string
-  description: string
-  requirements: Record<string, unknown>
+  chapter_id: string
+  title: string
+  description?: string
   xp_reward: number
-  badge_id: string | null
-  active: boolean
+  badge_reward_id?: string | null
+  steps: Record<string, unknown>[]
+  is_active: boolean
   created_at: string
 }
 
 export interface QuestProgress {
   id?: string
+  chapter_id?: string
   member_id: string
   quest_id: string
-  status: 'not_started' | 'in_progress' | 'completed'
+  progress: Record<string, number>
   completed_at?: string
 }
 

@@ -3,19 +3,25 @@ import type { APIResponse } from '../types'
 
 export interface Badge {
   id: string
+  chapter_id: string
   name: string
-  description: string
+  icon?: string
+  category?: string
+  description?: string
+  requirement?: string
+  xp_reward: number
+  rarity: string
+  is_active: boolean
   criteria: Record<string, unknown>
-  xp_bonus: number
-  image_url?: string
   created_at: string
 }
 
 export interface MemberBadge {
   id: string
+  chapter_id: string
   member_id: string
   badge_id: string
-  earned_at: string
+  awarded_at: string
   awarded_by?: string
 }
 

@@ -62,7 +62,7 @@ func (m *mockService) Award(ctx context.Context, chapterID, badgeID, memberID, a
 	if m.awardFn != nil {
 		return m.awardFn(ctx, chapterID, badgeID, memberID, awardedBy)
 	}
-	return &MemberBadge{ID: "mb-1", MemberID: memberID, BadgeID: badgeID, EarnedAt: time.Now()}, nil
+	return &MemberBadge{ID: "mb-1", MemberID: memberID, BadgeID: badgeID, AwardedAt: time.Now()}, nil
 }
 
 // setupEcho creates an Echo instance and sets chapter/member context values.
@@ -110,7 +110,7 @@ func TestHandler_List_Empty(t *testing.T) {
 }
 
 func TestHandler_List_WithBadges(t *testing.T) {
-	badge := &Badge{ID: "badge-1", Name: "Perfect Attendance", XPBonus: 100, CreatedAt: time.Now()}
+	badge := &Badge{ID: "badge-1", Name: "Perfect Attendance", XPReward: 100, CreatedAt: time.Now()}
 	h := NewHandler(&mockService{
 		listFn: func(_ context.Context, _ string) ([]*Badge, error) {
 			return []*Badge{badge}, nil
@@ -156,7 +156,7 @@ func TestHandler_GetByID_NotFound(t *testing.T) {
 
 func TestHandler_Create_ValidBody(t *testing.T) {
 	h := NewHandler(&mockService{})
-	body := `{"name":"Service Star","description":"Awarded for service excellence","xp_bonus":50}`
+	body := `{"name":"Service Star","description":"Awarded for service excellence","xp_reward":50}`
 
 	c, rec := setupEcho(http.MethodPost, "/badges", body)
 	if err := h.Create(c); err != nil {
@@ -170,7 +170,7 @@ func TestHandler_Create_ValidBody(t *testing.T) {
 func TestHandler_Create_EmptyName_ReturnsError(t *testing.T) {
 	h := NewHandler(&mockService{})
 	// name is missing — validation should reject.
-	body := `{"description":"No name here","xp_bonus":10}`
+	body := `{"description":"No name here","xp_reward":10}`
 
 	c, rec := setupEcho(http.MethodPost, "/badges", body)
 	_ = rec
