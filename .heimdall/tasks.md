@@ -272,7 +272,7 @@ birthday → 🎂  graduation → 🎓  new_job → 💼  engagement → 💍  o
 ## TASK-013 · Migration — `023_challenges` table
 **Gap:** GAP-NEW-002  
 **Priority:** P1 — prerequisite for challenge engine  
-**Status:** `[ ] not started`  
+**Status:** `[x] done 2026-03-27`  
 **Effort:** 15 min  
 **Agent:** @ant-man  
 
@@ -309,7 +309,7 @@ CREATE INDEX idx_challenges_status     ON challenges(status);
 ## TASK-014 · Backend — Go `challenges` package
 **Gap:** GAP-NEW-002  
 **Priority:** P1  
-**Status:** `[ ] not started`  
+**Status:** `[x] done 2026-03-27`  
 **Effort:** 3h  
 **Agent:** @ant-man  
 **Depends on:** TASK-013  
@@ -352,7 +352,7 @@ challenges.NewHandler(challengesSvc, tokenManager).Register(v1)
 ## TASK-015 · Backend — WebSocket Hub + Presence System
 **Gap:** GAP-NEW-001  
 **Priority:** P1  
-**Status:** `[ ] not started`  
+**Status:** `[x] done 2026-03-27`  
 **Effort:** 3h  
 **Agent:** @ant-man  
 
@@ -413,7 +413,7 @@ e.GET("/v1/presence", hub.HandlePresenceList, authMiddleware)
 ## TASK-016 · Frontend — `useWebSocket` + `usePresence` hooks
 **Gap:** GAP-NEW-001  
 **Priority:** P1  
-**Status:** `[ ] not started`  
+**Status:** `[x] done 2026-03-27`  
 **Effort:** 2h  
 **Agent:** @ant-man  
 **Depends on:** TASK-015  
@@ -451,7 +451,7 @@ export function usePresence(): {
 ## TASK-017 · Frontend — `OnlineBadge` component + Directory/Leaderboard integration
 **Gap:** GAP-NEW-005  
 **Priority:** P2  
-**Status:** `[ ] not started`  
+**Status:** `[x] done 2026-03-27`  
 **Effort:** 1h  
 **Agent:** @ant-man  
 **Depends on:** TASK-016  
@@ -499,7 +499,7 @@ export function OnlineBadge({ memberID }: { memberID: string }) {
 ## TASK-018 · Frontend — `ChallengesPage`
 **Gap:** GAP-NEW-002  
 **Priority:** P2  
-**Status:** `[ ] not started`  
+**Status:** `[x] done 2026-03-27`  
 **Effort:** 2.5h  
 **Agent:** @ant-man  
 **Depends on:** TASK-014, TASK-016  
@@ -536,7 +536,7 @@ submitTrivia(id, answers) → POST /v1/challenges/:id/submit
 ## TASK-019 · Frontend — `ChallengeModal` + profile integration
 **Gap:** GAP-NEW-002  
 **Priority:** P2  
-**Status:** `[ ] not started`  
+**Status:** `[x] done 2026-03-27`  
 **Effort:** 1.5h  
 **Agent:** @ant-man  
 **Depends on:** TASK-018  
@@ -571,7 +571,7 @@ interface ChallengeModalProps {
 ## TASK-020 · Backend + Frontend — Trivia Game Engine
 **Gap:** GAP-NEW-002  
 **Priority:** P3  
-**Status:** `[ ] not started`  
+**Status:** `[x] done 2026-03-27`  
 **Effort:** 3h  
 **Agent:** @ant-man  
 **Depends on:** TASK-014, TASK-016  
@@ -597,7 +597,7 @@ interface ChallengeModalProps {
 ## TASK-021 · Frontend — PWA Service Worker
 **Gap:** GAP-NEW-003  
 **Priority:** P3  
-**Status:** `[ ] not started`  
+**Status:** `[x] done 2026-03-27`  
 **Effort:** 2h  
 **Agent:** @ant-man  
 
@@ -648,15 +648,15 @@ VitePWA({
 | TASK-010 — `committees` frontend | GAP-004 | 🟡 P2 | `[x] done 2026-03-26` |
 | TASK-011 — `alumni` frontend | GAP-004 | 🟡 P2 | `[x] done 2026-03-26` |
 | TASK-012 — verify `study-groups.ts` | GAP-007 | 🟢 P3 | `[x] done 2026-03-26` |
-| TASK-013 — `023_challenges` migration | GAP-NEW-002 | 🔴 P1 | `[ ] not started` |
-| TASK-014 — `challenges` Go package | GAP-NEW-002 | 🔴 P1 | `[ ] not started` |
-| TASK-015 — WebSocket hub + presence | GAP-NEW-001 | 🔴 P1 | `[ ] not started` |
-| TASK-016 — `useWebSocket` + `usePresence` hooks | GAP-NEW-001 | 🔴 P1 | `[ ] not started` |
-| TASK-017 — `OnlineBadge` + DM real-time | GAP-NEW-005 | 🟡 P2 | `[ ] not started` |
-| TASK-018 — `ChallengesPage` frontend | GAP-NEW-002 | 🟡 P2 | `[ ] not started` |
-| TASK-019 — `ChallengeModal` + profile integration | GAP-NEW-002 | 🟡 P2 | `[ ] not started` |
-| TASK-020 — Trivia game engine | GAP-NEW-002 | 🟢 P3 | `[ ] not started` |
-| TASK-021 — PWA service worker | GAP-NEW-003 | 🟢 P3 | `[ ] not started` |
+| TASK-013 — `023_challenges` migration | GAP-NEW-002 | 🔴 P1 | `[x] done 2026-03-27` |
+| TASK-014 — `challenges` Go package | GAP-NEW-002 | 🔴 P1 | `[x] done 2026-03-27` |
+| TASK-015 — WebSocket hub + presence | GAP-NEW-001 | 🔴 P1 | `[x] done 2026-03-27` |
+| TASK-016 — `useWebSocket` + `usePresence` hooks | GAP-NEW-001 | 🔴 P1 | `[x] done 2026-03-27` |
+| TASK-017 — `OnlineBadge` + DM real-time | GAP-NEW-005 | 🟡 P2 | `[x] done 2026-03-27` |
+| TASK-018 — `ChallengesPage` frontend | GAP-NEW-002 | 🟡 P2 | `[x] done 2026-03-27` |
+| TASK-019 — `ChallengeModal` + profile integration | GAP-NEW-002 | 🟡 P2 | `[x] done 2026-03-27` |
+| TASK-020 — Trivia game engine | GAP-NEW-002 | 🟢 P3 | `[x] done 2026-03-27` |
+| TASK-021 — PWA service worker | GAP-NEW-003 | 🟢 P3 | `[x] done 2026-03-27` |
 
 ---
 
