@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate, Outlet, useSearchParams, useNavigate } from 'react-router-dom'
-import { Suspense, lazy, useEffect } from 'react'
+import { Suspense, lazy, useEffect, useState } from 'react'
+import { SidebarContext } from './context/SidebarContext'
 import { useMutation } from '@tanstack/react-query'
 import { Sidebar } from './components/Sidebar'
 import { ProtectedRoute } from './components/ProtectedRoute'
@@ -65,15 +66,26 @@ function PageLoader() {
 
 // ── Authenticated app shell (sidebar + outlet) ──
 function AppShell() {
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const closeSidebar = () => setSidebarOpen(false)
+
   return (
-    <div className="app-game-theme" style={{ display: 'flex', minHeight: '100vh' }}>
-      <Sidebar />
-      <div className="main-content">
-        <Suspense fallback={<PageLoader />}>
-          <Outlet />
-        </Suspense>
+    <SidebarContext.Provider value={{ toggleSidebar: () => setSidebarOpen(v => !v) }}>
+      <div className="app-game-theme" style={{ display: 'flex', minHeight: '100vh' }}>
+        {/* Overlay — tapping closes sidebar on mobile */}
+        <div
+          className={`sidebar-overlay${sidebarOpen ? ' visible' : ''}`}
+          onClick={closeSidebar}
+          aria-hidden="true"
+        />
+        <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
+        <div className="main-content">
+          <Suspense fallback={<PageLoader />}>
+            <Outlet />
+          </Suspense>
+        </div>
       </div>
-    </div>
+    </SidebarContext.Provider>
   )
 }
 

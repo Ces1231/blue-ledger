@@ -76,7 +76,12 @@ const NAV_SECTIONS = [
   },
 ]
 
-export function Sidebar() {
+interface SidebarProps {
+  isOpen: boolean
+  onClose: () => void
+}
+
+export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { user, role, isSysadmin, logout } = useAuth()
   const { member } = useCurrentMember()
   const navigate = useNavigate()
@@ -97,7 +102,7 @@ export function Sidebar() {
     : '??'
 
   return (
-    <nav className="sidebar">
+    <nav className={`sidebar${isOpen ? ' open' : ''}`}>
       {/* Logo */}
       <div className="sidebar-logo">
         <div className="sidebar-logo-row">
@@ -148,6 +153,7 @@ export function Sidebar() {
                   key={item.path}
                   to={item.path}
                   className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
+                  onClick={onClose}
                 >
                   <span className="nav-icon">{item.icon}</span>
                   {item.label}

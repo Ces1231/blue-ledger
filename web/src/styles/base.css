@@ -1628,46 +1628,192 @@ tbody tr:hover td {
 .empty-state-text { font-size: 0.88rem; color: var(--muted); }
 
 /* ══════════════════════════════════════
-   RESPONSIVE
+   SIDEBAR OVERLAY (mobile drawer backdrop)
 ══════════════════════════════════════ */
-@media (max-width: 900px) {
-  .dash-grid { grid-template-columns: 1fr; }
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 199;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+.sidebar-overlay.visible {
+  display: block;
+  animation: fadeIn 0.2s ease;
 }
 
-@media (max-width: 768px) {
-  .sidebar {
-    transform: translateX(-100%);
-    transition: transform 0.25s;
-  }
-  .sidebar.open {
-    transform: none;
-  }
-  .main-content {
-    margin-left: 0;
-  }
-  .page-body {
-    padding: 1rem;
-  }
-  .service-stats { grid-template-columns: 1fr 1fr; }
-  .form-row { grid-template-columns: 1fr; }
-  .mobile-menu-btn { display: flex !important; }
-}
-
+/* ══════════════════════════════════════
+   MOBILE MENU BUTTON (hamburger)
+   Hidden by default; flex on mobile via media query.
+══════════════════════════════════════ */
 .mobile-menu-btn {
   display: none;
   align-items: center;
   justify-content: center;
   width: 36px;
   height: 36px;
+  flex-shrink: 0;
   border-radius: 8px;
   border: 1px solid var(--border);
-  background: var(--white);
+  background: transparent;
   cursor: pointer;
-  font-size: 1.1rem;
+  font-size: 1.15rem;
+  color: var(--ink);
+  transition: background 0.15s;
+  line-height: 1;
+}
+.mobile-menu-btn:hover { background: var(--cream2); }
+
+/* Game-theme overrides for hamburger */
+.app-game-theme .mobile-menu-btn {
+  border-color: rgba(20, 100, 230, 0.3);
+  color: rgba(170, 200, 255, 0.7);
+}
+.app-game-theme .mobile-menu-btn:hover {
+  background: var(--g-surface2);
+  color: var(--g-text);
 }
 
-@media (max-width: 600px) {
-  .info-grid { grid-template-columns: 1fr; }
+/* ══════════════════════════════════════
+   RESPONSIVE — Breakpoints
+══════════════════════════════════════ */
+
+/* ── Large desktop (≤ 1280px) ── */
+@media (max-width: 1280px) {
+  .page-body { padding: 1.5rem; }
+}
+
+/* ── Tablet landscape (≤ 1024px) ── */
+@media (max-width: 1024px) {
+  .dash-grid { grid-template-columns: 1fr; }
+  .action-tiles { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* ── Tablet portrait (≤ 900px) ── */
+@media (max-width: 900px) {
+  .dash-grid { grid-template-columns: 1fr; }
+  .action-tiles { grid-template-columns: 1fr 1fr; }
+  .player-card { padding: 1.1rem 1.25rem; }
+  .profile-hero { gap: 1rem; padding: 1.25rem; }
+}
+
+/* ── Mobile (≤ 768px) — main breakpoint ── */
+@media (max-width: 768px) {
+  /* ─ Sidebar becomes a slide-in drawer ─ */
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 200;
+    box-shadow: none;
+  }
+  .sidebar.open {
+    transform: translateX(0);
+    box-shadow: 8px 0 48px rgba(0, 0, 0, 0.55);
+  }
+
+  /* Main content fills full width */
+  .main-content { margin-left: 0; width: 100%; }
+
+  /* Topbar */
+  .topbar { padding: 0 1rem; height: 56px; }
+  .topbar-title { font-size: 0.92rem; }
+  .mobile-menu-btn { display: flex !important; }
+
+  /* Page body */
+  .page-body { padding: 1rem; }
+
+  /* Grids */
+  .service-stats { grid-template-columns: 1fr 1fr; }
+  .form-row      { grid-template-columns: 1fr; }
+  .info-grid     { grid-template-columns: 1fr 1fr; }
+  .quick-actions { grid-template-columns: repeat(2, 1fr); }
+  .admin-grid    { grid-template-columns: repeat(2, 1fr); }
+
+  /* Profile hero — stack vertically */
+  .profile-hero {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 1.25rem;
+  }
+
+  /* Tables — allow horizontal scroll */
+  .table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Cards */
+  .card-body   { padding: 1rem; }
+  .card-header { padding: 0.85rem 1rem; }
+
+  /* Leaderboard podium */
+  .lb-podium { gap: 8px; }
+  .lb-podium-plinth { width: 58px; }
+
+  /* Modal — sheet from bottom on mobile */
+  .modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+  .modal-box {
+    max-height: 88vh;
+    border-radius: 20px 20px 0 0;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  /* Toast */
+  .toast-container {
+    bottom: 0.75rem;
+    right: 0.75rem;
+    left: 0.75rem;
+    align-items: stretch;
+  }
+
+  /* Login */
+  .login-card { padding: 1.75rem 1.25rem; }
+  .login-title { font-size: 1.55rem; }
+
+  /* Player card — wrap on narrow screens */
+  .player-card { flex-wrap: wrap; gap: 1rem; }
+  .player-avatar-ring { width: 68px; height: 68px; font-size: 1.25rem; }
+
+  /* Quest grid */
+  .quest-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ── Small mobile (≤ 520px) ── */
+@media (max-width: 520px) {
+  .page-body { padding: 0.75rem; }
+  .topbar { padding: 0 0.75rem; height: 52px; }
+
+  /* All grids become single column */
+  .info-grid      { grid-template-columns: 1fr; }
+  .action-tiles   { grid-template-columns: 1fr; }
+  .service-stats  { grid-template-columns: 1fr 1fr; }
+  .admin-grid     { grid-template-columns: 1fr 1fr; }
+  .quick-actions  { grid-template-columns: repeat(2, 1fr); }
+  .quest-grid     { grid-template-columns: 1fr; }
+
+  /* Typography scale-down */
+  .dash-xp-big  { font-size: 1.7rem; }
+  .stat-value   { font-size: 1.3rem; }
+  .player-name  { font-size: 1.15rem; }
+  .action-tile-icon { font-size: 1.8rem; }
+
+  /* Login */
+  .login-card  { padding: 1.5rem 1rem; }
+  .login-title { font-size: 1.4rem; }
+
+  /* Cards */
+  .card-body   { padding: 0.85rem; }
+  .card-header { padding: 0.75rem 0.85rem; }
+
+  /* Modal stays bottom sheet */
+  .modal-box { border-radius: 16px 16px 0 0; }
 }
 
 /* ══════════════════════════════════════
@@ -2044,14 +2190,7 @@ body.dark-mode .modal-footer  { border-color: #30363D; }
 .qr-teaser:hover { border-color: var(--g-accent); box-shadow: 0 0 16px rgba(46, 144, 250, 0.18); }
 .qr-teaser-sub   { font-size: 0.58rem; color: var(--g-muted); margin-top: 4px; }
 
-/* ── Responsive (game layout) ── */
-@media (max-width: 860px) {
-  .action-tiles { grid-template-columns: 1fr 1fr; }
-}
-@media (max-width: 700px) {
-  .player-card { flex-wrap: wrap; }
-  .player-avatar-ring { width: 64px; height: 64px; font-size: 1.2rem; }
-}
-@media (max-width: 520px) {
-  .action-tiles { grid-template-columns: 1fr; }
+/* ── Responsive (game layout — consolidated into main breakpoints above) ── */
+@media (max-width: 768px) {
+  .dues-chart-wrap { height: 52px; }
 }
