@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { Topbar } from '../../components/Topbar'
 import { Card } from '../../components/Card'
+import { OnlineBadge } from '../../components/OnlineBadge'
 import { getLeaderboard } from '../../api/xp'
 import { useAuth } from '../../hooks/useAuth'
 import type { LeaderboardEntry } from '../../types'
@@ -26,20 +27,22 @@ function PodiumItem({
   return (
     <div className="lb-podium-item">
       <div className="lb-podium-rank">{RANK_EMOJI[rank] ?? rank}</div>
-      <div
-        className="lb-podium-avatar"
-        style={{
-          width: avatarSize,
-          height: avatarSize,
-          background: entry.avatar_bg ?? '#001A4D',
-          color: entry.avatar_fg ?? '#C9A84C',
-          fontSize: rank === 1 ? '.9rem' : '.75rem',
-          fontWeight: 700,
-          borderColor: crownColor,
-        }}
-      >
-        {entry.first_name[0]}{entry.last_name[0]}
-      </div>
+      <div style={{ position: 'relative', display: 'inline-block' }}>
+        <div
+          className="lb-podium-avatar"
+          style={{
+            width: avatarSize,
+            height: avatarSize,
+            background: entry.avatar_bg ?? '#001A4D',
+            color: entry.avatar_fg ?? '#C9A84C',
+            fontSize: rank === 1 ? '.9rem' : '.75rem',
+            fontWeight: 700,
+            borderColor: crownColor,
+          }}
+        >
+          {entry.first_name[0]}{entry.last_name[0]}
+        </div>
+        <OnlineBadge memberID={entry.member_id} /></div>
       <div className="lb-podium-name">
         {entry.first_name} {entry.last_name}
       </div>

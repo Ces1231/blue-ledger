@@ -34,11 +34,12 @@ const NAV_SECTIONS = [
   {
     label: 'Engage',
     items: [
-      { label: 'Quests & Badges', path: '/quests',    icon: '⭐' },
-      { label: 'Mentorship',    path: '/mentorship',  icon: '🎓' },
-      { label: 'Voting',        path: '/votes',       icon: '🗳️' },
-      { label: 'Minutes',       path: '/minutes',     icon: '📝' },
-      { label: 'Store',         path: '/store',       icon: '🛍️' },
+      { label: 'Quests & Badges', path: '/quests',      icon: '⭐' },
+      { label: 'Challenges',      path: '/challenges',  icon: '⚔️' },
+      { label: 'Mentorship',      path: '/mentorship',  icon: '🎓' },
+      { label: 'Voting',          path: '/votes',       icon: '🗳️' },
+      { label: 'Minutes',         path: '/minutes',     icon: '📝' },
+      { label: 'Store',           path: '/store',       icon: '🛍️' },
     ],
   },
   {

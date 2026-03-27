@@ -1628,6 +1628,38 @@ tbody tr:hover td {
 .empty-state-text { font-size: 0.88rem; color: var(--muted); }
 
 /* ══════════════════════════════════════
+   ONLINE PRESENCE BADGE
+══════════════════════════════════════ */
+.online-dot {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 10px;
+  height: 10px;
+  background: #00ff88;
+  border-radius: 50%;
+  border: 2px solid #060D1A;
+  animation: pulse-green 2s infinite;
+  pointer-events: none;
+}
+.online-dot--sm {
+  width: 7px;
+  height: 7px;
+  bottom: 1px;
+  right: 1px;
+}
+.online-dot--lg {
+  width: 14px;
+  height: 14px;
+  bottom: 3px;
+  right: 3px;
+}
+@keyframes pulse-green {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.45); }
+  50%       { box-shadow: 0 0 0 6px rgba(0, 255, 136, 0); }
+}
+
+/* ══════════════════════════════════════
    SIDEBAR OVERLAY (mobile drawer backdrop)
 ══════════════════════════════════════ */
 .sidebar-overlay {

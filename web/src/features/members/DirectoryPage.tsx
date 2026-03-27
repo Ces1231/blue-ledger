@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { Topbar } from '../../components/Topbar'
 import { Card } from '../../components/Card'
+import { OnlineBadge } from '../../components/OnlineBadge'
+import { ChallengeModal, type ChallengeTarget } from '../../components/ChallengeModal'
 import { getMembers } from '../../api/members'
 import { useAuth } from '../../hooks/useAuth'
 import type { Member } from '../../types'
@@ -15,37 +17,44 @@ const ROLE_ORDER: Record<string, number> = {
   sysadmin: 99,
 }
 
-function MemberRow({ member }: { member: Member }) {
+function MemberRow({ member, onChallenge }: { member: Member; onChallenge?: (m: Member) => void }) {
+  const [hovered, setHovered] = useState(false)
   return (
-    <Link
-      to={`/members/${member.id}`}
-      style={{ textDecoration: 'none', color: 'inherit' }}
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px',
+        padding: '12px 1.25rem',
+        borderBottom: '1px solid var(--border)',
+        transition: 'background .12s',
+        cursor: 'pointer',
+        position: 'relative',
+      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px',
-          padding: '12px 1.25rem',
-          borderBottom: '1px solid var(--border)',
-          transition: 'background .12s',
-          cursor: 'pointer',
-        }}
-        onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--cream)')}
-        onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+      <Link
+        to={`/members/${member.id}`}
+        style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}
       >
         <div
-          className="avatar-circle"
-          style={{
-            width: 40,
-            height: 40,
-            background: member.avatar_bg ?? '#001A4D',
-            color: member.avatar_fg ?? '#C9A84C',
-            fontSize: '.8rem',
-            flexShrink: 0,
-          }}
+          style={{ position: 'relative', flexShrink: 0 }}
         >
-          {member.first_name[0]}{member.last_name[0]}
+          <div
+            className="avatar-circle"
+            style={{
+              width: 40,
+              height: 40,
+              background: member.avatar_bg ?? '#001A4D',
+              color: member.avatar_fg ?? '#C9A84C',
+              fontSize: '.8rem',
+              flexShrink: 0,
+            }}
+          >
+            {member.first_name[0]}{member.last_name[0]}
+          </div>
+          <OnlineBadge memberID={member.id} size="sm" />
         </div>
 
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -78,16 +87,35 @@ function MemberRow({ member }: { member: Member }) {
             <span className={`badge badge-${member.level_key}`}>{member.level}</span>
           </div>
         </div>
-      </div>
-    </Link>
+      </Link>
+
+      {/* Challenge button — shown on hover, only for other members */}
+      {onChallenge && hovered && (
+        <button
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onChallenge(member) }}
+          className="btn btn-outline btn-sm"
+          style={{
+            flexShrink: 0,
+            marginLeft: '8px',
+            borderColor: 'var(--gold)',
+            color: 'var(--gold)',
+            fontSize: '.72rem',
+            padding: '4px 10px',
+          }}
+        >
+          ⚔️
+        </button>
+      )}
+    </div>
   )
 }
 
 export function DirectoryPage() {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, memberID } = useAuth()
   const [search, setSearch] = useState('')
   const [roleFilter, setRoleFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('active')
+  const [challengeTarget, setChallengeTarget] = useState<ChallengeTarget | null>(null)
 
   const { data, isLoading } = useQuery({
     queryKey: ['members', 'list', { per_page: 200 }],
@@ -120,6 +148,13 @@ export function DirectoryPage() {
     <>
       <Topbar title="Member Directory" />
       <main className="page-body">
+        {challengeTarget && (
+          <ChallengeModal
+            isOpen={!!challengeTarget}
+            onClose={() => setChallengeTarget(null)}
+            target={challengeTarget}
+          />
+        )}
         {/* Stats row */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '10px', marginBottom: '1.25rem' }}>
           <div className="stat-card">
@@ -202,7 +237,11 @@ export function DirectoryPage() {
                 </div>
               )}
               {filtered.map((m) => (
-                <MemberRow key={m.id} member={m} />
+                <MemberRow
+                  key={m.id}
+                  member={m}
+                  onChallenge={m.id !== memberID ? (target) => setChallengeTarget({ id: target.id, name: `${target.first_name} ${target.last_name}`, level: target.level, xp_total: target.xp_total }) : undefined}
+                />
               ))}
             </div>
           </Card>

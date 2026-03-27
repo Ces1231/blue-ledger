@@ -6,6 +6,7 @@ import { Button } from '../../components/Button'
 import { Modal } from '../../components/Modal'
 import { useToast } from '../../components/Toast'
 import { useAuth } from '../../hooks/useAuth'
+import { useWebSocket } from '../../hooks/useWebSocket'
 import { getMembers } from '../../api/members'
 import {
   getThreads,
@@ -32,6 +33,7 @@ export function MessagesPage() {
   const { memberID } = useAuth()
   const qc = useQueryClient()
   const { showToast } = useToast()
+  const { on } = useWebSocket()
   const [activeThread, setActiveThread] = useState<MessageThread | null>(null)
   const [msgInput, setMsgInput] = useState('')
   const [showNewThread, setShowNewThread] = useState(false)
@@ -39,6 +41,18 @@ export function MessagesPage() {
   const [initMsg, setInitMsg] = useState('')
   const [selectedMembers, setSelectedMembers] = useState<string[]>([])
   const bottomRef = useRef<HTMLDivElement>(null)
+
+  // Real-time: invalidate message cache on new WS message event
+  useEffect(() => {
+    const unsub = on('MESSAGE_NEW', (payload) => {
+      const p = payload as { conversation_id?: string } | null
+      qc.invalidateQueries({ queryKey: ['message-threads'] })
+      if (activeThread && p?.conversation_id === activeThread.id) {
+        qc.invalidateQueries({ queryKey: ['thread-messages', activeThread.id] })
+      }
+    })
+    return unsub
+  }, [on, qc, activeThread])
 
   const { data: threads = [], isLoading: threadsLoading } = useQuery({
     queryKey: ['message-threads'],

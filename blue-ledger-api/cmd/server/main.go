@@ -12,6 +12,7 @@ import (
 
 	"github.com/ces1231/blue-ledger-api/internal/ai"
 	"github.com/ces1231/blue-ledger-api/internal/alumni"
+	"github.com/ces1231/blue-ledger-api/internal/challenges"
 	"github.com/ces1231/blue-ledger-api/internal/announcements"
 	"github.com/ces1231/blue-ledger-api/internal/auth"
 	"github.com/ces1231/blue-ledger-api/internal/badges"
@@ -90,6 +91,26 @@ func main() {
 	}
 	log.Info().Msg("migrations applied")
 
+	// ── WebSocket Hub ────────────────────────────────────────────────────────
+	var wsHub *platform.Hub
+	if redisClient != nil {
+		wsHub = platform.NewHub(redisClient)
+		go wsHub.Run()
+		log.Info().Msg("websocket hub started")
+	}
+
+	// broadcastFn wires the hub into domain services (nil-safe)
+	broadcastFn := func(chapterID, memberID, msgType string, payload any) {
+		if wsHub == nil {
+			return
+		}
+		if memberID != "" {
+			wsHub.SendToMember(memberID, msgType, payload)
+		} else {
+			wsHub.BroadcastToChapter(chapterID, msgType, payload)
+		}
+	}
+
 	// ── Core services ─────────────────────────────────────────────────────────
 	tokenManager, err := auth.NewTokenManager(
 		cfg.JWTPrivateKeyPath, cfg.JWTPublicKeyPath,
@@ -118,6 +139,7 @@ func main() {
 	jobboardSvc := jobboard.NewService(pool)
 	alumniSvc := alumni.NewService(pool)
 	sbcSvc := sbc.NewService(pool)
+	challengesSvc := challenges.NewService(pool, xpSvc, broadcastFn)
 	aiSvc := ai.NewService(pool, cfg.AnthropicAPIKey, cfg.OpenAIAPIKey)
 	announcementsSvc := announcements.NewService(pool)
 	propsSvc := props.NewService(pool, xpSvc)
@@ -152,6 +174,7 @@ func main() {
 	jobboardHandler := jobboard.NewHandler(jobboardSvc)
 	alumniHandler := alumni.NewHandler(alumniSvc)
 	sbcHandler := sbc.NewHandler(sbcSvc)
+	challengesHandler := challenges.NewHandler(challengesSvc)
 	aiHandler := ai.NewHandler(aiSvc, cfg.AnthropicAPIKey, cfg.OpenAIAPIKey)
 	announcementsHandler := announcements.NewHandler(announcementsSvc)
 	propsHandler := props.NewHandler(propsSvc)
@@ -251,6 +274,13 @@ func main() {
 	jobboardHandler.RegisterRoutes(v1.Group("/job-board"), jwtMW)
 	alumniHandler.RegisterRoutes(v1.Group("/alumni"), jwtMW)
 	sbcHandler.RegisterRoutes(v1.Group("/sbc"), jwtMW)
+	challengesHandler.RegisterRoutes(v1.Group("/challenges"), jwtMW)
+
+	// WebSocket + presence routes
+	if wsHub != nil {
+		v1.GET("/ws", wsHub.HandleWebSocket, jwtMW)
+		v1.GET("/presence", wsHub.HandlePresenceList, jwtMW)
+	}
 
 	// AI assistant routes
 	aiHandler.RegisterRoutes(v1.Group("/ai"), jwtMW)

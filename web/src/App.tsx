@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate, Outlet, useSearchParams, useNavigate } from 'react-router-dom'
 import { Suspense, lazy, useEffect, useState } from 'react'
 import { SidebarContext } from './context/SidebarContext'
+import { PresenceProvider } from './context/PresenceContext'
 import { useMutation } from '@tanstack/react-query'
 import { Sidebar } from './components/Sidebar'
 import { ProtectedRoute } from './components/ProtectedRoute'
@@ -42,6 +43,7 @@ const MessagesPage          = lazy(() => import('./features/messages/MessagesPag
 const ResourcesPage         = lazy(() => import('./features/resources/ResourcesPage').then(m => ({ default: m.ResourcesPage })))
 const MilestonesPage        = lazy(() => import('./features/milestones/MilestonesPage').then(m => ({ default: m.MilestonesPage })))
 const AlumniPage            = lazy(() => import('./features/alumni/AlumniPage').then(m => ({ default: m.AlumniPage })))
+const ChallengesPage        = lazy(() => import('./features/challenges/ChallengesPage').then(m => ({ default: m.ChallengesPage })))
 const AdminPage             = lazy(() => import('./features/admin/AdminPage').then(m => ({ default: m.AdminPage })))
 const AdminMembersPage      = lazy(() => import('./features/admin/AdminMembersPage').then(m => ({ default: m.AdminMembersPage })))
 const AdminEventsPage       = lazy(() => import('./features/admin/AdminEventsPage').then(m => ({ default: m.AdminEventsPage })))
@@ -71,20 +73,22 @@ function AppShell() {
 
   return (
     <SidebarContext.Provider value={{ toggleSidebar: () => setSidebarOpen(v => !v) }}>
-      <div className="app-game-theme" style={{ display: 'flex', minHeight: '100vh' }}>
-        {/* Overlay — tapping closes sidebar on mobile */}
-        <div
-          className={`sidebar-overlay${sidebarOpen ? ' visible' : ''}`}
-          onClick={closeSidebar}
-          aria-hidden="true"
-        />
-        <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
-        <div className="main-content">
-          <Suspense fallback={<PageLoader />}>
-            <Outlet />
-          </Suspense>
+      <PresenceProvider>
+        <div className="app-game-theme" style={{ display: 'flex', minHeight: '100vh' }}>
+          {/* Overlay — tapping closes sidebar on mobile */}
+          <div
+            className={`sidebar-overlay${sidebarOpen ? ' visible' : ''}`}
+            onClick={closeSidebar}
+            aria-hidden="true"
+          />
+          <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
+          <div className="main-content">
+            <Suspense fallback={<PageLoader />}>
+              <Outlet />
+            </Suspense>
+          </div>
         </div>
-      </div>
+      </PresenceProvider>
     </SidebarContext.Provider>
   )
 }
@@ -155,6 +159,7 @@ export function App() {
         <Route path="/milestones"      element={<MilestonesPage />} />
         <Route path="/alumni"          element={<AlumniPage />} />
         <Route path="/assistant"       element={<AssistantPage />} />
+        <Route path="/challenges"      element={<ChallengesPage />} />
 
         {/* ── Chair routes ── */}
         <Route

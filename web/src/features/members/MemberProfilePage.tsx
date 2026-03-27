@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { Topbar } from '../../components/Topbar'
 import { Card } from '../../components/Card'
 import { useToast } from '../../components/Toast'
+import { ChallengeModal } from '../../components/ChallengeModal'
 import { getMember, getMemberXPHistory, updateMember } from '../../api/members'
 import { useAuth } from '../../hooks/useAuth'
 import type { Member } from '../../types'
@@ -130,6 +131,7 @@ export function MemberProfilePage() {
   const { id } = useParams<{ id: string }>()
   const { memberID, isAdmin, isSysadmin } = useAuth()
   const [editOpen, setEditOpen] = useState(false)
+  const [challengeOpen, setChallengeOpen] = useState(false)
 
   const { data: member, isLoading } = useQuery({
     queryKey: ['member', id],
@@ -179,6 +181,18 @@ export function MemberProfilePage() {
       <Topbar title="Member Profile" />
       <main className="page-body">
         {editOpen && <EditModal member={member} onClose={() => setEditOpen(false)} />}
+        {challengeOpen && (
+          <ChallengeModal
+            isOpen={challengeOpen}
+            onClose={() => setChallengeOpen(false)}
+            target={{
+              id: member.id,
+              name: `${member.first_name} ${member.last_name}`,
+              level: member.level,
+              xp_total: member.xp_total,
+            }}
+          />
+        )}
 
         {/* Profile hero */}
         <div className="profile-hero fade-in">
@@ -207,11 +221,22 @@ export function MemberProfilePage() {
               )}
             </div>
           </div>
-          {canEdit && (
-            <button className="btn btn-gold btn-sm" onClick={() => setEditOpen(true)}>
-              Edit Profile
-            </button>
-          )}
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+            {member.id !== memberID && (
+              <button
+                className="btn btn-outline btn-sm"
+                onClick={() => setChallengeOpen(true)}
+                style={{ borderColor: 'var(--gold)', color: 'var(--gold)' }}
+              >
+                ⚔️ Challenge
+              </button>
+            )}
+            {canEdit && (
+              <button className="btn btn-gold btn-sm" onClick={() => setEditOpen(true)}>
+                Edit Profile
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="info-grid">
