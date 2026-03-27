@@ -165,11 +165,12 @@ func (s *service) Register(ctx context.Context, input RegisterInput, deviceHint,
 
 	// Create member record (first admin)
 	displayID := fmt.Sprintf("%s-001", input.GreekLetters)
+	fullName := fmt.Sprintf("%s %s", input.FirstName, input.LastName)
 	err = tx.QueryRow(ctx, `
-		INSERT INTO members (chapter_id, user_id, member_display_id, role, status)
-		VALUES ($1, $2, $3, 'admin', 'active')
+		INSERT INTO members (chapter_id, user_id, display_id, name, email, role, status)
+		VALUES ($1, $2, $3, $4, $5, 'admin', 'active')
 		RETURNING id`,
-		chapterID, userID, displayID,
+		chapterID, userID, displayID, fullName, input.Email,
 	).Scan(&memberID)
 	if err != nil {
 		return nil, fmt.Errorf("create member: %w", err)
@@ -179,7 +180,7 @@ func (s *service) Register(ctx context.Context, input RegisterInput, deviceHint,
 		return nil, fmt.Errorf("commit registration: %w", err)
 	}
 
-	return s.issueTokens(ctx, userID, chapterID, memberID, "admin", input.Email, false, deviceHint, ipAddress)
+	return s.issueTokens(ctx, userID, chapterID, memberID, "admin", input.Email, input.FirstName, input.LastName, false, deviceHint, ipAddress)
 }
 
 // Login authenticates a user with email and password.
@@ -248,7 +249,7 @@ func (s *service) Login(ctx context.Context, input LoginInput, deviceHint, ipAdd
 
 	if isSysadmin && err == pgx.ErrNoRows {
 		// Sysadmin may not have a chapter membership
-		return s.issueTokens(ctx, userID, "", "", "sysadmin", input.Email, true, deviceHint, ipAddress)
+		return s.issueTokens(ctx, userID, "", "", "sysadmin", input.Email, firstName, lastName, true, deviceHint, ipAddress)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("lookup member: %w", err)
@@ -258,7 +259,7 @@ func (s *service) Login(ctx context.Context, input LoginInput, deviceHint, ipAdd
 		role = "sysadmin"
 	}
 
-	return s.issueTokens(ctx, userID, chapterID, memberID, role, input.Email, isSysadmin, deviceHint, ipAddress)
+	return s.issueTokens(ctx, userID, chapterID, memberID, role, input.Email, firstName, lastName, isSysadmin, deviceHint, ipAddress)
 }
 
 // SendMagicLink generates a magic link token and sends it via email.
@@ -361,7 +362,7 @@ func (s *service) ConsumeMagicLink(ctx context.Context, rawToken, deviceHint, ip
 		role = "sysadmin"
 	}
 
-	return s.issueTokens(ctx, userID, chapterID, memberID, role, email, isSysadmin, deviceHint, ipAddress)
+	return s.issueTokens(ctx, userID, chapterID, memberID, role, email, "", "", isSysadmin, deviceHint, ipAddress)
 }
 
 // RefreshToken rotates a refresh token, issuing new access + refresh tokens.
@@ -425,7 +426,7 @@ func (s *service) RefreshToken(ctx context.Context, rawRefreshToken, deviceHint,
 		role = "sysadmin"
 	}
 
-	return s.issueTokens(ctx, userID, cid, memberID, role, email, isSysadmin, deviceHint, ipAddress)
+	return s.issueTokens(ctx, userID, cid, memberID, role, email, "", "", isSysadmin, deviceHint, ipAddress)
 }
 
 // Logout revokes the session associated with the given refresh token.
@@ -465,7 +466,7 @@ func (s *service) GetUserByID(ctx context.Context, userID string) (*UserSummary,
 }
 
 // issueTokens generates access + refresh tokens and persists the session.
-func (s *service) issueTokens(ctx context.Context, userID, chapterID, memberID, role, email string, isSysadmin bool, deviceHint, ipAddress string) (*AuthResponse, error) {
+func (s *service) issueTokens(ctx context.Context, userID, chapterID, memberID, role, email, firstName, lastName string, isSysadmin bool, deviceHint, ipAddress string) (*AuthResponse, error) {
 	accessToken, err := s.tokens.GenerateAccessToken(userID, chapterID, memberID, role, email, isSysadmin)
 	if err != nil {
 		return nil, fmt.Errorf("generate access token: %w", err)
@@ -500,6 +501,8 @@ func (s *service) issueTokens(ctx context.Context, userID, chapterID, memberID, 
 		User: UserSummary{
 			ID:         userID,
 			Email:      email,
+			FirstName:  firstName,
+			LastName:   lastName,
 			ChapterID:  chapterID,
 			MemberID:   memberID,
 			Role:       role,

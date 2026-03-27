@@ -2,6 +2,7 @@ package email
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/resendlabs/resend-go"
 )
@@ -12,21 +13,39 @@ type Client struct {
 	fromEmail string
 	fromName  string
 	appURL    string
+	// devMode is true when no real Resend API key is configured.
+	// In dev mode all emails are printed to stdout instead of sent.
+	devMode bool
 }
 
 // New creates a new email client backed by Resend.
+// When apiKey is empty or a placeholder, the client runs in dev mode:
+// emails are printed to stdout so magic links can be copy-pasted from logs.
 func New(apiKey, fromEmail, fromName, appURL string) *Client {
+	devMode := apiKey == "" || strings.HasPrefix(apiKey, "re_placeholder")
 	return &Client{
 		client:    resend.NewClient(apiKey),
 		fromEmail: fromEmail,
 		fromName:  fromName,
 		appURL:    appURL,
+		devMode:   devMode,
 	}
 }
 
 // SendMagicLink sends a sign-in magic link email to the given address.
+// In dev mode (no real Resend key) the link is printed to stdout instead.
 func (c *Client) SendMagicLink(toEmail, token string) error {
-	magicURL := fmt.Sprintf("%s/auth/magic?token=%s", c.appURL, token)
+	magicURL := fmt.Sprintf("%s/magic?token=%s", c.appURL, token)
+
+	if c.devMode {
+		fmt.Printf("\n╔══════════════════════════════════════════════════════════════╗\n")
+		fmt.Printf("║  [DEV] MAGIC LINK — copy into browser to sign in             ║\n")
+		fmt.Printf("║  To: %-56s ║\n", toEmail)
+		fmt.Printf("╠══════════════════════════════════════════════════════════════╣\n")
+		fmt.Printf("║  %s\n", magicURL)
+		fmt.Printf("╚══════════════════════════════════════════════════════════════╝\n\n")
+		return nil
+	}
 
 	html := fmt.Sprintf(`
 <!DOCTYPE html>
