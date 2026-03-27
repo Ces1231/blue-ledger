@@ -1,8 +1,11 @@
 import { Link } from 'react-router-dom'
+import { QRCodeSVG } from 'qrcode.react'
 import { Topbar } from '../../components/Topbar'
-import { Card, StatCard } from '../../components/Card'
+import { Card } from '../../components/Card'
 import { useDashboard } from './useDashboard'
 import { useAuth } from '../../hooks/useAuth'
+import type { DuesRecord } from '../../types'
+import type { Goal } from '../../api/goals'
 
 const XP_LEVELS = [
   { key: 'neo',    min: 0,    max: 249,   label: 'Neophyte' },
@@ -20,162 +23,296 @@ function getXPProgress(xp: number) {
   return { pct, current, next, xpToNext: next.min - xp }
 }
 
-const QUICK_ACTIONS = [
-  { icon: '📅', title: 'Events',     sub: 'RSVP & check in',    path: '/events',      bg: '#EAF0FB', fg: '#003087' },
-  { icon: '🏆', title: 'Leaderboard',sub: 'See your rank',      path: '/leaderboard', bg: '#F5E6C8', fg: '#7A4A00' },
-  { icon: '🤝', title: 'Service',    sub: 'Log service hours',  path: '/service',     bg: '#EAF5EE', fg: '#1A6B3A' },
-  { icon: '💳', title: 'Dues',       sub: 'Pay your dues',      path: '/dues',        bg: '#FCE4EC', fg: '#8B1A1A' },
-  { icon: '👥', title: 'Members',    sub: 'Browse directory',   path: '/members',     bg: '#EAF0FB', fg: '#003087' },
-  { icon: '⭐', title: 'Quests',     sub: 'Track progress',     path: '/quests',      bg: '#F5E6C8', fg: '#7A4A00' },
+const ACTION_TILES = [
+  { icon: '🎖️', label: 'Badge Room',         sub: 'EARN REWARDS',    path: '/quests' },
+  { icon: '📜', label: 'Quest Log',           sub: 'TRACK PROGRESS',  path: '/quests' },
+  { icon: '🛍️', label: 'Paraphernalia Floor', sub: 'BROWSE STORE',    path: '/store'  },
 ]
 
-export function DashboardPage() {
-  const { user } = useAuth()
-  const {
-    member,
-    totalMembers,
-    upcomingEvents,
-    leaderboard,
-    myRank,
-    unpaidDues,
-    isLoading,
-  } = useDashboard()
+// ── Dues bar chart ──────────────────────────────────────────────────
+function DuesChart({ dues }: { dues: DuesRecord[] }) {
+  const items = [...dues].reverse()
+  const maxAmt = Math.max(...items.map((d) => d.amount_cents), 1)
 
-  const xpData = member ? getXPProgress(member.xp_total) : null
+  function shortLabel(semester: string) {
+    const parts = semester.split(' ')
+    if (parts.length >= 2) {
+      const map: Record<string, string> = { Spring: 'SPR', Fall: 'FAL', Summer: 'SUM' }
+      return [map[parts[0]] ?? parts[0].slice(0, 3), `'${parts[1].slice(2)}`]
+    }
+    return [semester.slice(0, 4)]
+  }
+
+  if (items.length === 0) {
+    return (
+      <div style={{ textAlign: 'center', padding: '1rem 0', color: 'var(--g-muted)', fontSize: '.75rem' }}>
+        No dues records
+      </div>
+    )
+  }
 
   return (
     <>
-      <Topbar title="Dashboard" />
-      <main className="page-body">
-        {/* Hero XP section */}
-        {member && xpData && (
-          <div className="dash-hero fade-in">
-            <div className="dash-greeting">Welcome back</div>
-            <div className="dash-name">
-              Bro. {user?.first_name} {user?.last_name}
+      <div className="dues-chart-wrap">
+        {items.map((d) => {
+          const pct = Math.max(8, Math.round((d.amount_cents / maxAmt) * 100))
+          const paid = d.status === 'paid' || d.status === 'waived'
+          return (
+            <div
+              key={d.id}
+              className={`dues-bar ${paid ? 'paid' : 'unpaid'}`}
+              style={{ height: `${pct}%` }}
+              title={`${d.semester}: $${(d.amount_cents / 100).toFixed(0)} — ${d.status}`}
+            />
+          )
+        })}
+      </div>
+      <div className="dues-bar-labels">
+        {items.map((d) => (
+          <div key={d.id} className="dues-bar-label">
+            {shortLabel(d.semester).map((t, i) => <div key={i}>{t}</div>)}
+          </div>
+        ))}
+      </div>
+    </>
+  )
+}
+
+// ── Achievement row ─────────────────────────────────────────────────
+function AchievementRow({ goal }: { goal: Goal }) {
+  const pct =
+    goal.target_value > 0
+      ? Math.min(100, Math.round((goal.current_value / goal.target_value) * 100))
+      : 0
+  const done = pct >= 100
+  return (
+    <div className="achievement-row">
+      <div className={`achievement-check ${done ? 'done' : 'pending'}`}>
+        {done ? '✓' : '○'}
+      </div>
+      <div className="achievement-bar-wrap">
+        <div className="achievement-title">{goal.title}</div>
+        <div className="achievement-bar">
+          <div className={`achievement-bar-fill ${done ? 'done' : ''}`} style={{ width: `${pct}%` }} />
+        </div>
+      </div>
+      <div style={{ fontSize: '.7rem', color: 'var(--g-muted)', minWidth: 34, textAlign: 'right' }}>
+        {pct}%
+      </div>
+    </div>
+  )
+}
+
+// ── Dashboard ────────────────────────────────────────────────────────
+export function DashboardPage() {
+  const { user } = useAuth()
+  const { member, totalMembers, upcomingEvents, leaderboard, myRank, unpaidDues, myDues, chapterGoals, isLoading } =
+    useDashboard()
+
+  const xpData       = member ? getXPProgress(member.xp_total) : null
+  const yearsOfService = member?.inducted_year ? new Date().getFullYear() - member.inducted_year : null
+  const paidCount    = myDues.filter((d) => d.status === 'paid' || d.status === 'waived').length
+  const duesPct      = myDues.length > 0 ? Math.round((paidCount / myDues.length) * 100) : 100
+  const qrValue      = member
+    ? `BL:${member.member_display_id}:${member.first_name} ${member.last_name}`
+    : 'BL:ID'
+
+  const initials = user ? `${user.first_name[0]}${user.last_name[0]}`.toUpperCase() : '??'
+
+  return (
+    <>
+      <Topbar title="Chapter HQ" />
+      <main className="page-body" style={{ maxWidth: 1100, margin: '0 auto' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+
+          {/* ── PLAYER CARD ── */}
+          <div className="player-card fade-in">
+            <div className="player-avatar-ring">
+              {member?.avatar_url
+                ? <img src={member.avatar_url} alt="avatar" />
+                : <span>{initials}</span>
+              }
             </div>
-            <div className="dash-meta-row">
-              <div>
-                <div className="dash-xp-big">{member.xp_total.toLocaleString()}</div>
-                <div className="dash-xp-label">Total XP</div>
+
+            <div className="player-stats">
+              <div className="player-name">
+                {user ? `${user.first_name} ${user.last_name}` : '—'}
               </div>
-              <div className="dash-level-badge">{member.level}</div>
-              {xpData.next && (
-                <div className="dash-xp-bar-wrap">
-                  <div className="dash-xp-bar-label">
-                    <span>Level Progress</span>
-                    <span>{xpData.xpToNext} XP to {xpData.next.label}</span>
+              {member && (
+                <>
+                  <div className="player-stat-row">
+                    <span>🪪</span>
+                    <span>Member #:</span>
+                    <span className="val">{member.member_display_id}</span>
                   </div>
-                  <div className="dash-xp-bar">
-                    <div className="dash-xp-fill" style={{ width: `${xpData.pct}%` }} />
+                  {yearsOfService !== null && (
+                    <div className="player-stat-row">
+                      <span>📅</span>
+                      <span>Years of Service:</span>
+                      <span className="val">{yearsOfService}</span>
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <div className="player-xp">
+                      <span style={{ color: 'var(--gold)', fontSize: '1rem' }}>✦</span>
+                      <span className="player-xp-value">{member.xp_total.toLocaleString()}</span>
+                      <span className="player-xp-label">Experience Points</span>
+                    </div>
+                    <span className="player-level">{member.level}</span>
                   </div>
-                </div>
+                  {xpData?.next && (
+                    <div style={{ marginTop: '.5rem', maxWidth: 300 }}>
+                      <div style={{ fontSize: '.64rem', color: 'var(--g-muted)', marginBottom: 4 }}>
+                        {xpData.xpToNext.toLocaleString()} XP → {xpData.next.label}
+                      </div>
+                      <div className="progress-bar" style={{ height: 5 }}>
+                        <div
+                          className="progress-fill"
+                          style={{ width: `${xpData.pct}%`, background: 'var(--g-accent)' }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
-          </div>
-        )}
 
-        {/* Quick actions */}
-        <div className="quick-actions">
-          {QUICK_ACTIONS.map((a) => (
-            <Link key={a.path} to={a.path} style={{ textDecoration: 'none' }}>
-              <div className="quick-card">
-                <div className="quick-icon" style={{ background: a.bg, color: a.fg }}>
-                  {a.icon}
+            {/* Right side: rank + QR */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center', flexShrink: 0 }}>
+              {myRank > 0 && (
+                <div className="rank-badge">
+                  <div className="rank-number">#{myRank}</div>
+                  <div className="rank-label">Chapter Rank</div>
                 </div>
-                <div>
-                  <div className="quick-title">{a.title}</div>
-                  <div className="quick-sub">{a.sub}</div>
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
-
-        {/* Dashboard grid */}
-        <div className="dash-grid">
-          {/* Left column */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            {/* Stats row */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '10px' }}>
-              <StatCard
-                label="Chapter Rank"
-                value={myRank > 0 ? `#${myRank}` : '—'}
-                sub="of leaderboard"
-              />
-              <StatCard
-                label="Semester XP"
-                value={(member?.xp_semester ?? 0).toLocaleString()}
-                sub="this semester"
-              />
-              <StatCard
-                label="Dues Status"
-                value={unpaidDues.length === 0 ? 'Paid' : 'Outstanding'}
-                sub={unpaidDues.length === 0 ? 'All clear' : `${unpaidDues.length} unpaid`}
-              />
+              )}
+              <Link to="/digital-id" className="qr-teaser">
+                <QRCodeSVG value={qrValue} size={60} bgColor="transparent" fgColor="#60A5FA" />
+                <div className="qr-teaser-sub">Scan to Share Profile</div>
+              </Link>
             </div>
+          </div>
 
-            {/* Upcoming events */}
+          {/* ── ACTION TILES ── */}
+          <div className="action-tiles fade-in">
+            {ACTION_TILES.map((tile) => (
+              <Link key={tile.label} to={tile.path} className="action-tile">
+                <div className="action-tile-icon">{tile.icon}</div>
+                <div className="action-tile-label">{tile.label}</div>
+                <div className="action-tile-sub">{tile.sub}</div>
+              </Link>
+            ))}
+          </div>
+
+          {/* ── MIDDLE ROW: Achievements + Financial ── */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+
+            {/* Chapter Achievements */}
             <Card>
               <Card.Header
-                title="Upcoming Events"
-                action={<Link to="/events" style={{ fontSize: '.78rem', color: 'var(--navy)' }}>View all</Link>}
+                title="Chapter Achievements"
+                action={
+                  <Link to="/goals" style={{ fontSize: '.75rem', color: 'var(--g-accent)', textDecoration: 'none' }}>
+                    View all
+                  </Link>
+                }
               />
               <Card.Body>
-                {isLoading && (
-                  <p style={{ color: 'var(--muted)', fontSize: '.83rem' }}>Loading...</p>
+                {isLoading ? (
+                  <p style={{ color: 'var(--g-muted)', fontSize: '.83rem' }}>Loading…</p>
+                ) : chapterGoals.length === 0 ? (
+                  <p style={{ color: 'var(--g-muted)', fontSize: '.83rem' }}>No active chapter goals</p>
+                ) : (
+                  <div className="achievement-list">
+                    {chapterGoals.slice(0, 5).map((goal) => (
+                      <AchievementRow key={goal.id} goal={goal} />
+                    ))}
+                  </div>
                 )}
-                {!isLoading && upcomingEvents.length === 0 && (
-                  <p style={{ color: 'var(--muted)', fontSize: '.83rem' }}>No upcoming events</p>
+              </Card.Body>
+            </Card>
+
+            {/* Financial Status */}
+            <Card>
+              <Card.Header title="Financial Status" />
+              <Card.Body>
+                <div className="fin-budget-label">Budget Status</div>
+                <div className="fin-budget-bar">
+                  <div className="fin-budget-fill" style={{ width: `${duesPct}%` }} />
+                </div>
+                <div className="fin-budget-label">
+                  Dues Collection — {paidCount}/{myDues.length} paid
+                </div>
+                <DuesChart dues={myDues} />
+                {unpaidDues.length > 0 && (
+                  <div style={{ marginTop: '.85rem' }}>
+                    <Link
+                      to="/dues"
+                      style={{
+                        display: 'block', textAlign: 'center',
+                        background: 'rgba(139,26,26,0.22)',
+                        border: '1px solid rgba(200,50,50,0.35)',
+                        borderRadius: 8, padding: '6px 12px',
+                        fontSize: '.75rem', color: '#FF7575', textDecoration: 'none',
+                      }}
+                    >
+                      ⚠️ {unpaidDues.length} outstanding {unpaidDues.length === 1 ? 'balance' : 'balances'}
+                    </Link>
+                  </div>
                 )}
-                {upcomingEvents.map((ev) => (
-                  <Link
-                    key={ev.id}
-                    to={`/events`}
-                    style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 0', borderBottom: '1px solid var(--border)', textDecoration: 'none', color: 'inherit' }}
-                  >
-                    <div style={{ background: 'var(--navy)', color: 'var(--gold)', borderRadius: '8px', padding: '6px 10px', fontSize: '.72rem', fontFamily: 'DM Mono, monospace', textAlign: 'center', minWidth: '52px' }}>
-                      <div style={{ fontSize: '1rem', fontWeight: 700 }}>
-                        {new Date(ev.event_date).getDate()}
-                      </div>
-                      <div style={{ textTransform: 'uppercase', letterSpacing: '.06em' }}>
-                        {new Date(ev.event_date).toLocaleDateString('en', { month: 'short' })}
-                      </div>
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '.85rem', fontWeight: 600, color: 'var(--ink)' }}>{ev.name}</div>
-                      <div style={{ fontSize: '.72rem', color: 'var(--muted)' }}>
-                        {ev.location ?? ev.event_type} • +{ev.xp_attend} XP
-                      </div>
-                    </div>
-                  </Link>
-                ))}
               </Card.Body>
             </Card>
           </div>
 
-          {/* Right column */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            {/* Chapter stats */}
+          {/* ── BOTTOM ROW: Events + Leaderboard ── */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+
+            {/* Upcoming Events */}
             <Card>
-              <Card.Header title="Chapter Stats" />
+              <Card.Header
+                title="Recent Chapter Events"
+                action={
+                  <Link to="/events" style={{ fontSize: '.75rem', color: 'var(--g-accent)', textDecoration: 'none' }}>
+                    View all
+                  </Link>
+                }
+              />
               <Card.Body>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '.83rem', color: 'var(--muted)' }}>Active Members</span>
-                    <span style={{ fontFamily: 'DM Serif Display, serif', fontSize: '1.2rem', color: 'var(--navy)' }}>
-                      {totalMembers}
-                    </span>
-                  </div>
-                </div>
+                {isLoading ? (
+                  <p style={{ color: 'var(--g-muted)', fontSize: '.83rem' }}>Loading…</p>
+                ) : upcomingEvents.length === 0 ? (
+                  <p style={{ color: 'var(--g-muted)', fontSize: '.83rem' }}>No upcoming events</p>
+                ) : (
+                  upcomingEvents.map((ev) => {
+                    const d = new Date(ev.event_date)
+                    return (
+                      <Link key={ev.id} to="/events" className="game-event-row">
+                        <div className="game-event-date">
+                          <div className="game-event-day">{d.getDate()}</div>
+                          <div className="game-event-mon">
+                            {d.toLocaleDateString('en', { month: 'short' })}
+                          </div>
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div className="game-event-name">{ev.name}</div>
+                          <div className="game-event-meta">{ev.location ?? ev.event_type}</div>
+                        </div>
+                        <span className="xp-tag">+{ev.xp_attend} XP</span>
+                      </Link>
+                    )
+                  })
+                )}
               </Card.Body>
             </Card>
 
-            {/* Leaderboard preview */}
+            {/* Leaderboard */}
             <Card>
               <Card.Header
-                title="Top 5"
-                action={<Link to="/leaderboard" style={{ fontSize: '.78rem', color: 'var(--navy)' }}>Full board</Link>}
+                title="Member Leaderboard"
+                action={
+                  <Link to="/leaderboard" style={{ fontSize: '.75rem', color: 'var(--g-accent)', textDecoration: 'none' }}>
+                    Full board
+                  </Link>
+                }
               />
               <div>
                 {leaderboard.map((e) => (
@@ -184,10 +321,10 @@ export function DashboardPage() {
                     <div
                       className="avatar-circle"
                       style={{
-                        width: 32, height: 32,
-                        background: e.avatar_bg ?? '#001A4D',
-                        color: e.avatar_fg ?? '#C9A84C',
-                        fontSize: '.7rem',
+                        width: 30, height: 30,
+                        background: e.avatar_bg ?? 'var(--navy)',
+                        color: e.avatar_fg ?? 'var(--gold)',
+                        fontSize: '.68rem',
                       }}
                     >
                       {e.first_name[0]}{e.last_name[0]}
@@ -199,7 +336,25 @@ export function DashboardPage() {
                   </div>
                 ))}
               </div>
+
+              {/* Bottom stat row */}
+              <div
+                style={{
+                  display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px',
+                  padding: '1rem', borderTop: '1px solid var(--border)',
+                }}
+              >
+                <div className="stat-card">
+                  <div className="stat-label">Active Members</div>
+                  <div className="stat-value">{totalMembers}</div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-label">Semester XP</div>
+                  <div className="stat-value">{(member?.xp_semester ?? 0).toLocaleString()}</div>
+                </div>
+              </div>
             </Card>
+
           </div>
         </div>
       </main>

@@ -66,7 +66,7 @@ function PageLoader() {
 // ── Authenticated app shell (sidebar + outlet) ──
 function AppShell() {
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
+    <div className="app-game-theme" style={{ display: 'flex', minHeight: '100vh' }}>
       <Sidebar />
       <div className="main-content">
         <Suspense fallback={<PageLoader />}>

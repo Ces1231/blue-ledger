@@ -3,6 +3,7 @@ import { getMembers } from '../../api/members'
 import { getEvents } from '../../api/events'
 import { getLeaderboard } from '../../api/xp'
 import { getMyDues } from '../../api/dues'
+import { getGoals } from '../../api/goals'
 import { useAuth } from '../../hooks/useAuth'
 import { useCurrentMember } from '../../hooks/useCurrentMember'
 
@@ -38,10 +39,18 @@ export function useDashboard() {
     staleTime: 1000 * 60 * 5,
   })
 
+  const goalsQuery = useQuery({
+    queryKey: ['goals', 'chapter'],
+    queryFn: getGoals,
+    enabled: isAuthenticated,
+    staleTime: 1000 * 60 * 5,
+  })
+
   const totalMembers = membersQuery.data?.meta.total ?? 0
   const upcomingEvents = eventsQuery.data?.data ?? []
   const leaderboard = leaderboardQuery.data ?? []
   const myDues = duesQuery.data ?? []
+  const chapterGoals = (goalsQuery.data ?? []).filter((g) => g.is_active)
 
   const myRank = member
     ? leaderboard.findIndex((e) => e.member_id === member.id) + 1
@@ -56,6 +65,8 @@ export function useDashboard() {
     leaderboard: leaderboard.slice(0, 5),
     myRank,
     unpaidDues,
+    myDues,
+    chapterGoals,
     isLoading:
       membersQuery.isLoading ||
       eventsQuery.isLoading ||
