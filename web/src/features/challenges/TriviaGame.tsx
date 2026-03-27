@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import confetti from 'canvas-confetti'
 import { useToast } from '../../components/Toast'
 import { submitAnswers, type Challenge } from '../../api/challenges'
 
@@ -130,6 +131,33 @@ export function TriviaGame({ challenge, myID, onClose }: TriviaGameProps) {
       </div>
     )
   }
+
+  // ── Confetti burst on win ──
+  useEffect(() => {
+    if (result?.won) {
+      confetti({
+        particleCount: 160,
+        spread: 80,
+        origin: { y: 0.55 },
+        colors: ['#C9A84C', '#001A4D', '#00ff88', '#ffffff'],
+      })
+      // Second burst slightly delayed for extra pop
+      setTimeout(() => {
+        confetti({
+          particleCount: 80,
+          spread: 100,
+          origin: { x: 0.2, y: 0.5 },
+          colors: ['#C9A84C', '#00ff88'],
+        })
+        confetti({
+          particleCount: 80,
+          spread: 100,
+          origin: { x: 0.8, y: 0.5 },
+          colors: ['#C9A84C', '#00ff88'],
+        })
+      }, 300)
+    }
+  }, [result?.won])
 
   // ── Result screen ──
   if (result) {

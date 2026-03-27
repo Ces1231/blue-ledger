@@ -1,6 +1,10 @@
 import { NavLink, useNavigate } from 'react-router-dom'
+import { useEffect } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../hooks/useAuth'
 import { useCurrentMember } from '../hooks/useCurrentMember'
+import { useWebSocket } from '../hooks/useWebSocket'
+import { listChallenges } from '../api/challenges'
 
 interface NavItem {
   label: string
@@ -83,9 +87,30 @@ interface SidebarProps {
 }
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
-  const { user, role, isSysadmin, logout } = useAuth()
+  const { user, role, isSysadmin, logout, memberID } = useAuth()
   const { member } = useCurrentMember()
   const navigate = useNavigate()
+  const qc = useQueryClient()
+  const { on } = useWebSocket()
+
+  // Pending incoming challenge count for badge
+  const { data: challenges = [] } = useQuery({
+    queryKey: ['challenges'],
+    queryFn: listChallenges,
+    staleTime: 30_000,
+    refetchInterval: 30_000,
+  })
+  const pendingCount = challenges.filter(
+    (c) => c.challenged_id === memberID && c.status === 'pending'
+  ).length
+
+  // Real-time update when a new challenge invite arrives
+  useEffect(() => {
+    const unsub = on('CHALLENGE_INVITE', () => {
+      qc.invalidateQueries({ queryKey: ['challenges'] })
+    })
+    return unsub
+  }, [on, qc])
 
   const handleLogout = async () => {
     await logout()
@@ -158,6 +183,27 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 >
                   <span className="nav-icon">{item.icon}</span>
                   {item.label}
+                  {item.path === '/challenges' && pendingCount > 0 && (
+                    <span
+                      style={{
+                        marginLeft: 'auto',
+                        background: 'var(--danger, #e53935)',
+                        color: '#fff',
+                        borderRadius: '50%',
+                        minWidth: '18px',
+                        height: '18px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '.62rem',
+                        fontWeight: 700,
+                        padding: '0 3px',
+                        lineHeight: 1,
+                      }}
+                    >
+                      {pendingCount > 9 ? '9+' : pendingCount}
+                    </span>
+                  )}
                 </NavLink>
               ))}
             </div>

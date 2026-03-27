@@ -657,16 +657,16 @@ VitePWA({
 | TASK-019 — `ChallengeModal` + profile integration | GAP-NEW-002 | 🟡 P2 | `[x] done 2026-03-27` |
 | TASK-020 — Trivia game engine | GAP-NEW-002 | 🟢 P3 | `[x] done 2026-03-27` |
 | TASK-021 — PWA service worker | GAP-NEW-003 | 🟢 P3 | `[x] done 2026-03-27` |
-| TASK-022 — Confetti win animation | — | 🟢 P3 | `[ ] not started` |
-| TASK-023 — PWA icon assets | — | 🟡 P2 | `[ ] not started` |
-| TASK-024 — Sidebar challenge badge | — | 🟡 P2 | `[ ] not started` |
-| TASK-025 — Run `023_challenges` migration in prod | — | 🔴 P1 | `[ ] not started` |
+| TASK-022 — Confetti win animation | — | 🟢 P3 | `[x] done 2026-03-27` |
+| TASK-023 — PWA icon assets | — | 🟡 P2 | `[x] done 2026-03-27` |
+| TASK-024 — Sidebar challenge badge | — | 🟡 P2 | `[x] done 2026-03-27` |
+| TASK-025 — Run `023_challenges` migration in prod | — | 🔴 P1 | `[x] done 2026-03-27` |
 
 ---
 
 ## TASK-022 · Frontend — Confetti win animation in `TriviaGame`
 **Priority:** P3  
-**Status:** `[ ] not started`  
+**Status:** `[x] done 2026-03-27`  
 **Effort:** 30 min  
 
 **What to do:**
@@ -691,7 +691,7 @@ VitePWA({
 
 ## TASK-023 · Assets — PWA icon files
 **Priority:** P2  
-**Status:** `[ ] not started`  
+**Status:** `[x] done 2026-03-27`  
 **Effort:** 30 min  
 
 **What to do:**
@@ -713,7 +713,7 @@ Generate and place two PNG icon files required by the web app manifest:
 
 ## TASK-024 · Frontend — Sidebar challenge notification badge
 **Priority:** P2  
-**Status:** `[ ] not started`  
+**Status:** `[x] done 2026-03-27`  
 **Effort:** 1h  
 
 **What to do:**
@@ -747,7 +747,7 @@ Show a red badge with unread-incoming-challenge count on the ⚔️ Challenges s
 
 ## TASK-025 · Ops — Apply `023_challenges` migration to production DB
 **Priority:** P1  
-**Status:** `[ ] not started`  
+**Status:** `[x] done 2026-03-27`  
 **Effort:** 15 min  
 
 **What to do:**
