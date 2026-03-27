@@ -513,9 +513,38 @@ make keys
 - Make.com / Zapier automations require manual setup (documented in guides)
 - Stripe payment UI requires additional config (Enhancement E3)
 - No seed data script beyond `cmd/seed/` placeholder
-- `sbc` package is sparse — SBC-specific features partially stubbed
-- `milestones` feature has no dedicated API handler registered in main.go (frontend feature exists, backend route may be missing)
-- `study-groups` same — present in frontend but not confirmed in backend route table
+- **No WebSocket / real-time layer** — TASK-015 planned (GAP-NEW-001)
+- **No challenge/game engine** — TASK-013/014/018/019 planned (GAP-NEW-002)
+- **No PWA service worker** — TASK-021 planned (GAP-NEW-003)
+- DMs use polling; real-time delivery pending WebSocket hub (TASK-017)
+
+---
+
+## 15. SESSION 2 CHANGES (2026-03-27)
+
+### Auth Fixes
+- `internal/auth/service.go` — member INSERT columns corrected (`member_display_id`→`display_id`, added `name`, `email`); `first_name`/`last_name` added to `issueTokens()` and returned in auth response
+- `pkg/email/resend.go` — dev-mode stdout logging for magic links when `RESEND_API_KEY` is empty/placeholder
+- `docker-compose.yml` — API host port `8080→8081` (port conflict); `API_BASE_URL` set to `http://localhost:3001` (magic link path)
+
+### Gamification Theme
+- `web/src/styles/base.css` — `.app-game-theme` CSS class: dark `#060D1A` background, circuit-board grid, neon blue accents, card glow/hover effects, XP bar styling
+- `web/src/features/dashboard/DashboardPage.tsx` — redesigned as gamified HUD with XP bar, level badge, streak, quest progress, online count
+
+### Responsive Layout
+- `web/src/context/SidebarContext.tsx` — NEW: provides `SidebarContext` + `useSidebarToggle()` hook
+- `web/src/App.tsx` — `sidebarOpen` state, `SidebarContext.Provider`, `.sidebar-overlay` div
+- `web/src/components/Sidebar.tsx` — accepts `{ isOpen, onClose }` props; auto-closes on nav tap
+- `web/src/components/Topbar.tsx` — hamburger button (`.mobile-menu-btn`) shown on ≤768px
+- `web/src/styles/base.css` — comprehensive 5-breakpoint responsive system (1280/1024/900/768/520px)
+
+### Docker
+- `blue-ledger-api/docker-compose.yml` — API port remapped to `8081:8080`; `API_BASE_URL` env var added
+
+### Deployment Status
+- All 4 containers healthy: postgres:5432, redis:6379, api:8081, web:3001
+- Login verified working: `admin@blueledger.local` / `BlueLedger2026!`
+- Magic links logged to stdout: `docker compose logs api | grep "magic"`
 
 ---
 

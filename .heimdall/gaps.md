@@ -208,7 +208,7 @@ Verify: search for any alternate table name used by `sbc` service (e.g. `sbc_ent
 
 ---
 
-## Remediation Order
+## Remediation Order (Original)
 
 | Priority | Gap | Effort | Risk |
 |---|---|---|---|
@@ -221,4 +221,111 @@ Verify: search for any alternate table name used by `sbc` service (e.g. `sbc_ent
 
 ---
 
-*HEIMDALL — All-Seeing Eye — Gap file complete.*
+# ═══════════════════════════════════════════════════
+# GAP REVIEW — SESSION 2 — 2026-03-27
+# ═══════════════════════════════════════════════════
+
+## Original Gaps — Resolution Status
+
+| Gap | Status | Notes |
+|---|---|---|
+| GAP-001 `022_sbc_log` migration | ✅ RESOLVED | `migrations/022_sbc_log.up/down.sql` exists |
+| GAP-002 `milestones` backend | ✅ RESOLVED | TASK-003 completed 2026-03-26 |
+| GAP-003 `study-groups` backend | ✅ RESOLVED | TASK-004 completed 2026-03-26 |
+| GAP-004 Frontend stub pages | ✅ RESOLVED | All 7 pages (resources, job-board, fundraising, committees, alumni, milestones, study-groups) fully built |
+| GAP-005 RSA keys + .env | ✅ RESOLVED | TASK-002 completed 2026-03-26 |
+| GAP-006 sbc_log numbering note | ✅ RESOLVED | 022 used correctly |
+| GAP-007 study-groups.ts content | ✅ RESOLVED | `web/src/api/study-groups.ts` fully implemented |
+
+**Result: 7/7 original gaps remediated. Zero remaining StubPage components in production routes.**
+
+---
+
+## New Gaps — Discovered 2026-03-27
+
+### GAP-NEW-001 · 🟡 MISSING — No WebSocket / Real-Time Layer
+
+**Severity:** P2 — Users have no live updates; must manually refresh for notifications, new messages, challenge invites  
+**Layer:** Backend + Frontend
+
+- Redis 7 is running but used only for rate limiting
+- Echo v4 supports WebSocket upgrade natively
+- No `hub.go`, no `presence` package, no WS endpoint registered
+- `MessagesPage` uses polling only
+
+**Required:** WebSocket hub, presence broadcast, real-time notification delivery  
+**See:** TASK-015 (WebSocket hub), TASK-016 (frontend hooks)
+
+---
+
+### GAP-NEW-002 · 🟡 MISSING — No Challenges / Social Game Engine
+
+**Severity:** P2 — Core gamification pillar absent; no member-vs-member engagement  
+**Layer:** Backend + Frontend + DB
+
+- No `challenges` table or migration
+- No `internal/challenges/` package
+- No `ChallengesPage.tsx` or challenge UI
+- No challenge invite flow
+
+**Required:** Full challenge engine (see Enhancement Plan in `enhancements.md`)  
+**See:** TASK-013, TASK-014, TASK-018, TASK-019
+
+---
+
+### GAP-NEW-003 · 🟢 MISSING — No PWA Service Worker
+
+**Severity:** P3 — App is installable (manifest.json exists) but no offline support or push notifications  
+**Layer:** Frontend
+
+- `manifest.json` defines standalone PWA
+- No `vite-plugin-pwa` or manual service worker
+- No Web Push subscription for challenge/notification delivery
+- Members won't receive background alerts when challenged
+
+**Required:** `vite-plugin-pwa` + service worker + push subscription backend endpoint  
+**See:** TASK-021
+
+---
+
+### GAP-NEW-004 · 🟢 UX — Messages Page has No Real-Time Delivery
+
+**Severity:** P3 — DMs work but require page refresh to see new messages  
+**Layer:** Frontend
+
+- `MessagesPage.tsx` uses TanStack Query polling
+- Once WebSocket hub is built (GAP-NEW-001), DMs can subscribe to message events
+- Needs integration work after TASK-015
+
+**Required:** Wire `MessagesPage` to WebSocket message events post-hub  
+**See:** TASK-017 (includes messaging integration)
+
+---
+
+### GAP-NEW-005 · 🟢 UX — No Online Presence Indicators
+
+**Severity:** P3 — Members cannot see who is currently active; reduces social engagement  
+**Layer:** Frontend
+
+- No green "online" dot on member cards in Directory
+- No "online now" indicators on Leaderboard
+- No presence context on member profiles
+
+**Required:** `OnlineBadge` component + `usePresence()` hook wired to WS hub  
+**See:** TASK-017
+
+---
+
+## New Gap Remediation Order
+
+| Priority | Gap | Effort | Dependency |
+|---|---|---|---|
+| 1 | GAP-NEW-001 — WebSocket hub + presence | 4h | Redis (already running) |
+| 2 | GAP-NEW-002 — Challenges engine | 6h | GAP-NEW-001 |
+| 3 | GAP-NEW-005 — Online presence indicators | 1h | GAP-NEW-001 |
+| 4 | GAP-NEW-004 — Messages real-time delivery | 1h | GAP-NEW-001 |
+| 5 | GAP-NEW-003 — PWA service worker | 2h | Independent |
+
+---
+
+*HEIMDALL — All-Seeing Eye — Gap review complete. Last updated 2026-03-27.*

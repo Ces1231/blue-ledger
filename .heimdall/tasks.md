@@ -267,6 +267,371 @@ birthday → 🎂  graduation → 🎓  new_job → 💼  engagement → 💍  o
 
 ---
 
+---
+
+## TASK-013 · Migration — `023_challenges` table
+**Gap:** GAP-NEW-002  
+**Priority:** P1 — prerequisite for challenge engine  
+**Status:** `[ ] not started`  
+**Effort:** 15 min  
+**Agent:** @ant-man  
+
+**What to do:**
+Create `blue-ledger-api/migrations/023_challenges.up.sql` and `.down.sql`.
+
+```sql
+-- 023_challenges.up.sql
+CREATE TABLE IF NOT EXISTS challenges (
+  id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  chapter_id      UUID        NOT NULL REFERENCES chapters(id) ON DELETE CASCADE,
+  challenger_id   UUID        NOT NULL REFERENCES members(id)  ON DELETE CASCADE,
+  challenged_id   UUID        NOT NULL REFERENCES members(id)  ON DELETE CASCADE,
+  type            TEXT        NOT NULL CHECK (type IN ('xp_duel','service_race','trivia','streak_showdown')),
+  status          TEXT        NOT NULL DEFAULT 'pending'
+                              CHECK (status IN ('pending','accepted','declined','active','completed','expired')),
+  xp_stake        INT         NOT NULL DEFAULT 50 CHECK (xp_stake >= 10 AND xp_stake <= 500),
+  game_data       JSONB       NOT NULL DEFAULT '{}',
+  winner_id       UUID        REFERENCES members(id) ON DELETE SET NULL,
+  expires_at      TIMESTAMPTZ NOT NULL DEFAULT NOW() + INTERVAL '24 hours',
+  accepted_at     TIMESTAMPTZ,
+  completed_at    TIMESTAMPTZ,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_challenges_chapter    ON challenges(chapter_id);
+CREATE INDEX idx_challenges_challenger ON challenges(challenger_id);
+CREATE INDEX idx_challenges_challenged ON challenges(challenged_id);
+CREATE INDEX idx_challenges_status     ON challenges(status);
+```
+
+---
+
+## TASK-014 · Backend — Go `challenges` package
+**Gap:** GAP-NEW-002  
+**Priority:** P1  
+**Status:** `[ ] not started`  
+**Effort:** 3h  
+**Agent:** @ant-man  
+**Depends on:** TASK-013  
+
+**What to do:**
+Create `blue-ledger-api/internal/challenges/` with 3 files:
+
+**`repository.go`** — raw SQL via pgx/v5:
+- `Create(ctx, params)` → challenge row
+- `GetByID(ctx, id, chapterID)` → challenge
+- `ListForMember(ctx, memberID, chapterID)` → []challenge (active + recent)
+- `UpdateStatus(ctx, id, status, winnerID)` → challenge
+- `ExpireStale(ctx)` → bulk expire `pending/active` past `expires_at`
+
+**`service.go`** — business logic:
+- `ChallengeService.Send(ctx, challengerID, challengedID, type, xpStake)` — validates both members in same chapter, deduplicates active challenges, inserts row, publishes WS event `CHALLENGE_INVITE`
+- `ChallengeService.Accept(ctx, memberID, challengeID)` — sets status=`accepted`, publishes `CHALLENGE_ACCEPTED`
+- `ChallengeService.Decline(ctx, memberID, challengeID)` — sets status=`declined`
+- `ChallengeService.Complete(ctx, challengeID, winnerID)` — sets status=`completed`, awards XP to winner via XPService, deducts from loser if xp_stake > 0
+- `ChallengeService.ResolveTrivia(ctx, challengeID, answers map[memberID][]int)` — scores quiz, calls Complete
+
+**`handler.go`** — Echo routes:
+```
+POST   /v1/challenges          — Send challenge (auth)
+POST   /v1/challenges/:id/accept   — Accept (auth, must be challenged_id)
+POST   /v1/challenges/:id/decline  — Decline (auth, must be challenged_id)
+POST   /v1/challenges/:id/submit   — Submit trivia answers (auth)
+GET    /v1/challenges           — List my challenges (active + last 20)
+GET    /v1/challenges/:id       — Get challenge detail
+```
+
+**Register in `cmd/server/main.go`:**
+```go
+challengesSvc := challenges.NewService(pool, xpSvc)
+challenges.NewHandler(challengesSvc, tokenManager).Register(v1)
+```
+
+---
+
+## TASK-015 · Backend — WebSocket Hub + Presence System
+**Gap:** GAP-NEW-001  
+**Priority:** P1  
+**Status:** `[ ] not started`  
+**Effort:** 3h  
+**Agent:** @ant-man  
+
+**What to do:**
+Create `blue-ledger-api/internal/platform/hub.go`:
+
+**Hub design:**
+```go
+type Hub struct {
+    // chapter_id → set of client connections
+    rooms   map[string]map[*Client]bool
+    mu      sync.RWMutex
+    redis   *redis.Client
+
+    register   chan *Client
+    unregister chan *Client
+    broadcast  chan BroadcastMsg
+}
+
+type Client struct {
+    hub        *Hub
+    conn       *websocket.Conn
+    chapterID  string
+    memberID   string
+    send       chan []byte
+}
+
+type BroadcastMsg struct {
+    ChapterID string
+    Type      string   // PRESENCE_UPDATE | CHALLENGE_INVITE | CHALLENGE_ACCEPTED | CHALLENGE_RESULT | NOTIFICATION | PROPS_RECEIVED
+    Payload   any
+}
+```
+
+**Presence flow:**
+1. Client connects to `GET /v1/ws` with Bearer token in `?token=` query param (WS can't set headers)
+2. Hub registers client, sets Redis key `presence:{chapterID}:{memberID}` with TTL 90s
+3. Hub broadcasts `PRESENCE_UPDATE` to all chapter members with current online list
+4. Client sends ping every 30s → hub refreshes TTL
+5. On disconnect → delete Redis key → broadcast updated presence list
+6. `GET /v1/presence` REST endpoint returns current online member IDs (from Redis SCAN)
+
+**Add to `go.mod`:**
+```bash
+go get github.com/gorilla/websocket@v1.5.3
+```
+
+**Register in `main.go`:**
+```go
+hub := platform.NewHub(redisClient)
+go hub.Run()
+e.GET("/v1/ws", hub.HandleWebSocket, authMiddleware)
+e.GET("/v1/presence", hub.HandlePresenceList, authMiddleware)
+```
+
+---
+
+## TASK-016 · Frontend — `useWebSocket` + `usePresence` hooks
+**Gap:** GAP-NEW-001  
+**Priority:** P1  
+**Status:** `[ ] not started`  
+**Effort:** 2h  
+**Agent:** @ant-man  
+**Depends on:** TASK-015  
+
+**What to do:**
+
+**`web/src/hooks/useWebSocket.ts`:**
+```ts
+// Singleton WebSocket connection per session
+// Auto-reconnect with exponential backoff (1s → 2s → 4s → 8s → max 30s)
+// Typed message dispatch via EventEmitter pattern
+export function useWebSocket(): {
+  send: (type: string, payload: unknown) => void
+  on: (type: string, handler: (payload: unknown) => void) => () => void
+  isConnected: boolean
+}
+```
+
+**`web/src/hooks/usePresence.ts`:**
+```ts
+// Subscribes to PRESENCE_UPDATE messages from WS
+// Falls back to GET /v1/presence polling every 60s if WS disconnected
+export function usePresence(): {
+  onlineMembers: string[]  // array of member IDs currently online
+  isOnline: (memberID: string) => boolean
+}
+```
+
+**Integration in `App.tsx`:**
+- Initialize `useWebSocket()` at AppShell level
+- Pass `onlineMembers` through context (`PresenceContext`)
+
+---
+
+## TASK-017 · Frontend — `OnlineBadge` component + Directory/Leaderboard integration
+**Gap:** GAP-NEW-005  
+**Priority:** P2  
+**Status:** `[ ] not started`  
+**Effort:** 1h  
+**Agent:** @ant-man  
+**Depends on:** TASK-016  
+
+**What to do:**
+
+**`web/src/components/OnlineBadge.tsx`:**
+```tsx
+// Green pulsing dot overlay on member avatar
+// Props: memberID: string
+// Uses usePresence() to determine if online
+export function OnlineBadge({ memberID }: { memberID: string }) {
+  const { isOnline } = usePresence()
+  if (!isOnline(memberID)) return null
+  return <span className="online-dot" aria-label="Online now" />
+}
+```
+
+**CSS in `base.css`:**
+```css
+.online-dot {
+  position: absolute;
+  bottom: 2px; right: 2px;
+  width: 10px; height: 10px;
+  background: #00ff88;
+  border-radius: 50%;
+  border: 2px solid #060D1A;
+  animation: pulse-green 2s infinite;
+}
+@keyframes pulse-green {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0,255,136,0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(0,255,136,0); }
+}
+```
+
+**Add `<OnlineBadge>` to:**
+- `DirectoryPage.tsx` — member card avatar wrapper
+- `LeaderboardPage.tsx` — leaderboard row avatar
+- `MemberProfilePage.tsx` — profile header avatar
+
+**Wire DMs:** In `MessagesPage.tsx`, subscribe to WS event `MESSAGE_NEW` → invalidate TanStack Query `messages` cache to trigger re-fetch in near-real-time.
+
+---
+
+## TASK-018 · Frontend — `ChallengesPage`
+**Gap:** GAP-NEW-002  
+**Priority:** P2  
+**Status:** `[ ] not started`  
+**Effort:** 2.5h  
+**Agent:** @ant-man  
+**Depends on:** TASK-014, TASK-016  
+
+**What to do:**
+Create `web/src/features/challenges/ChallengesPage.tsx` and `web/src/api/challenges.ts`.
+
+**`web/src/api/challenges.ts`:**
+```ts
+listChallenges()     → GET /v1/challenges
+sendChallenge(data)  → POST /v1/challenges
+acceptChallenge(id)  → POST /v1/challenges/:id/accept
+declineChallenge(id) → POST /v1/challenges/:id/decline
+submitTrivia(id, answers) → POST /v1/challenges/:id/submit
+```
+
+**ChallengesPage UI sections:**
+1. **Active Challenges** — incoming pending invites with Accept/Decline buttons; accepted challenges with status
+2. **My Challenges** — challenges I sent (pending / in progress)
+3. **Challenge History** — completed challenges with win/loss badge and XP gained/lost
+4. **Stats bar** — W/L record, XP won from challenges, win streak
+
+**Game type badge colors:**
+- `xp_duel` → 🗡️ neon blue
+- `service_race` → 🏃 green
+- `trivia` → 🧠 gold
+- `streak_showdown` → 🔥 orange
+
+**Route:** Add `{ path: '/challenges', element: <ChallengesPage /> }` to `App.tsx`  
+**Sidebar:** Add ⚔️ Challenges link under the gamification section
+
+---
+
+## TASK-019 · Frontend — `ChallengeModal` + profile integration
+**Gap:** GAP-NEW-002  
+**Priority:** P2  
+**Status:** `[ ] not started`  
+**Effort:** 1.5h  
+**Agent:** @ant-man  
+**Depends on:** TASK-018  
+
+**What to do:**
+Create `web/src/components/ChallengeModal.tsx`.
+
+**Props:**
+```ts
+interface ChallengeModalProps {
+  isOpen: boolean
+  onClose: () => void
+  targetMember: { id: string; name: string; xp_total: number; level_key: string }
+}
+```
+
+**UI:**
+- Target member display: avatar + name + level badge
+- Challenge type selector (4 cards with icons and descriptions)
+- XP Stake slider: 10 → 500 XP (increments of 10)
+- "Challenge to Battle" submit button
+- Success state: "Challenge sent! 🗡️ Waiting for response..."
+- WS event `CHALLENGE_INVITE` received by challenged member → toast notification "⚔️ {name} challenges you!"
+
+**Add "⚔️ Challenge" button to:**
+- `MemberProfilePage.tsx` — action bar (visible when viewing another member's profile)
+- `DirectoryPage.tsx` — hover action on member card
+- `LeaderboardPage.tsx` — hover action on leaderboard row
+
+---
+
+## TASK-020 · Backend + Frontend — Trivia Game Engine
+**Gap:** GAP-NEW-002  
+**Priority:** P3  
+**Status:** `[ ] not started`  
+**Effort:** 3h  
+**Agent:** @ant-man  
+**Depends on:** TASK-014, TASK-016  
+
+**What to do:**
+
+**Backend (`data/QuizBank.xlsx` → `internal/challenges/trivia.go`):**
+- Embed 50 PBS/chapter history trivia questions as `[]TriviaQuestion` (type, question, options[4], correct_index)
+- On `Accept` of a `trivia` challenge → generate random 5-question set, store in `game_data` JSONB
+- Timer: 120s per question set (tracked via `expires_at` update)
+- `Submit` endpoint: scores answers, determines winner, calls `Complete`
+
+**Frontend `web/src/features/challenges/TriviaGame.tsx`:**
+- Full-screen game overlay activated when challenge status = `active` and type = `trivia`
+- Question + 4 answer choices (A/B/C/D buttons)
+- Progress bar (question X of 5)
+- 120s countdown timer (red pulse when < 30s)
+- Score reveal screen: "You got 4/5! Brother got 3/5 — YOU WIN 🏆 +100 XP"
+- Confetti burst on win (`canvas-confetti` package)
+
+---
+
+## TASK-021 · Frontend — PWA Service Worker
+**Gap:** GAP-NEW-003  
+**Priority:** P3  
+**Status:** `[ ] not started`  
+**Effort:** 2h  
+**Agent:** @ant-man  
+
+**What to do:**
+Add PWA support to Vite build:
+
+```bash
+npm install -D vite-plugin-pwa
+```
+
+**`web/vite.config.ts`** — add `VitePWA` plugin:
+```ts
+VitePWA({
+  registerType: 'autoUpdate',
+  includeAssets: ['favicon.ico', 'assets/avatars/*.png'],
+  manifest: false, // uses existing manifest.json
+  workbox: {
+    globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+    runtimeCaching: [{
+      urlPattern: /^https:\/\/.*\/v1\/(?!ws)/,
+      handler: 'NetworkFirst',
+      options: { cacheName: 'api-cache', networkTimeoutSeconds: 10 }
+    }]
+  }
+})
+```
+
+**Benefits:**
+- Offline access to cached pages
+- Install prompt on mobile (Add to Home Screen)
+- Background sync for service hours submission when offline
+
+---
+
 ## Progress Tracker
 
 | Task | Gap | Priority | Status |
@@ -283,7 +648,16 @@ birthday → 🎂  graduation → 🎓  new_job → 💼  engagement → 💍  o
 | TASK-010 — `committees` frontend | GAP-004 | 🟡 P2 | `[x] done 2026-03-26` |
 | TASK-011 — `alumni` frontend | GAP-004 | 🟡 P2 | `[x] done 2026-03-26` |
 | TASK-012 — verify `study-groups.ts` | GAP-007 | 🟢 P3 | `[x] done 2026-03-26` |
+| TASK-013 — `023_challenges` migration | GAP-NEW-002 | 🔴 P1 | `[ ] not started` |
+| TASK-014 — `challenges` Go package | GAP-NEW-002 | 🔴 P1 | `[ ] not started` |
+| TASK-015 — WebSocket hub + presence | GAP-NEW-001 | 🔴 P1 | `[ ] not started` |
+| TASK-016 — `useWebSocket` + `usePresence` hooks | GAP-NEW-001 | 🔴 P1 | `[ ] not started` |
+| TASK-017 — `OnlineBadge` + DM real-time | GAP-NEW-005 | 🟡 P2 | `[ ] not started` |
+| TASK-018 — `ChallengesPage` frontend | GAP-NEW-002 | 🟡 P2 | `[ ] not started` |
+| TASK-019 — `ChallengeModal` + profile integration | GAP-NEW-002 | 🟡 P2 | `[ ] not started` |
+| TASK-020 — Trivia game engine | GAP-NEW-002 | 🟢 P3 | `[ ] not started` |
+| TASK-021 — PWA service worker | GAP-NEW-003 | 🟢 P3 | `[ ] not started` |
 
 ---
 
-*HEIMDALL — All-Seeing Eye — Task file complete.*
+*HEIMDALL — All-Seeing Eye — Task file complete. Last updated 2026-03-27.*
