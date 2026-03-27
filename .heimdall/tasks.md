@@ -657,6 +657,128 @@ VitePWA({
 | TASK-019 — `ChallengeModal` + profile integration | GAP-NEW-002 | 🟡 P2 | `[x] done 2026-03-27` |
 | TASK-020 — Trivia game engine | GAP-NEW-002 | 🟢 P3 | `[x] done 2026-03-27` |
 | TASK-021 — PWA service worker | GAP-NEW-003 | 🟢 P3 | `[x] done 2026-03-27` |
+| TASK-022 — Confetti win animation | — | 🟢 P3 | `[ ] not started` |
+| TASK-023 — PWA icon assets | — | 🟡 P2 | `[ ] not started` |
+| TASK-024 — Sidebar challenge badge | — | 🟡 P2 | `[ ] not started` |
+| TASK-025 — Run `023_challenges` migration in prod | — | 🔴 P1 | `[ ] not started` |
+
+---
+
+## TASK-022 · Frontend — Confetti win animation in `TriviaGame`
+**Priority:** P3  
+**Status:** `[ ] not started`  
+**Effort:** 30 min  
+
+**What to do:**
+1. Install `canvas-confetti`:
+   ```bash
+   cd web && npm install canvas-confetti && npm install -D @types/canvas-confetti
+   ```
+2. In `web/src/features/challenges/TriviaGame.tsx`, import and fire confetti on the win result screen:
+   ```ts
+   import confetti from 'canvas-confetti'
+   // call once when result.won becomes true:
+   confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors: ['#C9A84C','#001A4D','#00ff88'] })
+   ```
+3. Wrap in a `useEffect` that fires only when `result?.won === true`.
+
+**Acceptance criteria:**
+- Gold/navy/green confetti bursts on the win screen
+- No confetti on loss screen
+- No TypeScript errors (`@types/canvas-confetti` installed)
+
+---
+
+## TASK-023 · Assets — PWA icon files
+**Priority:** P2  
+**Status:** `[ ] not started`  
+**Effort:** 30 min  
+
+**What to do:**
+Generate and place two PNG icon files required by the web app manifest:
+
+1. Create directory `web/public/icons/`
+2. Produce `icon-192.png` (192×192 px) and `icon-512.png` (512×512 px)
+   - Use the Blue Ledger logo / ΦΒΣ crest on `#001A4D` navy background
+   - Tools: Figma export, ImageMagick, or any graphic editor
+3. Confirm `vite.config.ts` manifest already references `/icons/icon-192.png` and `/icons/icon-512.png` ✅ (done in TASK-021)
+4. Test: run `npm run build` and verify Lighthouse PWA audit passes "installable" check
+
+**Acceptance criteria:**
+- `web/public/icons/icon-192.png` and `icon-512.png` exist and are valid PNGs
+- Browser install prompt appears when visiting the app on mobile/Chrome
+- Lighthouse PWA score ≥ 90
+
+---
+
+## TASK-024 · Frontend — Sidebar challenge notification badge
+**Priority:** P2  
+**Status:** `[ ] not started`  
+**Effort:** 1h  
+
+**What to do:**
+Show a red badge with unread-incoming-challenge count on the ⚔️ Challenges sidebar link.
+
+1. In `web/src/components/Sidebar.tsx`, import `useQuery` and `listChallenges` from `../../api/challenges` (or use a lightweight count endpoint).
+2. Add a query (staleTime 30s, refetchInterval 30s) that fetches challenges and counts `status === 'pending' && challenged_id === memberID`.
+3. Render a badge next to the Challenges label:
+   ```tsx
+   {pendingCount > 0 && (
+     <span style={{
+       background: 'var(--danger)', color: '#fff',
+       borderRadius: '50%', width: 18, height: 18,
+       fontSize: '.65rem', fontWeight: 700,
+       display: 'flex', alignItems: 'center', justifyContent: 'center',
+       marginLeft: 'auto',
+     }}>
+       {pendingCount > 9 ? '9+' : pendingCount}
+     </span>
+   )}
+   ```
+4. Also subscribe to WS `CHALLENGE_INVITE` event → `queryClient.invalidateQueries(['challenges'])` to update count in real time.
+
+**Acceptance criteria:**
+- Badge appears when there are pending incoming challenges
+- Badge disappears when all are accepted/declined
+- WS event updates the count without page refresh
+- Badge shows `9+` for counts above 9
+
+---
+
+## TASK-025 · Ops — Apply `023_challenges` migration to production DB
+**Priority:** P1  
+**Status:** `[ ] not started`  
+**Effort:** 15 min  
+
+**What to do:**
+Run the challenges table migration against the production (Fly.io / Docker) database.
+
+1. Ensure the production database is reachable:
+   ```bash
+   fly postgres connect -a <app-db-name>
+   # or: docker compose exec db psql -U postgres blue_ledger
+   ```
+2. From `blue-ledger-api/`, run:
+   ```bash
+   make migrate-up
+   ```
+   This applies all pending migrations including `023_challenges.up.sql`.
+3. Verify the table exists:
+   ```sql
+   SELECT COUNT(*) FROM challenges;
+   -- expect: 0 (empty, no error)
+   ```
+4. Redeploy the API container so the new `/v1/challenges` routes and WebSocket hub go live:
+   ```bash
+   fly deploy
+   # or: docker compose up -d --build api
+   ```
+
+**Acceptance criteria:**
+- `challenges` table exists in production schema
+- `GET /v1/challenges` returns `{"data":[]}` (not 404 / 500)
+- `GET /v1/ws` upgrades to WebSocket successfully
+- `GET /v1/presence` returns `{"data":[]}` (not 404)
 
 ---
 
