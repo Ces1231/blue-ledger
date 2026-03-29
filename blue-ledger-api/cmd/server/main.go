@@ -19,7 +19,6 @@ import (
 	"github.com/ces1231/blue-ledger-api/internal/committees"
 	"github.com/ces1231/blue-ledger-api/internal/dues"
 	"github.com/ces1231/blue-ledger-api/internal/fundraising"
-	"github.com/ces1231/blue-ledger-api/internal/importer"
 	"github.com/ces1231/blue-ledger-api/internal/jobboard"
 	"github.com/ces1231/blue-ledger-api/internal/events"
 	"github.com/ces1231/blue-ledger-api/internal/goals"
@@ -91,12 +90,6 @@ func main() {
 		log.Fatal().Err(err).Msg("failed to run database migrations")
 	}
 	log.Info().Msg("migrations applied")
-
-	// ── Initialize Data (if empty) ────────────────────────────────────────────
-	if err := importer.ImportIfEmpty(ctx, pool); err != nil {
-		log.Warn().Err(err).Msg("failed to import seed data")
-		// Don't fail - database might already have data
-	}
 
 	// ── WebSocket Hub ────────────────────────────────────────────────────────
 	var wsHub *platform.Hub
