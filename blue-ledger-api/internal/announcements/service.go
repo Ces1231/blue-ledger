@@ -66,11 +66,12 @@ func NewService(pool *pgxpool.Pool) Service {
 func (s *service) List(ctx context.Context, chapterID string) ([]*Announcement, error) {
 	rows, err := s.pool.Query(ctx, `
 		SELECT
-			a.id, a.chapter_id, a.title, a.body, a.category, a.posted_by,
+			a.id, a.chapter_id, a.title, a.body, a.category, a.author_id,
 			a.is_pinned, a.is_active, a.created_at, a.updated_at,
-			m.first_name AS poster_first_name, m.last_name AS poster_last_name
-		FROM announcements a
-		LEFT JOIN members m ON m.id = a.posted_by
+				u.first_name AS poster_first_name, u.last_name AS poster_last_name
+			FROM announcements a
+			LEFT JOIN members m ON m.id = a.author_id
+			LEFT JOIN users u ON u.id = m.user_id
 		WHERE a.chapter_id = $1 AND a.is_active = TRUE
 		ORDER BY a.is_pinned DESC, a.created_at DESC
 	`, chapterID)
@@ -97,9 +98,9 @@ func (s *service) List(ctx context.Context, chapterID string) ([]*Announcement, 
 func (s *service) Create(ctx context.Context, chapterID, posterMemberID string, input CreateInput) (*Announcement, error) {
 	a := &Announcement{}
 	err := s.pool.QueryRow(ctx, `
-		INSERT INTO announcements (chapter_id, title, body, category, posted_by, is_pinned, is_active)
+		INSERT INTO announcements (chapter_id, title, body, category, author_id, is_pinned, is_active)
 		VALUES ($1, $2, $3, $4, $5, $6, TRUE)
-		RETURNING id, chapter_id, title, body, category, posted_by, is_pinned, is_active, created_at, updated_at
+		RETURNING id, chapter_id, title, body, category, author_id, is_pinned, is_active, created_at, updated_at
 	`, chapterID, input.Title, input.Body, input.Category, posterMemberID, input.IsPinned).
 		Scan(&a.ID, &a.ChapterID, &a.Title, &a.Body, &a.Category, &a.PostedBy,
 			&a.IsPinned, &a.IsActive, &a.CreatedAt, &a.UpdatedAt)
@@ -120,7 +121,7 @@ func (s *service) Update(ctx context.Context, chapterID, announcementID string, 
 			is_pinned = COALESCE($6, is_pinned),
 			updated_at = NOW()
 		WHERE id = $1 AND chapter_id = $2 AND is_active = TRUE
-		RETURNING id, chapter_id, title, body, category, posted_by, is_pinned, is_active, created_at, updated_at
+		RETURNING id, chapter_id, title, body, category, author_id, is_pinned, is_active, created_at, updated_at
 	`, announcementID, chapterID, input.Title, input.Body, input.Category, input.IsPinned).
 		Scan(&a.ID, &a.ChapterID, &a.Title, &a.Body, &a.Category, &a.PostedBy,
 			&a.IsPinned, &a.IsActive, &a.CreatedAt, &a.UpdatedAt)
@@ -152,7 +153,7 @@ func (s *service) Pin(ctx context.Context, chapterID, announcementID string, pin
 	err := s.pool.QueryRow(ctx, `
 		UPDATE announcements SET is_pinned = $3, updated_at = NOW()
 		WHERE id = $1 AND chapter_id = $2 AND is_active = TRUE
-		RETURNING id, chapter_id, title, body, category, posted_by, is_pinned, is_active, created_at, updated_at
+		RETURNING id, chapter_id, title, body, category, author_id, is_pinned, is_active, created_at, updated_at
 	`, announcementID, chapterID, pinned).
 		Scan(&a.ID, &a.ChapterID, &a.Title, &a.Body, &a.Category, &a.PostedBy,
 			&a.IsPinned, &a.IsActive, &a.CreatedAt, &a.UpdatedAt)

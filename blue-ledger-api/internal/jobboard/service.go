@@ -14,35 +14,42 @@ var ErrNotFound = errors.New("job posting not found")
 
 // JobPosting is a job listing posted by a member.
 type JobPosting struct {
-	ID          string    `json:"id"`
-	ChapterID   string    `json:"chapter_id"`
-	Title       string    `json:"title"`
-	Company     string    `json:"company"`
-	Location    *string   `json:"location,omitempty"`
-	Description string    `json:"description"`
-	URL         *string   `json:"url,omitempty"`
-	PostedBy    string    `json:"posted_by"`
-	Active      bool      `json:"active"`
-	CreatedAt   time.Time `json:"created_at"`
+	ID          string     `json:"id"`
+	ChapterID   string     `json:"chapter_id"`
+	PostedBy    string     `json:"posted_by"`
+	Company     string     `json:"company"`
+	JobTitle    string     `json:"job_title"`
+	JobType     *string    `json:"job_type,omitempty"`
+	Location    *string    `json:"location,omitempty"`
+	Link        *string    `json:"link,omitempty"`
+	Description *string    `json:"description,omitempty"`
+	Fields      []string   `json:"fields"`
+	Deadline    *time.Time `json:"deadline,omitempty"`
+	IsActive    bool       `json:"is_active"`
+	CreatedAt   time.Time  `json:"created_at"`
 }
 
 // CreateInput for creating a job posting.
 type CreateInput struct {
-	Title       string  `json:"title" validate:"required,min=2,max=200"`
-	Company     string  `json:"company" validate:"required"`
-	Location    *string `json:"location"`
-	Description string  `json:"description" validate:"required"`
-	URL         *string `json:"url"`
+	Company     string     `json:"company" validate:"required"`
+	JobTitle    string     `json:"job_title" validate:"required,min=2,max=200"`
+	JobType     *string    `json:"job_type"`
+	Location    *string    `json:"location"`
+	Link        *string    `json:"link"`
+	Description *string    `json:"description"`
+	Fields      []string   `json:"fields"`
+	Deadline    *time.Time `json:"deadline"`
 }
 
 // UpdateInput for updating a job posting.
 type UpdateInput struct {
-	Title       *string `json:"title"`
 	Company     *string `json:"company"`
+	JobTitle    *string `json:"job_title"`
+	JobType     *string `json:"job_type"`
 	Location    *string `json:"location"`
+	Link        *string `json:"link"`
 	Description *string `json:"description"`
-	URL         *string `json:"url"`
-	Active      *bool   `json:"active"`
+	IsActive    *bool   `json:"is_active"`
 }
 
 // Service defines job board business logic.
@@ -61,8 +68,8 @@ func NewService(pool *pgxpool.Pool) Service { return &service{pool: pool} }
 
 func (s *service) List(ctx context.Context, chapterID string) ([]*JobPosting, error) {
 	rows, err := s.pool.Query(ctx, `
-		SELECT id, chapter_id, title, company, location, description, url, posted_by, active, created_at
-		FROM job_postings WHERE chapter_id = $1 AND active = TRUE ORDER BY created_at DESC
+		SELECT id, chapter_id, posted_by, company, job_title, job_type, location, link, description, fields, deadline, is_active, created_at
+		FROM job_board WHERE chapter_id = $1 AND is_active = TRUE ORDER BY created_at DESC
 	`, chapterID)
 	if err != nil {
 		return nil, fmt.Errorf("list jobs: %w", err)
@@ -71,7 +78,8 @@ func (s *service) List(ctx context.Context, chapterID string) ([]*JobPosting, er
 	var result []*JobPosting
 	for rows.Next() {
 		j := &JobPosting{}
-		if err := rows.Scan(&j.ID, &j.ChapterID, &j.Title, &j.Company, &j.Location, &j.Description, &j.URL, &j.PostedBy, &j.Active, &j.CreatedAt); err != nil {
+		if err := rows.Scan(&j.ID, &j.ChapterID, &j.PostedBy, &j.Company, &j.JobTitle, &j.JobType,
+			&j.Location, &j.Link, &j.Description, &j.Fields, &j.Deadline, &j.IsActive, &j.CreatedAt); err != nil {
 			return nil, fmt.Errorf("scan job: %w", err)
 		}
 		result = append(result, j)
@@ -82,9 +90,10 @@ func (s *service) List(ctx context.Context, chapterID string) ([]*JobPosting, er
 func (s *service) GetByID(ctx context.Context, chapterID, id string) (*JobPosting, error) {
 	j := &JobPosting{}
 	err := s.pool.QueryRow(ctx, `
-		SELECT id, chapter_id, title, company, location, description, url, posted_by, active, created_at
-		FROM job_postings WHERE id = $1 AND chapter_id = $2
-	`, id, chapterID).Scan(&j.ID, &j.ChapterID, &j.Title, &j.Company, &j.Location, &j.Description, &j.URL, &j.PostedBy, &j.Active, &j.CreatedAt)
+		SELECT id, chapter_id, posted_by, company, job_title, job_type, location, link, description, fields, deadline, is_active, created_at
+		FROM job_board WHERE id = $1 AND chapter_id = $2
+	`, id, chapterID).Scan(&j.ID, &j.ChapterID, &j.PostedBy, &j.Company, &j.JobTitle, &j.JobType,
+		&j.Location, &j.Link, &j.Description, &j.Fields, &j.Deadline, &j.IsActive, &j.CreatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -92,28 +101,36 @@ func (s *service) GetByID(ctx context.Context, chapterID, id string) (*JobPostin
 }
 
 func (s *service) Create(ctx context.Context, chapterID, memberID string, input CreateInput) (*JobPosting, error) {
+	fields := input.Fields
+	if fields == nil {
+		fields = []string{}
+	}
 	j := &JobPosting{}
 	err := s.pool.QueryRow(ctx, `
-		INSERT INTO job_postings (chapter_id, title, company, location, description, url, posted_by, active)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE)
-		RETURNING id, chapter_id, title, company, location, description, url, posted_by, active, created_at
-	`, chapterID, input.Title, input.Company, input.Location, input.Description, input.URL, memberID).
-		Scan(&j.ID, &j.ChapterID, &j.Title, &j.Company, &j.Location, &j.Description, &j.URL, &j.PostedBy, &j.Active, &j.CreatedAt)
+		INSERT INTO job_board (chapter_id, posted_by, company, job_title, job_type, location, link, description, fields, deadline, is_active)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, TRUE)
+		RETURNING id, chapter_id, posted_by, company, job_title, job_type, location, link, description, fields, deadline, is_active, created_at
+	`, chapterID, memberID, input.Company, input.JobTitle, input.JobType, input.Location, input.Link, input.Description, fields, input.Deadline).
+		Scan(&j.ID, &j.ChapterID, &j.PostedBy, &j.Company, &j.JobTitle, &j.JobType,
+			&j.Location, &j.Link, &j.Description, &j.Fields, &j.Deadline, &j.IsActive, &j.CreatedAt)
 	return j, err
 }
 
 func (s *service) Update(ctx context.Context, chapterID, id, memberID string, input UpdateInput) (*JobPosting, error) {
 	j := &JobPosting{}
 	err := s.pool.QueryRow(ctx, `
-		UPDATE job_postings
-		SET title       = COALESCE($4, title),
-		    company     = COALESCE($5, company),
-		    description = COALESCE($6, description),
-		    active      = COALESCE($7, active)
+		UPDATE job_board
+		SET company     = COALESCE($4, company),
+		    job_title   = COALESCE($5, job_title),
+		    job_type    = COALESCE($6, job_type),
+		    description = COALESCE($7, description),
+		    is_active   = COALESCE($8, is_active),
+		    updated_at  = NOW()
 		WHERE id = $1 AND chapter_id = $2 AND (posted_by = $3 OR $3 IS NOT NULL)
-		RETURNING id, chapter_id, title, company, location, description, url, posted_by, active, created_at
-	`, id, chapterID, memberID, input.Title, input.Company, input.Description, input.Active).
-		Scan(&j.ID, &j.ChapterID, &j.Title, &j.Company, &j.Location, &j.Description, &j.URL, &j.PostedBy, &j.Active, &j.CreatedAt)
+		RETURNING id, chapter_id, posted_by, company, job_title, job_type, location, link, description, fields, deadline, is_active, created_at
+	`, id, chapterID, memberID, input.Company, input.JobTitle, input.JobType, input.Description, input.IsActive).
+		Scan(&j.ID, &j.ChapterID, &j.PostedBy, &j.Company, &j.JobTitle, &j.JobType,
+			&j.Location, &j.Link, &j.Description, &j.Fields, &j.Deadline, &j.IsActive, &j.CreatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -124,10 +141,10 @@ func (s *service) Delete(ctx context.Context, chapterID, id, memberID, role stri
 	var query string
 	var args []any
 	if role == "admin" {
-		query = `DELETE FROM job_postings WHERE id = $1 AND chapter_id = $2`
+		query = `DELETE FROM job_board WHERE id = $1 AND chapter_id = $2`
 		args = []any{id, chapterID}
 	} else {
-		query = `DELETE FROM job_postings WHERE id = $1 AND chapter_id = $2 AND posted_by = $3`
+		query = `DELETE FROM job_board WHERE id = $1 AND chapter_id = $2 AND posted_by = $3`
 		args = []any{id, chapterID, memberID}
 	}
 	tag, err := s.pool.Exec(ctx, query, args...)

@@ -13,11 +13,10 @@ RUN npm run build
 # Stage 2: serve with Nginx
 FROM nginx:1.27-alpine
 
-# Remove default config
-RUN rm /etc/nginx/conf.d/default.conf
-
-# Our custom config (proxies /api/ to the Go service)
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Our custom config template — the official nginx image runs envsubst
+# on every file in /etc/nginx/templates/ and writes the result to
+# /etc/nginx/conf.d/, so ${API_UPSTREAM} is substituted at container start.
+COPY nginx.conf.template /etc/nginx/templates/default.conf.template
 
 # Copy the Vite build output
 COPY --from=builder /app/dist /usr/share/nginx/html

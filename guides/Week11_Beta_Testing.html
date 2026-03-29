@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -123,7 +123,7 @@ hr{border:none;border-top:1px solid var(--border);margin:2rem 0;}
     <table class="tbl">
     <thead><tr><th>Issue</th><th>Root Cause</th><th>Fix</th></tr></thead>
     <tbody>
-    <tr><td>Scanner doesn't recognize QR code</td><td>QR Data column template not set up correctly</td><td>Check <span class="cd">QR Data</span> column value in sheet. Should read <span class="cd">MEMBER:ΤΤΣ-001</span> format. Re-generate on the member's profile view.</td></tr>
+    <tr><td>Scanner doesn't recognize QR code</td><td>QR Data column template not set up correctly</td><td>Check <span class="cd">QR Data</span> column value in sheet. Should read <span class="cd">MEMBER:ΤΣΣ-001</span> format. Re-generate on the member's profile view.</td></tr>
     <tr><td>XP doesn't update after scan</td><td>Make.com scenario not triggered or errored</td><td>Open Make.com → Scenario history → find the failed run → check the error. Common: Google Sheets permission issue or row not found (Member # mismatch).</td></tr>
     <tr><td>Badge not awarded after threshold crossed</td><td>Badge name in Earned Badges doesn't match exactly</td><td>String matching is case-sensitive. Verify the badge name in the 🎖️ Quests & Badges tab matches exactly what Make.com appends.</td></tr>
     <tr><td>Profile completion XP fires twice</td><td>Glide re-triggers on every profile save</td><td>The <span class="cd">Profile XP Awarded?</span> flag in the Users tab prevents this. If it fired twice, the flag column wasn't checked correctly in Make.com — add an explicit filter.</td></tr>

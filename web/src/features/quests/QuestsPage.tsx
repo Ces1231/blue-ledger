@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import { Topbar } from '../../components/Topbar'
 import { Card } from '../../components/Card'
 import apiClient from '../../api/client'
@@ -89,12 +90,19 @@ function BadgeCard({ badge, earned }: { badge: Badge; earned: boolean }) {
   )
 }
 
-function QuestCard({ quest }: { quest: Quest }) {
+function QuestCard({ quest, onSelect }: { quest: Quest; onSelect: (id: string) => void }) {
   const steps = quest.steps ?? []
   const progress = quest.progress ?? {}
 
   return (
-    <div className="card fade-in" style={{ padding: '1.25rem' }}>
+    <div
+      className="card fade-in"
+      style={{ padding: '1.25rem', cursor: 'pointer', transition: 'all 0.15s' }}
+      onClick={() => onSelect(quest.id)}
+      onKeyDown={(e) => e.key === 'Enter' && onSelect(quest.id)}
+      role="button"
+      tabIndex={0}
+    >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: '0.75rem' }}>
         <div>
           <div style={{ fontWeight: 700, fontSize: '.92rem', color: 'var(--ink)' }}>{quest.title}</div>
@@ -154,6 +162,7 @@ function QuestCard({ quest }: { quest: Quest }) {
 }
 
 export function QuestsPage() {
+  const navigate = useNavigate()
   const { data: quests = [], isLoading: questsLoading } = useQuery({
     queryKey: ['quests'],
     queryFn: getQuests,
@@ -171,6 +180,10 @@ export function QuestsPage() {
 
   const earnedIds = new Set(myBadges.map((mb) => mb.badge_id))
   const activeQuests = quests.filter((q) => q.is_active)
+
+  const handleQuestSelect = (questId: string) => {
+    navigate(`/quests/${questId}`)
+  }
 
   return (
     <>
@@ -235,7 +248,7 @@ export function QuestsPage() {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           {activeQuests.map((quest) => (
-            <QuestCard key={quest.id} quest={quest} />
+            <QuestCard key={quest.id} quest={quest} onSelect={handleQuestSelect} />
           ))}
         </div>
       </main>

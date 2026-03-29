@@ -79,11 +79,12 @@ func (s *service) List(ctx context.Context, chapterID string, page, perPage int)
 	rows, err := s.pool.Query(ctx, `
 		SELECT
 			sl.id, sl.chapter_id, sl.member_id, sl.event_name, sl.organization,
-			sl.service_date, sl.hours, sl.xp_awarded, sl.verified,
+			sl.service_date::text, sl.hours, sl.xp_awarded, sl.verified,
 			sl.verified_by, sl.verified_at, sl.notes, sl.created_at,
-			m.first_name, m.last_name
-		FROM service_log sl
-		LEFT JOIN members m ON m.id = sl.member_id
+				u.first_name, u.last_name
+			FROM service_log sl
+			LEFT JOIN members m ON m.id = sl.member_id
+			LEFT JOIN users u ON u.id = m.user_id
 		WHERE sl.chapter_id = $1
 		ORDER BY sl.service_date DESC, sl.created_at DESC
 		LIMIT $2 OFFSET $3
@@ -103,7 +104,7 @@ func (s *service) Create(ctx context.Context, chapterID, memberID string, input 
 			(chapter_id, member_id, event_name, organization, service_date, hours, xp_awarded, verified)
 		VALUES ($1, $2, $3, $4, $5, $6, 0, FALSE)
 		RETURNING id, chapter_id, member_id, event_name, organization,
-			service_date, hours, xp_awarded, verified, verified_by, verified_at, notes, created_at
+			service_date::text, hours, xp_awarded, verified, verified_by, verified_at, notes, created_at
 	`, chapterID, memberID, input.EventName, input.Organization, input.ServiceDate, input.Hours).
 		Scan(&e.ID, &e.ChapterID, &e.MemberID, &e.EventName, &e.Organization,
 			&e.ServiceDate, &e.Hours, &e.XPAwarded, &e.Verified,
@@ -121,7 +122,7 @@ func (s *service) Verify(ctx context.Context, chapterID, entryID, verifierMember
 		SET verified = TRUE, verified_by = $3, verified_at = NOW()
 		WHERE id = $1 AND chapter_id = $2 AND verified = FALSE
 		RETURNING id, chapter_id, member_id, event_name, organization,
-			service_date, hours, xp_awarded, verified, verified_by, verified_at, notes, created_at
+			service_date::text, hours, xp_awarded, verified, verified_by, verified_at, notes, created_at
 	`, entryID, chapterID, verifierMemberID).
 		Scan(&e.ID, &e.ChapterID, &e.MemberID, &e.EventName, &e.Organization,
 			&e.ServiceDate, &e.Hours, &e.XPAwarded, &e.Verified,
@@ -171,11 +172,12 @@ func (s *service) GetByMember(ctx context.Context, chapterID, memberID string, p
 	rows, err := s.pool.Query(ctx, `
 		SELECT
 			sl.id, sl.chapter_id, sl.member_id, sl.event_name, sl.organization,
-			sl.service_date, sl.hours, sl.xp_awarded, sl.verified,
+			sl.service_date::text, sl.hours, sl.xp_awarded, sl.verified,
 			sl.verified_by, sl.verified_at, sl.notes, sl.created_at,
-			m.first_name, m.last_name
-		FROM service_log sl
-		LEFT JOIN members m ON m.id = sl.member_id
+				u.first_name, u.last_name
+			FROM service_log sl
+			LEFT JOIN members m ON m.id = sl.member_id
+			LEFT JOIN users u ON u.id = m.user_id
 		WHERE sl.chapter_id = $1 AND sl.member_id = $2
 		ORDER BY sl.service_date DESC
 		LIMIT $3 OFFSET $4

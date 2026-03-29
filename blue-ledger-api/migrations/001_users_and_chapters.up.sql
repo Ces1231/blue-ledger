@@ -1,4 +1,4 @@
--- ============================================================
+﻿-- ============================================================
 -- Migration: 001_users_and_chapters
 -- Date: 2026-03-24
 -- Author: Nebula
@@ -37,8 +37,8 @@ $$ LANGUAGE plpgsql;
 -- ============================================================
 CREATE TABLE IF NOT EXISTS chapters (
   id                      UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-  name                    TEXT        NOT NULL,                 -- "Tau Tau Sigma Chapter"
-  greek_letters           TEXT        NOT NULL,                 -- "ΤΤΣ"
+  name                    TEXT        NOT NULL,                 -- "Tau Sigma Sigma Chapter"
+  greek_letters           TEXT        NOT NULL,                 -- "ΤΣΣ"
   city                    TEXT        NOT NULL,
   state_code              CHAR(2)     NOT NULL,
   university              TEXT,

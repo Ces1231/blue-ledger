@@ -26,10 +26,10 @@ function getWsUrl(accessToken: string): string {
   if (WS_BASE_URL) {
     return `${WS_BASE_URL}/v1/ws?token=${accessToken}`
   }
-  // Derive from current origin: http(s)://host → ws(s)://host
+  // In Docker/production nginx proxies /api/ws → ws://api:8080/v1/ws
+  // Use same origin so the nginx upgrade path is used automatically.
   const proto = window.location.protocol === 'https:' ? 'wss' : 'ws'
-  const apiPort = import.meta.env.VITE_API_PORT ?? '8081'
-  return `${proto}://${window.location.hostname}:${apiPort}/v1/ws?token=${accessToken}`
+  return `${proto}://${window.location.host}/api/ws?token=${accessToken}`
 }
 
 // ── Hook ───────────────────────────────────────────────────────────────────────

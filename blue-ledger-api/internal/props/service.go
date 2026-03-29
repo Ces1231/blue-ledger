@@ -73,11 +73,13 @@ func (s *service) List(ctx context.Context, chapterID string, page, perPage int)
 		SELECT
 			p.id, p.chapter_id, p.from_id, p.to_id, p.category, p.message,
 			p.xp_awarded, p.created_at,
-			f.first_name, f.last_name,
-			t.first_name, t.last_name
-		FROM props p
-		LEFT JOIN members f ON f.id = p.from_id
-		LEFT JOIN members t ON t.id = p.to_id
+				uf.first_name, uf.last_name,
+				ut.first_name, ut.last_name
+			FROM props p
+			LEFT JOIN members f ON f.id = p.from_id
+			LEFT JOIN members t ON t.id = p.to_id
+			LEFT JOIN users uf ON uf.id = f.user_id
+			LEFT JOIN users ut ON ut.id = t.user_id
 		WHERE p.chapter_id = $1
 		ORDER BY p.created_at DESC
 		LIMIT $2 OFFSET $3
@@ -155,11 +157,13 @@ func (s *service) GetReceived(ctx context.Context, chapterID, memberID string, p
 		SELECT
 			p.id, p.chapter_id, p.from_id, p.to_id, p.category, p.message,
 			p.xp_awarded, p.created_at,
-			f.first_name, f.last_name,
-			t.first_name, t.last_name
-		FROM props p
-		LEFT JOIN members f ON f.id = p.from_id
-		LEFT JOIN members t ON t.id = p.to_id
+				uf.first_name, uf.last_name,
+				ut.first_name, ut.last_name
+			FROM props p
+			LEFT JOIN members f ON f.id = p.from_id
+			LEFT JOIN members t ON t.id = p.to_id
+			LEFT JOIN users uf ON uf.id = f.user_id
+			LEFT JOIN users ut ON ut.id = t.user_id
 		WHERE p.chapter_id = $1 AND p.to_id = $2
 		ORDER BY p.created_at DESC
 		LIMIT $3 OFFSET $4

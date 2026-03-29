@@ -49,9 +49,6 @@ func (h *Handler) BecomeMentor(c echo.Context) error {
 
 	mentor, err := h.svc.BecomeMentor(c.Request().Context(), chapterID, memberID, req)
 	if err != nil {
-		if errors.Is(err, ErrAlreadyMentor) {
-			return echo.NewHTTPError(http.StatusConflict, "already registered as a mentor")
-		}
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to register as mentor")
 	}
 	return c.JSON(http.StatusCreated, map[string]any{"data": mentor})

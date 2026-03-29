@@ -22,11 +22,23 @@ func NewHandler(svc Service) *Handler {
 func (h *Handler) RegisterRoutes(g *echo.Group, jwtMW echo.MiddlewareFunc) {
 	g.Use(jwtMW)
 	g.GET("", h.List)
+	g.GET("/mine", h.Mine)
 	g.GET("/:id", h.GetByID)
 	g.POST("", h.Create, auth.RoleGate("admin"))
 	g.PUT("/:id", h.Update, auth.RoleGate("admin"))
 	g.DELETE("/:id", h.Delete, auth.RoleGate("admin"))
 	g.POST("/:id/award", h.Award, auth.RoleGate("admin"))
+}
+
+// Mine handles GET /badges/mine — returns all badges earned by the calling member.
+func (h *Handler) Mine(c echo.Context) error {
+	chapterID := auth.GetChapterID(c)
+	memberID := auth.GetMemberID(c)
+	items, err := h.svc.Mine(c.Request().Context(), chapterID, memberID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to list my badges")
+	}
+	return c.JSON(http.StatusOK, map[string]any{"data": items})
 }
 
 // List handles GET /badges

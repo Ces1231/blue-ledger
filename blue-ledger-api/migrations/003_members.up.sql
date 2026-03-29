@@ -1,4 +1,4 @@
--- ============================================================
+﻿-- ============================================================
 -- Migration: 003_members
 -- Date: 2026-03-24
 -- Author: Nebula
@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS members (
   chapter_id          UUID        NOT NULL REFERENCES chapters(id) ON DELETE CASCADE,
   user_id             UUID        NOT NULL REFERENCES users(id)    ON DELETE CASCADE,
 
-  -- Chapter-scoped display ID (e.g., ΤΤΣ-001 or MBR-042)
+  -- Chapter-scoped display ID (e.g., ΤΣΣ-001 or MBR-042)
   -- Combination of chapter.member_id_prefix + sequence
   display_id          TEXT        NOT NULL,
 

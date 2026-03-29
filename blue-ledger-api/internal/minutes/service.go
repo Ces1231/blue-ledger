@@ -14,17 +14,20 @@ var ErrNotFound = errors.New("minutes not found")
 
 // Minutes is the domain model for meeting minutes.
 type Minutes struct {
-	ID          string     `json:"id"`
-	ChapterID   string     `json:"chapter_id"`
-	Title       string     `json:"title"`
-	MeetingDate string     `json:"meeting_date"`
-	Body        string     `json:"body"`
-	CreatedBy   string     `json:"created_by"`
-	IsFinalized bool       `json:"is_finalized"`
-	FinalizedAt *time.Time `json:"finalized_at,omitempty"`
-	FinalizedBy *string    `json:"finalized_by,omitempty"`
-	CreatedAt   time.Time  `json:"created_at"`
-	UpdatedAt   time.Time  `json:"updated_at"`
+	ID              string    `json:"id"`
+	ChapterID       string    `json:"chapter_id"`
+	Title           string    `json:"title"`
+	MeetingDate     string    `json:"meeting_date"`
+	Body            string    `json:"body"`
+	RecorderID      *string   `json:"recorder_id,omitempty"`
+	CreatedBy       *string   `json:"created_by,omitempty"` // alias for recorder_id
+	Quorum          bool      `json:"quorum"`
+	AttendeeIDs     []string  `json:"attendee_ids"`
+	XPForAttendance int       `json:"xp_for_attendance"`
+	Status          string    `json:"status"` // "draft" | "final"
+	IsFinalized     bool      `json:"is_finalized"` // derived: status == "final"
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
 	// Joined
 	AuthorFirstName *string `json:"author_first_name,omitempty"`
 	AuthorLastName  *string `json:"author_last_name,omitempty"`
@@ -32,9 +35,12 @@ type Minutes struct {
 
 // CreateInput holds data for creating minutes.
 type CreateInput struct {
-	Title       string `json:"title" validate:"required,min=2,max=200"`
-	MeetingDate string `json:"meeting_date" validate:"required"`
-	Body        string `json:"body" validate:"required"`
+	Title           string   `json:"title" validate:"required,min=2,max=200"`
+	MeetingDate     string   `json:"meeting_date" validate:"required"`
+	Body            string   `json:"body" validate:"required"`
+	Quorum          bool     `json:"quorum"`
+	AttendeeIDs     []string `json:"attendee_ids"`
+	XPForAttendance int      `json:"xp_for_attendance"`
 }
 
 // UpdateInput holds data for updating minutes.
@@ -72,21 +78,21 @@ func (s *service) List(ctx context.Context, chapterID string, page, perPage int)
 
 	var total int
 	if err := s.pool.QueryRow(ctx,
-		`SELECT COUNT(*) FROM meeting_minutes WHERE chapter_id = $1`, chapterID,
+		`SELECT COUNT(*) FROM chapter_minutes WHERE chapter_id = $1`, chapterID,
 	).Scan(&total); err != nil {
 		return nil, 0, fmt.Errorf("count minutes: %w", err)
 	}
 
 	rows, err := s.pool.Query(ctx, `
-		SELECT
-			mm.id, mm.chapter_id, mm.title, mm.meeting_date, mm.body,
-			mm.created_by, mm.is_finalized, mm.finalized_at, mm.finalized_by,
-			mm.created_at, mm.updated_at,
-			m.first_name, m.last_name
-		FROM meeting_minutes mm
-		LEFT JOIN members m ON m.id = mm.created_by
-		WHERE mm.chapter_id = $1
-		ORDER BY mm.meeting_date DESC
+		SELECT cm.id, cm.chapter_id, cm.title, cm.meeting_date::text, cm.body,
+			cm.recorder_id, cm.quorum, cm.attendee_ids, cm.xp_for_attendance,
+			cm.status, cm.created_at, cm.updated_at,
+				u.first_name, u.last_name
+			FROM chapter_minutes cm
+			LEFT JOIN members m ON m.id = cm.recorder_id
+			LEFT JOIN users u ON u.id = m.user_id
+		WHERE cm.chapter_id = $1
+		ORDER BY cm.meeting_date DESC
 		LIMIT $2 OFFSET $3
 	`, chapterID, perPage, offset)
 	if err != nil {
@@ -99,47 +105,58 @@ func (s *service) List(ctx context.Context, chapterID string, page, perPage int)
 		mn := &Minutes{}
 		if err := rows.Scan(
 			&mn.ID, &mn.ChapterID, &mn.Title, &mn.MeetingDate, &mn.Body,
-			&mn.CreatedBy, &mn.IsFinalized, &mn.FinalizedAt, &mn.FinalizedBy,
-			&mn.CreatedAt, &mn.UpdatedAt,
+			&mn.RecorderID, &mn.Quorum, &mn.AttendeeIDs, &mn.XPForAttendance,
+			&mn.Status, &mn.CreatedAt, &mn.UpdatedAt,
 			&mn.AuthorFirstName, &mn.AuthorLastName,
 		); err != nil {
 			return nil, 0, fmt.Errorf("scan minutes: %w", err)
 		}
+		mn.IsFinalized = mn.Status == "final"
+		mn.CreatedBy = mn.RecorderID
 		result = append(result, mn)
 	}
 	return result, total, rows.Err()
 }
 
 func (s *service) Create(ctx context.Context, chapterID, createdByMemberID string, input CreateInput) (*Minutes, error) {
+	attendeeIDs := input.AttendeeIDs
+	if attendeeIDs == nil {
+		attendeeIDs = []string{}
+	}
 	mn := &Minutes{}
 	err := s.pool.QueryRow(ctx, `
-		INSERT INTO meeting_minutes (chapter_id, title, meeting_date, body, created_by, is_finalized)
-		VALUES ($1, $2, $3, $4, $5, FALSE)
-		RETURNING id, chapter_id, title, meeting_date, body, created_by, is_finalized, finalized_at, finalized_by, created_at, updated_at
-	`, chapterID, input.Title, input.MeetingDate, input.Body, createdByMemberID).
+		INSERT INTO chapter_minutes (chapter_id, title, meeting_date, body, recorder_id, quorum, attendee_ids, xp_for_attendance, status)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'draft')
+		RETURNING id, chapter_id, title, meeting_date::text, body,
+			recorder_id, quorum, attendee_ids, xp_for_attendance, status, created_at, updated_at
+	`, chapterID, input.Title, input.MeetingDate, input.Body, createdByMemberID,
+		input.Quorum, attendeeIDs, input.XPForAttendance).
 		Scan(&mn.ID, &mn.ChapterID, &mn.Title, &mn.MeetingDate, &mn.Body,
-			&mn.CreatedBy, &mn.IsFinalized, &mn.FinalizedAt, &mn.FinalizedBy, &mn.CreatedAt, &mn.UpdatedAt)
+			&mn.RecorderID, &mn.Quorum, &mn.AttendeeIDs, &mn.XPForAttendance,
+			&mn.Status, &mn.CreatedAt, &mn.UpdatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("create minutes: %w", err)
 	}
+	mn.IsFinalized = mn.Status == "final"
+	mn.CreatedBy = mn.RecorderID
 	return mn, nil
 }
 
 func (s *service) Get(ctx context.Context, chapterID, minutesID string) (*Minutes, error) {
 	mn := &Minutes{}
 	err := s.pool.QueryRow(ctx, `
-		SELECT
-			mm.id, mm.chapter_id, mm.title, mm.meeting_date, mm.body,
-			mm.created_by, mm.is_finalized, mm.finalized_at, mm.finalized_by,
-			mm.created_at, mm.updated_at,
-			m.first_name, m.last_name
-		FROM meeting_minutes mm
-		LEFT JOIN members m ON m.id = mm.created_by
-		WHERE mm.id = $1 AND mm.chapter_id = $2
+		SELECT cm.id, cm.chapter_id, cm.title, cm.meeting_date::text, cm.body,
+			cm.recorder_id, cm.quorum, cm.attendee_ids, cm.xp_for_attendance,
+			cm.status, cm.created_at, cm.updated_at,
+				u.first_name, u.last_name
+			FROM chapter_minutes cm
+			LEFT JOIN members m ON m.id = cm.recorder_id
+			LEFT JOIN users u ON u.id = m.user_id
+		WHERE cm.id = $1 AND cm.chapter_id = $2
 	`, minutesID, chapterID).
 		Scan(&mn.ID, &mn.ChapterID, &mn.Title, &mn.MeetingDate, &mn.Body,
-			&mn.CreatedBy, &mn.IsFinalized, &mn.FinalizedAt, &mn.FinalizedBy,
-			&mn.CreatedAt, &mn.UpdatedAt,
+			&mn.RecorderID, &mn.Quorum, &mn.AttendeeIDs, &mn.XPForAttendance,
+			&mn.Status, &mn.CreatedAt, &mn.UpdatedAt,
 			&mn.AuthorFirstName, &mn.AuthorLastName)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
@@ -147,46 +164,53 @@ func (s *service) Get(ctx context.Context, chapterID, minutesID string) (*Minute
 	if err != nil {
 		return nil, fmt.Errorf("get minutes: %w", err)
 	}
+	mn.IsFinalized = mn.Status == "final"
+	mn.CreatedBy = mn.RecorderID
 	return mn, nil
 }
 
 func (s *service) Update(ctx context.Context, chapterID, minutesID string, input UpdateInput) (*Minutes, error) {
 	mn := &Minutes{}
 	err := s.pool.QueryRow(ctx, `
-		UPDATE meeting_minutes
-		SET
-			title      = COALESCE($3, title),
-			body       = COALESCE($4, body),
-			updated_at = NOW()
-		WHERE id = $1 AND chapter_id = $2 AND is_finalized = FALSE
-		RETURNING id, chapter_id, title, meeting_date, body, created_by, is_finalized, finalized_at, finalized_by, created_at, updated_at
+		UPDATE chapter_minutes
+		SET title = COALESCE($3, title), body = COALESCE($4, body), updated_at = NOW()
+		WHERE id = $1 AND chapter_id = $2 AND status = 'draft'
+		RETURNING id, chapter_id, title, meeting_date::text, body,
+			recorder_id, quorum, attendee_ids, xp_for_attendance, status, created_at, updated_at
 	`, minutesID, chapterID, input.Title, input.Body).
 		Scan(&mn.ID, &mn.ChapterID, &mn.Title, &mn.MeetingDate, &mn.Body,
-			&mn.CreatedBy, &mn.IsFinalized, &mn.FinalizedAt, &mn.FinalizedBy, &mn.CreatedAt, &mn.UpdatedAt)
+			&mn.RecorderID, &mn.Quorum, &mn.AttendeeIDs, &mn.XPForAttendance,
+			&mn.Status, &mn.CreatedAt, &mn.UpdatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
 	}
 	if err != nil {
 		return nil, fmt.Errorf("update minutes: %w", err)
 	}
+	mn.IsFinalized = mn.Status == "final"
+	mn.CreatedBy = mn.RecorderID
 	return mn, nil
 }
 
 func (s *service) Finalize(ctx context.Context, chapterID, minutesID, memberID string) (*Minutes, error) {
 	mn := &Minutes{}
 	err := s.pool.QueryRow(ctx, `
-		UPDATE meeting_minutes
-		SET is_finalized = TRUE, finalized_at = NOW(), finalized_by = $3, updated_at = NOW()
-		WHERE id = $1 AND chapter_id = $2 AND is_finalized = FALSE
-		RETURNING id, chapter_id, title, meeting_date, body, created_by, is_finalized, finalized_at, finalized_by, created_at, updated_at
-	`, minutesID, chapterID, memberID).
+		UPDATE chapter_minutes
+		SET status = 'final', updated_at = NOW()
+		WHERE id = $1 AND chapter_id = $2 AND status = 'draft'
+		RETURNING id, chapter_id, title, meeting_date::text, body,
+			recorder_id, quorum, attendee_ids, xp_for_attendance, status, created_at, updated_at
+	`, minutesID, chapterID).
 		Scan(&mn.ID, &mn.ChapterID, &mn.Title, &mn.MeetingDate, &mn.Body,
-			&mn.CreatedBy, &mn.IsFinalized, &mn.FinalizedAt, &mn.FinalizedBy, &mn.CreatedAt, &mn.UpdatedAt)
+			&mn.RecorderID, &mn.Quorum, &mn.AttendeeIDs, &mn.XPForAttendance,
+			&mn.Status, &mn.CreatedAt, &mn.UpdatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
 	}
 	if err != nil {
 		return nil, fmt.Errorf("finalize minutes: %w", err)
 	}
+	mn.IsFinalized = mn.Status == "final"
+	mn.CreatedBy = mn.RecorderID
 	return mn, nil
 }

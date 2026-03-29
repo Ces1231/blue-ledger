@@ -227,9 +227,9 @@ func (s *eventsService) CheckInQR(ctx context.Context, chapterID, eventID, membe
 	// Look up member by display ID
 	var memberID, firstName, lastName, level string
 	err = s.db.QueryRow(ctx, `
-		SELECT m.id, u.first_name, u.last_name, m.level
-		FROM members m JOIN users u ON u.id = m.user_id
-		WHERE m.chapter_id = $1 AND m.member_display_id = $2 AND m.deleted_at IS NULL`,
+			SELECT m.id, u.first_name, u.last_name, m.level_key
+			FROM members m JOIN users u ON u.id = m.user_id
+			WHERE m.chapter_id = $1 AND m.display_id = $2 AND m.deleted_at IS NULL`,
 		chapterID, memberDisplayID).Scan(&memberID, &firstName, &lastName, &level)
 	if err == pgx.ErrNoRows {
 		return nil, fmt.Errorf("member not found")

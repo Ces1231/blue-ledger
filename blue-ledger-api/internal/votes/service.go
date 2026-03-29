@@ -22,33 +22,37 @@ type Vote struct {
 	ChapterID   string     `json:"chapter_id"`
 	Title       string     `json:"title"`
 	Description *string    `json:"description,omitempty"`
+	VoteType    string     `json:"vote_type"`
 	Options     []string   `json:"options"`
-	IsOpen      bool       `json:"is_open"`
+	IsActive    bool       `json:"is_active"`
+	IsAnonymous bool       `json:"is_anonymous"`
 	CreatedBy   string     `json:"created_by"`
-	ClosesAt    *time.Time `json:"closes_at,omitempty"`
+	Deadline    *time.Time `json:"deadline,omitempty"`
 	CreatedAt   time.Time  `json:"created_at"`
 	// Viewer state
-	MyResponse *string `json:"my_response,omitempty"`
+	MyVoteIndex *int `json:"my_vote_index,omitempty"`
 }
 
 // VoteResult holds the tally for a vote.
 type VoteResult struct {
-	VoteID  string            `json:"vote_id"`
-	Total   int               `json:"total"`
-	Options map[string]int    `json:"options"`
+	VoteID  string         `json:"vote_id"`
+	Total   int            `json:"total"`
+	Options map[string]int `json:"options"` // key = stringified option index
 }
 
 // CreateInput holds data for creating a new vote.
 type CreateInput struct {
 	Title       string     `json:"title" validate:"required,min=2,max=200"`
 	Description *string    `json:"description"`
+	VoteType    string     `json:"vote_type" validate:"required,oneof=election referendum motion"`
 	Options     []string   `json:"options" validate:"required,min=2"`
-	ClosesAt    *time.Time `json:"closes_at"`
+	Deadline    *time.Time `json:"deadline"`
+	IsAnonymous bool       `json:"is_anonymous"`
 }
 
-// RespondInput holds a member's vote choice.
+// RespondInput holds a member's vote choice (0-based option index).
 type RespondInput struct {
-	Choice string `json:"choice" validate:"required"`
+	OptionIndex int `json:"option_index" validate:"min=0"`
 }
 
 // Service defines the votes business logic interface.
@@ -71,13 +75,13 @@ func NewService(pool *pgxpool.Pool) Service {
 func (s *service) List(ctx context.Context, chapterID, memberID string) ([]*Vote, error) {
 	rows, err := s.pool.Query(ctx, `
 		SELECT
-			v.id, v.chapter_id, v.title, v.description, v.options,
-			v.is_open, v.created_by, v.closes_at, v.created_at,
-			vr.choice AS my_response
+			v.id, v.chapter_id, v.title, v.description, v.vote_type, v.options,
+			v.is_active, v.is_anonymous, v.created_by, v.deadline, v.created_at,
+			vr.option_index AS my_vote_index
 		FROM votes v
 		LEFT JOIN vote_responses vr ON vr.vote_id = v.id AND vr.member_id = $2
 		WHERE v.chapter_id = $1
-		ORDER BY v.is_open DESC, v.created_at DESC
+		ORDER BY v.is_active DESC, v.created_at DESC
 	`, chapterID, memberID)
 	if err != nil {
 		return nil, fmt.Errorf("list votes: %w", err)
@@ -88,9 +92,9 @@ func (s *service) List(ctx context.Context, chapterID, memberID string) ([]*Vote
 	for rows.Next() {
 		v := &Vote{}
 		if err := rows.Scan(
-			&v.ID, &v.ChapterID, &v.Title, &v.Description, &v.Options,
-			&v.IsOpen, &v.CreatedBy, &v.ClosesAt, &v.CreatedAt,
-			&v.MyResponse,
+			&v.ID, &v.ChapterID, &v.Title, &v.Description, &v.VoteType, &v.Options,
+			&v.IsActive, &v.IsAnonymous, &v.CreatedBy, &v.Deadline, &v.CreatedAt,
+			&v.MyVoteIndex,
 		); err != nil {
 			return nil, fmt.Errorf("scan vote: %w", err)
 		}
@@ -102,12 +106,12 @@ func (s *service) List(ctx context.Context, chapterID, memberID string) ([]*Vote
 func (s *service) Create(ctx context.Context, chapterID, createdByMemberID string, input CreateInput) (*Vote, error) {
 	v := &Vote{}
 	err := s.pool.QueryRow(ctx, `
-		INSERT INTO votes (chapter_id, title, description, options, is_open, created_by, closes_at)
-		VALUES ($1, $2, $3, $4, TRUE, $5, $6)
-		RETURNING id, chapter_id, title, description, options, is_open, created_by, closes_at, created_at
-	`, chapterID, input.Title, input.Description, input.Options, createdByMemberID, input.ClosesAt).
-		Scan(&v.ID, &v.ChapterID, &v.Title, &v.Description, &v.Options,
-			&v.IsOpen, &v.CreatedBy, &v.ClosesAt, &v.CreatedAt)
+		INSERT INTO votes (chapter_id, title, description, vote_type, options, is_active, is_anonymous, created_by, deadline)
+		VALUES ($1, $2, $3, $4, $5, TRUE, $6, $7, $8)
+		RETURNING id, chapter_id, title, description, vote_type, options, is_active, is_anonymous, created_by, deadline, created_at
+	`, chapterID, input.Title, input.Description, input.VoteType, input.Options, input.IsAnonymous, createdByMemberID, input.Deadline).
+		Scan(&v.ID, &v.ChapterID, &v.Title, &v.Description, &v.VoteType, &v.Options,
+			&v.IsActive, &v.IsAnonymous, &v.CreatedBy, &v.Deadline, &v.CreatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("create vote: %w", err)
 	}
@@ -115,25 +119,23 @@ func (s *service) Create(ctx context.Context, chapterID, createdByMemberID strin
 }
 
 func (s *service) Vote(ctx context.Context, chapterID, voteID, memberID string, input RespondInput) error {
-	// Check vote is open
-	var isOpen bool
+	var isActive bool
 	if err := s.pool.QueryRow(ctx,
-		`SELECT is_open FROM votes WHERE id = $1 AND chapter_id = $2`, voteID, chapterID,
-	).Scan(&isOpen); errors.Is(err, pgx.ErrNoRows) {
+		`SELECT is_active FROM votes WHERE id = $1 AND chapter_id = $2`, voteID, chapterID,
+	).Scan(&isActive); errors.Is(err, pgx.ErrNoRows) {
 		return ErrNotFound
 	} else if err != nil {
 		return fmt.Errorf("check vote: %w", err)
 	}
-	if !isOpen {
+	if !isActive {
 		return ErrVoteClosed
 	}
 
 	_, err := s.pool.Exec(ctx, `
-		INSERT INTO vote_responses (vote_id, chapter_id, member_id, choice)
+		INSERT INTO vote_responses (vote_id, chapter_id, member_id, option_index)
 		VALUES ($1, $2, $3, $4)
-	`, voteID, chapterID, memberID, input.Choice)
+	`, voteID, chapterID, memberID, input.OptionIndex)
 	if err != nil {
-		// Unique constraint violation — already voted
 		if isUniqueViolation(err) {
 			return ErrAlreadyVoted
 		}
@@ -143,7 +145,6 @@ func (s *service) Vote(ctx context.Context, chapterID, voteID, memberID string, 
 }
 
 func (s *service) GetResults(ctx context.Context, chapterID, voteID string) (*VoteResult, error) {
-	// Verify vote exists
 	var exists bool
 	if err := s.pool.QueryRow(ctx,
 		`SELECT EXISTS(SELECT 1 FROM votes WHERE id = $1 AND chapter_id = $2)`, voteID, chapterID,
@@ -155,9 +156,10 @@ func (s *service) GetResults(ctx context.Context, chapterID, voteID string) (*Vo
 	}
 
 	rows, err := s.pool.Query(ctx, `
-		SELECT choice, COUNT(*) FROM vote_responses
+		SELECT option_index, COUNT(*) FROM vote_responses
 		WHERE vote_id = $1
-		GROUP BY choice
+		GROUP BY option_index
+		ORDER BY option_index
 	`, voteID)
 	if err != nil {
 		return nil, fmt.Errorf("get vote results: %w", err)
@@ -169,12 +171,12 @@ func (s *service) GetResults(ctx context.Context, chapterID, voteID string) (*Vo
 		Options: make(map[string]int),
 	}
 	for rows.Next() {
-		var choice string
+		var optIdx int
 		var count int
-		if err := rows.Scan(&choice, &count); err != nil {
+		if err := rows.Scan(&optIdx, &count); err != nil {
 			return nil, fmt.Errorf("scan vote result: %w", err)
 		}
-		result.Options[choice] = count
+		result.Options[fmt.Sprintf("%d", optIdx)] = count
 		result.Total += count
 	}
 	return result, rows.Err()

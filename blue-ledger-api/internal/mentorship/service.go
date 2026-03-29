@@ -12,20 +12,19 @@ import (
 )
 
 var (
-	ErrNotFound        = errors.New("mentorship record not found")
-	ErrAlreadyMentor   = errors.New("member is already registered as a mentor")
-	ErrAlreadyMatched  = errors.New("member already has an active mentorship match")
+	ErrNotFound      = errors.New("mentorship record not found")
+	ErrAlreadyMatched = errors.New("member already has an active mentorship match")
 )
 
 // Mentor represents a member registered as a mentor.
 type Mentor struct {
-	ID          string    `json:"id"`
-	ChapterID   string    `json:"chapter_id"`
-	MemberID    string    `json:"member_id"`
-	Bio         *string   `json:"bio,omitempty"`
-	Specialties []string  `json:"specialties"`
-	IsActive    bool      `json:"is_active"`
-	CreatedAt   time.Time `json:"created_at"`
+	ID         string    `json:"id"`
+	ChapterID  string    `json:"chapter_id"`
+	MemberID   string    `json:"member_id"`
+	FocusAreas []string  `json:"specialties"`
+	Bio        *string   `json:"bio,omitempty"`
+	IsActive   bool      `json:"is_active"`
+	CreatedAt  time.Time `json:"created_at"`
 	// Joined
 	FirstName *string `json:"first_name,omitempty"`
 	LastName  *string `json:"last_name,omitempty"`
@@ -35,14 +34,13 @@ type Mentor struct {
 
 // Match represents a mentorship pairing.
 type Match struct {
-	ID         string     `json:"id"`
-	ChapterID  string     `json:"chapter_id"`
-	MentorID   string     `json:"mentor_id"`
-	MenteeID   string     `json:"mentee_id"`
-	Status     string     `json:"status"`
-	StartedAt  *time.Time `json:"started_at,omitempty"`
-	EndedAt    *time.Time `json:"ended_at,omitempty"`
-	CreatedAt  time.Time  `json:"created_at"`
+	ID        string     `json:"id"`
+	ChapterID string     `json:"chapter_id"`
+	MentorID  string     `json:"mentor_id"`
+	MenteeID  *string    `json:"mentee_id,omitempty"`
+	Status    string     `json:"status"`
+	StartedAt *time.Time `json:"started_at,omitempty"`
+	CreatedAt time.Time  `json:"created_at"`
 	// Joined
 	MentorFirstName *string `json:"mentor_first_name,omitempty"`
 	MentorLastName  *string `json:"mentor_last_name,omitempty"`
@@ -81,13 +79,14 @@ func NewService(pool *pgxpool.Pool, xpSvc xp.XPService) Service {
 
 func (s *service) List(ctx context.Context, chapterID string) ([]*Mentor, error) {
 	rows, err := s.pool.Query(ctx, `
-		SELECT
-			mt.id, mt.chapter_id, mt.member_id, mt.bio, mt.specialties, mt.is_active, mt.created_at,
-			m.first_name, m.last_name, m.avatar_url, m.role
-		FROM mentors mt
-		JOIN members m ON m.id = mt.member_id
+		SELECT DISTINCT ON (mt.mentor_id)
+			mt.id, mt.chapter_id, mt.mentor_id, mt.focus_areas, mt.bio, mt.is_active, mt.created_at,
+				u.first_name, u.last_name, u.avatar_url, m.role
+			FROM mentorships mt
+			JOIN members m ON m.id = mt.mentor_id
+			LEFT JOIN users u ON u.id = m.user_id
 		WHERE mt.chapter_id = $1 AND mt.is_active = TRUE
-		ORDER BY m.last_name, m.first_name
+		ORDER BY mt.mentor_id, mt.created_at DESC
 	`, chapterID)
 	if err != nil {
 		return nil, fmt.Errorf("list mentors: %w", err)
@@ -98,7 +97,7 @@ func (s *service) List(ctx context.Context, chapterID string) ([]*Mentor, error)
 	for rows.Next() {
 		mt := &Mentor{}
 		if err := rows.Scan(
-			&mt.ID, &mt.ChapterID, &mt.MemberID, &mt.Bio, &mt.Specialties, &mt.IsActive, &mt.CreatedAt,
+			&mt.ID, &mt.ChapterID, &mt.MemberID, &mt.FocusAreas, &mt.Bio, &mt.IsActive, &mt.CreatedAt,
 			&mt.FirstName, &mt.LastName, &mt.AvatarURL, &mt.Role,
 		); err != nil {
 			return nil, fmt.Errorf("scan mentor: %w", err)
@@ -111,13 +110,11 @@ func (s *service) List(ctx context.Context, chapterID string) ([]*Mentor, error)
 func (s *service) BecomeMentor(ctx context.Context, chapterID, memberID string, input BecomeMentorInput) (*Mentor, error) {
 	mt := &Mentor{}
 	err := s.pool.QueryRow(ctx, `
-		INSERT INTO mentors (chapter_id, member_id, bio, specialties, is_active)
+		INSERT INTO mentorships (chapter_id, mentor_id, focus_areas, bio, is_active)
 		VALUES ($1, $2, $3, $4, TRUE)
-		ON CONFLICT (chapter_id, member_id) DO UPDATE
-			SET bio = EXCLUDED.bio, specialties = EXCLUDED.specialties, is_active = TRUE
-		RETURNING id, chapter_id, member_id, bio, specialties, is_active, created_at
-	`, chapterID, memberID, input.Bio, input.Specialties).
-		Scan(&mt.ID, &mt.ChapterID, &mt.MemberID, &mt.Bio, &mt.Specialties, &mt.IsActive, &mt.CreatedAt)
+		RETURNING id, chapter_id, mentor_id, focus_areas, bio, is_active, created_at
+	`, chapterID, memberID, input.Specialties, input.Bio).
+		Scan(&mt.ID, &mt.ChapterID, &mt.MemberID, &mt.FocusAreas, &mt.Bio, &mt.IsActive, &mt.CreatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("become mentor: %w", err)
 	}
@@ -125,10 +122,10 @@ func (s *service) BecomeMentor(ctx context.Context, chapterID, memberID string, 
 }
 
 func (s *service) RequestMatch(ctx context.Context, chapterID, menteeID string, input RequestMatchInput) (*Match, error) {
-	// Check for existing active match
+	// Check for existing active match for this mentee
 	var existingID string
 	err := s.pool.QueryRow(ctx,
-		`SELECT id FROM mentorship_matches WHERE chapter_id = $1 AND mentee_id = $2 AND status IN ('pending','active')`,
+		`SELECT id FROM mentorships WHERE chapter_id = $1 AND mentee_id = $2 AND is_active = TRUE`,
 		chapterID, menteeID,
 	).Scan(&existingID)
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
@@ -140,44 +137,43 @@ func (s *service) RequestMatch(ctx context.Context, chapterID, menteeID string, 
 
 	match := &Match{}
 	err = s.pool.QueryRow(ctx, `
-		INSERT INTO mentorship_matches (chapter_id, mentor_id, mentee_id, status)
-		VALUES ($1, $2, $3, 'pending')
-		RETURNING id, chapter_id, mentor_id, mentee_id, status, started_at, ended_at, created_at
+		UPDATE mentorships
+		SET mentee_id = $3, started_at = NOW(), updated_at = NOW()
+		WHERE id = (
+			SELECT id FROM mentorships
+			WHERE chapter_id = $1 AND mentor_id = $2 AND mentee_id IS NULL AND is_active = TRUE
+			ORDER BY created_at DESC
+			LIMIT 1
+		)
+		RETURNING id, chapter_id, mentor_id, mentee_id, started_at, created_at
 	`, chapterID, input.MentorID, menteeID).
-		Scan(&match.ID, &match.ChapterID, &match.MentorID, &match.MenteeID,
-			&match.Status, &match.StartedAt, &match.EndedAt, &match.CreatedAt)
+		Scan(&match.ID, &match.ChapterID, &match.MentorID, &match.MenteeID, &match.StartedAt, &match.CreatedAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrNotFound
+	}
 	if err != nil {
 		return nil, fmt.Errorf("create mentorship match: %w", err)
 	}
-
-	// Award XP to the mentee for finding a mentor
-	_ = s.xpSvc.AwardXP(ctx, chapterID, menteeID, xp.AwardXPInput{
-		MemberID: menteeID,
-		XPAmount: 50,
-		Activity: "Mentorship match requested",
-	})
-
+	match.Status = "active"
 	return match, nil
 }
 
 func (s *service) GetMyMatch(ctx context.Context, chapterID, memberID string) (*Match, error) {
 	match := &Match{}
 	err := s.pool.QueryRow(ctx, `
-		SELECT
-			mm.id, mm.chapter_id, mm.mentor_id, mm.mentee_id,
-			mm.status, mm.started_at, mm.ended_at, mm.created_at,
-			tor.first_name AS mentor_first_name, tor.last_name AS mentor_last_name,
-			tee.first_name AS mentee_first_name, tee.last_name AS mentee_last_name
-		FROM mentorship_matches mm
-		LEFT JOIN members tor ON tor.id = mm.mentor_id
-		LEFT JOIN members tee ON tee.id = mm.mentee_id
-		WHERE mm.chapter_id = $1 AND (mm.mentee_id = $2 OR mm.mentor_id = $2)
-			AND mm.status IN ('pending', 'active')
-		ORDER BY mm.created_at DESC
+		SELECT mt.id, mt.chapter_id, mt.mentor_id, mt.mentee_id, mt.started_at, mt.created_at,
+				utor.first_name, utor.last_name, utee.first_name, utee.last_name
+			FROM mentorships mt
+			LEFT JOIN members tor ON tor.id = mt.mentor_id
+			LEFT JOIN members tee ON tee.id = mt.mentee_id
+			LEFT JOIN users utor ON utor.id = tor.user_id
+			LEFT JOIN users utee ON utee.id = tee.user_id
+		WHERE mt.chapter_id = $1 AND (mt.mentee_id = $2 OR mt.mentor_id = $2) AND mt.is_active = TRUE
+		ORDER BY mt.created_at DESC
 		LIMIT 1
 	`, chapterID, memberID).
 		Scan(&match.ID, &match.ChapterID, &match.MentorID, &match.MenteeID,
-			&match.Status, &match.StartedAt, &match.EndedAt, &match.CreatedAt,
+			&match.StartedAt, &match.CreatedAt,
 			&match.MentorFirstName, &match.MentorLastName,
 			&match.MenteeFirstName, &match.MenteeLastName)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -186,5 +182,6 @@ func (s *service) GetMyMatch(ctx context.Context, chapterID, memberID string) (*
 	if err != nil {
 		return nil, fmt.Errorf("get my match: %w", err)
 	}
+	match.Status = "active"
 	return match, nil
 }

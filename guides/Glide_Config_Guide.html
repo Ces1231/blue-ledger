@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -415,7 +415,7 @@
             <tr><td>Quick link: Service</td><td><span class="glide-label">Button</span></td><td>→ Service Log screen</td><td>Label: "Log Service Hours"</td></tr>
             <tr><td>Quick link: Quests</td><td><span class="glide-label">Button</span></td><td>→ My Quests screen</td><td>Label: "View My Quests"</td></tr>
             <tr><td>Separator</td><td><span class="glide-label">Separator</span></td><td>—</td><td></td></tr>
-            <tr><td>Member number</td><td><span class="glide-label">Text</span></td><td><span class="step-code">Member #</span></td><td>Small, muted — e.g. "ΤΤΣ-001"</td></tr>
+            <tr><td>Member number</td><td><span class="glide-label">Text</span></td><td><span class="step-code">Member #</span></td><td>Small, muted — e.g. "ΤΣΣ-001"</td></tr>
             <tr><td>Induction year</td><td><span class="glide-label">Text</span></td><td><span class="step-code">Induction Year</span></td><td>Small — e.g. "Initiated: 2019"</td></tr>
           </tbody>
         </table>
@@ -447,7 +447,7 @@
         <div class="section-h">QR Code Setup (critical step)</div>
         <div class="action-steps">
           <div class="action-step"><div class="action-step-num">1</div><div>In the 👥 Users Data Editor → Add Column → <span class="step-code">Template</span> column → name it <span class="step-code">QR Data</span></div></div>
-          <div class="action-step"><div class="action-step-num">2</div><div>Template value: <span class="step-code">MEMBER:{Member #}</span> — this becomes the text encoded in the QR. Example output: <span class="step-code">MEMBER:ΤΤΣ-001</span></div></div>
+          <div class="action-step"><div class="action-step-num">2</div><div>Template value: <span class="step-code">MEMBER:{Member #}</span> — this becomes the text encoded in the QR. Example output: <span class="step-code">MEMBER:ΤΣΣ-001</span></div></div>
           <div class="action-step"><div class="action-step-num">3</div><div>On the screen → Add Component → <span class="glide-label">QR Code</span> → map to the <span class="step-code">QR Data</span> column</div></div>
           <div class="action-step"><div class="action-step-num">4</div><div>Size: Large. This is what the Chair's scanner will read at events.</div></div>
         </div>
@@ -456,7 +456,7 @@
         <table class="config-table">
           <thead><tr><th>Component</th><th>Glide Type</th><th>Field / Value</th></tr></thead>
           <tbody>
-            <tr><td>Chapter name header</td><td><span class="glide-label">Rich Text</span></td><td>Static text: "Tau Tau Sigma Chapter — Blue Ledger"</td></tr>
+            <tr><td>Chapter name header</td><td><span class="glide-label">Rich Text</span></td><td>Static text: "Tau Sigma Sigma Chapter — Blue Ledger"</td></tr>
             <tr><td>QR Code</td><td><span class="glide-label">QR Code</span></td><td><span class="step-code">QR Data</span> column (MEMBER:{Member #})</td></tr>
             <tr><td>Full name</td><td><span class="glide-label">Title</span></td><td><span class="step-code">Full Name</span></td></tr>
             <tr><td>Member number</td><td><span class="glide-label">Text</span></td><td><span class="step-code">Member #</span></td></tr>
@@ -746,7 +746,7 @@
           </tbody>
         </table>
 
-        <div class="callout callout-success"><span class="callout-icon">✅</span>After "Confirm Check-In" fires, show a success notification: "ΤΤΣ-001 checked in — 50 XP awarded." Reset the Scanned Value field so the Chair can scan the next person immediately.</div>
+        <div class="callout callout-success"><span class="callout-icon">✅</span>After "Confirm Check-In" fires, show a success notification: "ΤΣΣ-001 checked in — 50 XP awarded." Reset the Scanned Value field so the Chair can scan the next person immediately.</div>
       </div>
     </div>
 
@@ -949,7 +949,7 @@
         <div style="font-size:0.82rem;font-weight:600;color:var(--navy);margin-bottom:6px;">QR Data (Template column in Users tab)</div>
         <div class="formula-block">
 <span class="str">MEMBER:</span>{<span class="fn">Member #</span>}
-<span class="kw">→ Example output:</span> <span class="str">MEMBER:ΤΤΣ-001</span>
+<span class="kw">→ Example output:</span> <span class="str">MEMBER:ΤΣΣ-001</span>
         </div>
       </div>
     </div>

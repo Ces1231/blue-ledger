@@ -75,6 +75,7 @@ type Service interface {
 	Update(ctx context.Context, chapterID, id string, input UpdateInput) (*Badge, error)
 	Delete(ctx context.Context, chapterID, id string) error
 	Award(ctx context.Context, chapterID, badgeID, memberID, awardedBy string) (*MemberBadge, error)
+	Mine(ctx context.Context, chapterID, memberID string) ([]*MemberBadge, error)
 }
 
 type service struct {
@@ -191,6 +192,32 @@ func (s *service) Delete(ctx context.Context, chapterID, id string) error {
 		return ErrNotFound
 	}
 	return nil
+}
+
+func (s *service) Mine(ctx context.Context, chapterID, memberID string) ([]*MemberBadge, error) {
+	rows, err := s.pool.Query(ctx, `
+		SELECT id, chapter_id, member_id, badge_id, awarded_at, awarded_by
+		FROM member_badges
+		WHERE chapter_id = $1 AND member_id = $2
+		ORDER BY awarded_at DESC
+	`, chapterID, memberID)
+	if err != nil {
+		return nil, fmt.Errorf("list my badges: %w", err)
+	}
+	defer rows.Close()
+
+	var result []*MemberBadge
+	for rows.Next() {
+		mb := &MemberBadge{}
+		if err := rows.Scan(&mb.ID, &mb.ChapterID, &mb.MemberID, &mb.BadgeID, &mb.AwardedAt, &mb.AwardedBy); err != nil {
+			return nil, fmt.Errorf("scan member badge: %w", err)
+		}
+		result = append(result, mb)
+	}
+	if result == nil {
+		result = []*MemberBadge{}
+	}
+	return result, rows.Err()
 }
 
 func (s *service) Award(ctx context.Context, chapterID, badgeID, memberID, awardedBy string) (*MemberBadge, error) {

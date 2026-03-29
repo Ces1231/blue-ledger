@@ -11,23 +11,23 @@ import (
 )
 
 var (
-	ErrNotFound         = errors.New("store item not found")
-	ErrInsufficientXP   = errors.New("insufficient XP balance for this purchase")
-	ErrItemUnavailable  = errors.New("item is not available")
+	ErrNotFound        = errors.New("store item not found")
+	ErrInsufficientXP  = errors.New("insufficient XP balance for this purchase")
+	ErrItemUnavailable = errors.New("item is not available")
 )
 
 // Item is the domain model for a store item.
 type Item struct {
-	ID          string     `json:"id"`
-	ChapterID   string     `json:"chapter_id"`
-	Name        string     `json:"name"`
-	Description *string    `json:"description,omitempty"`
-	ImageURL    *string    `json:"image_url,omitempty"`
-	XPCost      int        `json:"xp_cost"`
-	Quantity    *int       `json:"quantity,omitempty"`
-	IsActive    bool       `json:"is_active"`
-	CreatedAt   time.Time  `json:"created_at"`
-	UpdatedAt   time.Time  `json:"updated_at"`
+	ID          string    `json:"id"`
+	ChapterID   string    `json:"chapter_id"`
+	Name        string    `json:"name"`
+	Description *string   `json:"description,omitempty"`
+	XPCost      int       `json:"xp_cost"`
+	Category    *string   `json:"category,omitempty"`
+	Stock       int       `json:"stock"` // 0 = unlimited
+	Icon        *string   `json:"icon,omitempty"`
+	IsActive    bool      `json:"is_active"`
+	CreatedAt   time.Time `json:"created_at"`
 }
 
 // Order is the domain model for a store purchase order.
@@ -49,9 +49,10 @@ type Order struct {
 type CreateItemInput struct {
 	Name        string  `json:"name" validate:"required,min=2,max=200"`
 	Description *string `json:"description"`
-	ImageURL    *string `json:"image_url"`
 	XPCost      int     `json:"xp_cost" validate:"required,min=1"`
-	Quantity    *int    `json:"quantity"`
+	Category    *string `json:"category"`
+	Stock       int     `json:"stock"` // 0 = unlimited
+	Icon        *string `json:"icon"`
 }
 
 // Service defines the store business logic interface.
@@ -73,7 +74,7 @@ func NewService(pool *pgxpool.Pool) Service {
 
 func (s *service) List(ctx context.Context, chapterID string) ([]*Item, error) {
 	rows, err := s.pool.Query(ctx, `
-		SELECT id, chapter_id, name, description, image_url, xp_cost, quantity, is_active, created_at, updated_at
+		SELECT id, chapter_id, name, description, xp_cost, category, stock, icon, is_active, created_at
 		FROM store_items
 		WHERE chapter_id = $1 AND is_active = TRUE
 		ORDER BY xp_cost ASC, name
@@ -87,8 +88,8 @@ func (s *service) List(ctx context.Context, chapterID string) ([]*Item, error) {
 	for rows.Next() {
 		item := &Item{}
 		if err := rows.Scan(
-			&item.ID, &item.ChapterID, &item.Name, &item.Description, &item.ImageURL,
-			&item.XPCost, &item.Quantity, &item.IsActive, &item.CreatedAt, &item.UpdatedAt,
+			&item.ID, &item.ChapterID, &item.Name, &item.Description,
+			&item.XPCost, &item.Category, &item.Stock, &item.Icon, &item.IsActive, &item.CreatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("scan store item: %w", err)
 		}
@@ -100,12 +101,12 @@ func (s *service) List(ctx context.Context, chapterID string) ([]*Item, error) {
 func (s *service) Create(ctx context.Context, chapterID string, input CreateItemInput) (*Item, error) {
 	item := &Item{}
 	err := s.pool.QueryRow(ctx, `
-		INSERT INTO store_items (chapter_id, name, description, image_url, xp_cost, quantity, is_active)
-		VALUES ($1, $2, $3, $4, $5, $6, TRUE)
-		RETURNING id, chapter_id, name, description, image_url, xp_cost, quantity, is_active, created_at, updated_at
-	`, chapterID, input.Name, input.Description, input.ImageURL, input.XPCost, input.Quantity).
-		Scan(&item.ID, &item.ChapterID, &item.Name, &item.Description, &item.ImageURL,
-			&item.XPCost, &item.Quantity, &item.IsActive, &item.CreatedAt, &item.UpdatedAt)
+		INSERT INTO store_items (chapter_id, name, description, xp_cost, category, stock, icon, is_active)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE)
+		RETURNING id, chapter_id, name, description, xp_cost, category, stock, icon, is_active, created_at
+	`, chapterID, input.Name, input.Description, input.XPCost, input.Category, input.Stock, input.Icon).
+		Scan(&item.ID, &item.ChapterID, &item.Name, &item.Description,
+			&item.XPCost, &item.Category, &item.Stock, &item.Icon, &item.IsActive, &item.CreatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("create store item: %w", err)
 	}
@@ -116,9 +117,9 @@ func (s *service) Purchase(ctx context.Context, chapterID, memberID, itemID stri
 	// Get item details
 	item := &Item{}
 	err := s.pool.QueryRow(ctx,
-		`SELECT id, xp_cost, quantity, is_active FROM store_items WHERE id = $1 AND chapter_id = $2`,
+		`SELECT id, xp_cost, stock, is_active FROM store_items WHERE id = $1 AND chapter_id = $2`,
 		itemID, chapterID,
-	).Scan(&item.ID, &item.XPCost, &item.Quantity, &item.IsActive)
+	).Scan(&item.ID, &item.XPCost, &item.Stock, &item.IsActive)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -155,14 +156,14 @@ func (s *service) Purchase(ctx context.Context, chapterID, memberID, itemID stri
 		return nil, fmt.Errorf("deduct XP: %w", err)
 	}
 
-	// Decrement quantity if tracked
-	if item.Quantity != nil {
+	// Decrement stock if tracked (stock > 0 means limited supply)
+	if item.Stock > 0 {
 		tag, err := tx.Exec(ctx,
-			`UPDATE store_items SET quantity = quantity - 1 WHERE id = $1 AND quantity > 0`,
+			`UPDATE store_items SET stock = stock - 1 WHERE id = $1 AND stock > 0`,
 			itemID,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("decrement item quantity: %w", err)
+			return nil, fmt.Errorf("decrement item stock: %w", err)
 		}
 		if tag.RowsAffected() == 0 {
 			return nil, ErrItemUnavailable
@@ -208,10 +209,11 @@ func (s *service) ListOrders(ctx context.Context, chapterID string, page, perPag
 		SELECT
 			so.id, so.chapter_id, so.member_id, so.item_id, so.xp_spent, so.status, so.created_at,
 			si.name AS item_name,
-			m.first_name, m.last_name
+			u.first_name, u.last_name
 		FROM store_orders so
 		LEFT JOIN store_items si ON si.id = so.item_id
 		LEFT JOIN members m ON m.id = so.member_id
+		LEFT JOIN users u ON u.id = m.user_id
 		WHERE so.chapter_id = $1
 		ORDER BY so.created_at DESC
 		LIMIT $2 OFFSET $3

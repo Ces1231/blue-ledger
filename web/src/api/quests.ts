@@ -27,6 +27,11 @@ export async function getQuests(): Promise<Quest[]> {
   return data.data ?? []
 }
 
+export async function getQuest(questId: string): Promise<Quest> {
+  const { data } = await apiClient.get<APIResponse<Quest>>(`/quests/${questId}`)
+  return data.data
+}
+
 export async function getQuestProgress(questId: string): Promise<QuestProgress> {
   const { data } = await apiClient.get<APIResponse<QuestProgress>>(`/quests/${questId}/progress`)
   return data.data

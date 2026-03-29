@@ -52,7 +52,7 @@ func (h *Handler) Create(c echo.Context) error {
 	if err := c.Validate(&req); err != nil {
 		return err
 	}
-	item, err := h.svc.Create(c.Request().Context(), auth.GetChapterID(c), req)
+	item, err := h.svc.Create(c.Request().Context(), auth.GetChapterID(c), auth.GetMemberID(c), req)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to create campaign")
 	}

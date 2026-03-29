@@ -79,11 +79,11 @@ func (s *xpService) GetLeaderboard(ctx context.Context, chapterID, mode string) 
 	rows, err := s.db.Query(ctx, fmt.Sprintf(`
 		SELECT
 			ROW_NUMBER() OVER (ORDER BY %s DESC) AS rank,
-			m.id, m.member_display_id,
+			m.id, m.display_id,
 			u.first_name, u.last_name, u.avatar_url,
 			m.avatar_bg, m.avatar_fg,
 			m.xp_total, m.xp_semester,
-			m.level, m.level_key, m.role
+			m.level_key, m.level_key, m.role
 		FROM members m
 		JOIN users u ON u.id = m.user_id
 		WHERE m.chapter_id = $1 AND m.status = 'active' AND m.deleted_at IS NULL

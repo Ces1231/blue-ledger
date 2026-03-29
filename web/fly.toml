@@ -21,4 +21,5 @@ primary_region = "iad"
   memory = "256mb"
 
 [env]
-  NGINX_API_HOST = "blue-ledger-api.fly.dev"
+  # Uses Fly.io private networking (6PN) - no extra TLS hop, stays within the org
+  API_UPSTREAM = "blue-ledger-api.internal:8080"

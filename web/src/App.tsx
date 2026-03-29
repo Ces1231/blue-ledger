@@ -24,6 +24,7 @@ const ScannerPage           = lazy(() => import('./features/events/ScannerPage')
 const ServicePage           = lazy(() => import('./features/service/ServicePage').then(m => ({ default: m.ServicePage })))
 const DuesPage              = lazy(() => import('./features/dues/DuesPage').then(m => ({ default: m.DuesPage })))
 const QuestsPage            = lazy(() => import('./features/quests/QuestsPage').then(m => ({ default: m.QuestsPage })))
+const QuestDetailPage       = lazy(() => import('./features/quests/QuestDetailPage').then(m => ({ default: m.QuestDetailPage })))
 const AnnouncementsPage     = lazy(() => import('./features/announcements/AnnouncementsPage').then(m => ({ default: m.AnnouncementsPage })))
 const PropsPage             = lazy(() => import('./features/props/PropsPage').then(m => ({ default: m.PropsPage })))
 const NotificationsPage     = lazy(() => import('./features/notifications/NotificationsPage').then(m => ({ default: m.NotificationsPage })))
@@ -140,6 +141,7 @@ export function App() {
         <Route path="/service"         element={<ServicePage />} />
         <Route path="/dues"            element={<DuesPage />} />
         <Route path="/quests"          element={<QuestsPage />} />
+        <Route path="/quests/:id"      element={<QuestDetailPage />} />
         <Route path="/announcements"   element={<AnnouncementsPage />} />
         <Route path="/props"           element={<PropsPage />} />
 

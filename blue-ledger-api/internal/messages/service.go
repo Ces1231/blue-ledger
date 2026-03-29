@@ -77,17 +77,18 @@ func (s *service) ListThreads(ctx context.Context, chapterID, memberID string) (
 	rows, err := s.pool.Query(ctx, `
 		SELECT
 			t.id, t.chapter_id, t.subject, t.created_by, t.is_group_chat, t.created_at,
-			MAX(m.sent_at) AS last_message_at,
-			(SELECT body FROM messages WHERE thread_id = t.id ORDER BY sent_at DESC LIMIT 1) AS last_message_body,
+			MAX(m.created_at) AS last_message_at,
+			(SELECT body FROM messages WHERE thread_id = t.id ORDER BY created_at DESC LIMIT 1) AS last_message_body,
 			COUNT(m.id) AS message_count,
-			cr.first_name, cr.last_name
-		FROM message_threads t
-		LEFT JOIN messages m ON m.thread_id = t.id
-		LEFT JOIN members cr ON cr.id = t.created_by
-		JOIN thread_participants tp ON tp.thread_id = t.id AND tp.member_id = $2
-		WHERE t.chapter_id = $1
-		GROUP BY t.id, cr.first_name, cr.last_name
-		ORDER BY MAX(m.sent_at) DESC NULLS LAST, t.created_at DESC
+				ucr.first_name, ucr.last_name
+			FROM message_threads t
+			LEFT JOIN messages m ON m.thread_id = t.id
+			LEFT JOIN members cr ON cr.id = t.created_by
+			LEFT JOIN users ucr ON ucr.id = cr.user_id
+			JOIN thread_participants tp ON tp.thread_id = t.id AND tp.member_id = $2
+			WHERE t.chapter_id = $1
+			GROUP BY t.id, ucr.first_name, ucr.last_name
+		ORDER BY MAX(m.created_at) DESC NULLS LAST, t.created_at DESC
 	`, chapterID, memberID)
 	if err != nil {
 		return nil, fmt.Errorf("list threads: %w", err)
@@ -177,12 +178,13 @@ func (s *service) GetThread(ctx context.Context, chapterID, threadID, memberID s
 
 	rows, err := s.pool.Query(ctx, `
 		SELECT
-			m.id, m.thread_id, m.chapter_id, m.sender_id, m.body, m.sent_at,
-			mb.first_name, mb.last_name, mb.avatar_url
-		FROM messages m
-		LEFT JOIN members mb ON mb.id = m.sender_id
+			m.id, m.thread_id, m.chapter_id, m.sender_id, m.body, m.created_at,
+				umb.first_name, umb.last_name, umb.avatar_url
+			FROM messages m
+			LEFT JOIN members mb ON mb.id = m.sender_id
+			LEFT JOIN users umb ON umb.id = mb.user_id
 		WHERE m.thread_id = $1 AND m.chapter_id = $2
-		ORDER BY m.sent_at ASC
+		ORDER BY m.created_at ASC
 	`, threadID, chapterID)
 	if err != nil {
 		return nil, fmt.Errorf("get thread messages: %w", err)
@@ -220,7 +222,7 @@ func (s *service) SendMessage(ctx context.Context, chapterID, threadID, senderID
 	err := s.pool.QueryRow(ctx, `
 		INSERT INTO messages (thread_id, chapter_id, sender_id, body)
 		VALUES ($1, $2, $3, $4)
-		RETURNING id, thread_id, chapter_id, sender_id, body, sent_at
+		RETURNING id, thread_id, chapter_id, sender_id, body, created_at
 	`, threadID, chapterID, senderID, input.Body).
 		Scan(&msg.ID, &msg.ThreadID, &msg.ChapterID, &msg.SenderID, &msg.Body, &msg.SentAt)
 	if errors.Is(err, pgx.ErrNoRows) {
