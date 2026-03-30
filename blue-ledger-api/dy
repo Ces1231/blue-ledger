@@ -1,0 +1,1 @@
+{"error":{"code":"Unprocessable Entity","message":"Key: 'loginRequest.email' Error:Field validation for 'email' failed on the 'required' tag\nKey: 'loginRequest.password' Error:Field validation for 'password' failed on the 'required' tag","status":422}}

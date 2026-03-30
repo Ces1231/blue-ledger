@@ -104,6 +104,24 @@ func (r *Repository) GetByID(ctx context.Context, id string) (*Member, error) {
 	return m, nil
 }
 
+// GetByIDIncludeDeleted fetches a member including soft-deleted ones.
+func (r *Repository) GetByIDIncludeDeleted(ctx context.Context, id string) (*Member, error) {
+	row := r.db.QueryRow(ctx, `
+		SELECT `+memberSelectCols+`
+		FROM members m
+		JOIN users u ON u.id = m.user_id
+		WHERE m.id = $1`, id)
+
+	m, err := scanMember(row)
+	if err == pgx.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("get member by id: %w", err)
+	}
+	return m, nil
+}
+
 // GetByDisplayID fetches a member by their chapter-scoped display ID (e.g. "ΤΣΣ-001").
 func (r *Repository) GetByDisplayID(ctx context.Context, chapterID, displayID string) (*Member, error) {
 	row := r.db.QueryRow(ctx, `
@@ -124,24 +142,46 @@ func (r *Repository) GetByDisplayID(ctx context.Context, chapterID, displayID st
 }
 
 // List returns all active members for a chapter with pagination.
-func (r *Repository) List(ctx context.Context, chapterID string, page, perPage int) ([]*Member, int, error) {
+// If isSysadmin is true and chapterID is empty, returns members from all chapters.
+func (r *Repository) List(ctx context.Context, chapterID string, isSysadmin bool, page, perPage int) ([]*Member, int, error) {
 	offset := (page - 1) * perPage
 
 	var total int
-	err := r.db.QueryRow(ctx,
-		`SELECT COUNT(*) FROM members WHERE chapter_id = $1 AND deleted_at IS NULL`, chapterID).Scan(&total)
+	var err error
+	
+	if isSysadmin && chapterID == "" {
+		// Sysadmin with no specific chapter: return all members
+		err = r.db.QueryRow(ctx,
+			`SELECT COUNT(*) FROM members WHERE deleted_at IS NULL`).Scan(&total)
+	} else {
+		// Regular member or sysadmin with a chapter: filter by chapter
+		err = r.db.QueryRow(ctx,
+			`SELECT COUNT(*) FROM members WHERE chapter_id = $1 AND deleted_at IS NULL`, chapterID).Scan(&total)
+	}
 	if err != nil {
 		return nil, 0, fmt.Errorf("count members: %w", err)
 	}
 
-	rows, err := r.db.Query(ctx, `
-		SELECT `+memberSelectCols+`
-		FROM members m
-		JOIN users u ON u.id = m.user_id
-		WHERE m.chapter_id = $1 AND m.deleted_at IS NULL
-		ORDER BY m.xp_total DESC
-		LIMIT $2 OFFSET $3`,
-		chapterID, perPage, offset)
+	var rows pgx.Rows
+	if isSysadmin && chapterID == "" {
+		rows, err = r.db.Query(ctx, `
+			SELECT `+memberSelectCols+`
+			FROM members m
+			JOIN users u ON u.id = m.user_id
+			WHERE m.deleted_at IS NULL
+			ORDER BY m.xp_total DESC
+			LIMIT $1 OFFSET $2`,
+			perPage, offset)
+	} else {
+		rows, err = r.db.Query(ctx, `
+			SELECT `+memberSelectCols+`
+			FROM members m
+			JOIN users u ON u.id = m.user_id
+			WHERE m.chapter_id = $1 AND m.deleted_at IS NULL
+			ORDER BY m.xp_total DESC
+			LIMIT $2 OFFSET $3`,
+			chapterID, perPage, offset)
+	}
 	if err != nil {
 		return nil, 0, fmt.Errorf("list members: %w", err)
 	}
@@ -157,6 +197,108 @@ func (r *Repository) List(ctx context.Context, chapterID string, page, perPage i
 	}
 
 	return members, total, nil
+}
+
+// CreateInput holds the fields required to create a new member.
+type CreateInput struct {
+	FirstName    string
+	LastName     string
+	Email        string
+	Role         *string
+	Status       *string
+	DuesStatus   *string
+	InductedYear *int
+	Employer     *string
+	JobTitle     *string
+	City         *string
+	LinkedinURL  *string
+	AvatarBg     *string
+	AvatarFg     *string
+}
+
+// Create inserts a new member record (must have valid chapter_id in context).
+func (r *Repository) Create(ctx context.Context, chapterID string, input CreateInput) (*Member, error) {
+	var userID string
+	
+	// First, try to find existing user by email
+	err := r.db.QueryRow(ctx, 
+		`SELECT id FROM users WHERE email = $1`, input.Email).Scan(&userID)
+	
+	if err != nil && err != pgx.ErrNoRows {
+		return nil, fmt.Errorf("check user: %w", err)
+	}
+	
+	// If user doesn't exist, create one
+	if err == pgx.ErrNoRows {
+		// Create new user with generated UUID
+		userID = ""
+		err = r.db.QueryRow(ctx, `
+			INSERT INTO users (id, first_name, last_name, email, created_at, updated_at)
+			VALUES (gen_random_uuid(), $1, $2, $3, NOW(), NOW())
+			RETURNING id`, 
+			input.FirstName, input.LastName, input.Email).Scan(&userID)
+		if err != nil {
+			return nil, fmt.Errorf("create user: %w", err)
+		}
+	}
+	
+	// Generate display ID for this chapter
+	var displayID string
+	var chapterPrefix string
+	var maxNum int
+	
+	// Get chapter prefix
+	err = r.db.QueryRow(ctx, `
+		SELECT SUBSTRING(name FROM 1 FOR 3) FROM chapters WHERE id = $1`, chapterID).Scan(&chapterPrefix)
+	if err != nil {
+		return nil, fmt.Errorf("get chapter: %w", err)
+	}
+	
+	// Get next number
+	err = r.db.QueryRow(ctx, `
+		SELECT COALESCE(MAX(CAST(SUBSTRING(display_id FROM '[0-9]+$') AS INTEGER)), 0) + 1
+		FROM members WHERE chapter_id = $1`, chapterID).Scan(&maxNum)
+	if err != nil {
+		return nil, fmt.Errorf("get max member num: %w", err)
+	}
+	
+	displayID = fmt.Sprintf("%s-%03d", chapterPrefix, maxNum)
+	
+	role := "member"
+	if input.Role != nil {
+		role = *input.Role
+	}
+	
+	status := "active"
+	if input.Status != nil {
+		status = *input.Status
+	}
+	
+	duesStatus := "unpaid"
+	if input.DuesStatus != nil {
+		duesStatus = *input.DuesStatus
+	}
+	
+	var memberID string
+	// Concatenate first and last name for the name field
+	memberName := fmt.Sprintf("%s %s", input.FirstName, input.LastName)
+	
+	err = r.db.QueryRow(ctx, `
+		INSERT INTO members (
+			id, chapter_id, user_id, display_id, name, role, status, 
+			inducted_year, employer, title, city, linkedin,
+			avatar_bg, avatar_fg, dues_status, created_at, updated_at
+		) VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), NOW())
+		RETURNING id`,
+		chapterID, userID, displayID, memberName, role, status,
+		input.InductedYear, input.Employer, input.JobTitle, input.City, input.LinkedinURL,
+		input.AvatarBg, input.AvatarFg, duesStatus,
+	).Scan(&memberID)
+	if err != nil {
+		return nil, fmt.Errorf("create member: %w", err)
+	}
+	
+	return r.GetByID(ctx, memberID)
 }
 
 // UpdateInput holds the fields that can be updated on a member profile.
@@ -209,6 +351,16 @@ func (r *Repository) SoftDelete(ctx context.Context, memberID string) error {
 		return fmt.Errorf("soft delete member: %w", err)
 	}
 	return nil
+}
+
+// Reactivate clears the deleted_at timestamp to restore a soft-deleted member.
+func (r *Repository) Reactivate(ctx context.Context, memberID string) (*Member, error) {
+	_, err := r.db.Exec(ctx,
+		`UPDATE members SET deleted_at = NULL, status = 'active' WHERE id = $1`, memberID)
+	if err != nil {
+		return nil, fmt.Errorf("reactivate member: %w", err)
+	}
+	return r.GetByID(ctx, memberID)
 }
 
 // GetXPHistory returns the engagement_log entries for a member.

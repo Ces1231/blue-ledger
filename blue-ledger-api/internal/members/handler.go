@@ -1,6 +1,8 @@
 package members
 
 import (
+	"fmt"
+	"log"
 	"math"
 	"net/http"
 	"strconv"
@@ -22,9 +24,11 @@ func NewHandler(svc Service) *Handler {
 // RegisterRoutes mounts members routes on the given Echo group.
 func (h *Handler) RegisterRoutes(g *echo.Group, jwtMW echo.MiddlewareFunc) {
 	g.GET("", h.List, jwtMW)
+	g.POST("", h.Create, jwtMW, auth.RoleGate("admin"))
 	g.GET("/:id", h.Get, jwtMW)
 	g.PUT("/:id", h.Update, jwtMW)
 	g.DELETE("/:id", h.Delete, jwtMW, auth.RoleGate("admin"))
+	g.POST("/:id/reactivate", h.Reactivate, jwtMW, auth.RoleGate("admin"))
 	g.GET("/:id/xp-history", h.GetXPHistory, jwtMW)
 }
 
@@ -60,10 +64,11 @@ func queryInt(c echo.Context, key string, defaultVal int) int {
 // List handles GET /members
 func (h *Handler) List(c echo.Context) error {
 	chapterID := auth.GetChapterID(c)
+	isSysadmin := auth.IsSysadmin(c)
 	page := queryInt(c, "page", 1)
 	perPage := queryInt(c, "per_page", 25)
 
-	members, total, err := h.svc.List(c.Request().Context(), chapterID, page, perPage)
+	members, total, err := h.svc.List(c.Request().Context(), chapterID, isSysadmin, page, perPage)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to list members")
 	}
@@ -80,9 +85,10 @@ func (h *Handler) List(c echo.Context) error {
 // Get handles GET /members/:id
 func (h *Handler) Get(c echo.Context) error {
 	chapterID := auth.GetChapterID(c)
+	isSysadmin := auth.IsSysadmin(c)
 	memberID := c.Param("id")
 
-	m, err := h.svc.Get(c.Request().Context(), chapterID, memberID)
+	m, err := h.svc.Get(c.Request().Context(), chapterID, isSysadmin, memberID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get member")
 	}
@@ -91,6 +97,75 @@ func (h *Handler) Get(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{"data": m})
+}
+
+// createRequest for POST /members
+type createRequest struct {
+	ChapterID   *string `json:"chapter_id"` // Sysadmin only - required for sysadmin
+	FirstName   string  `json:"first_name" validate:"required"`
+	LastName    string  `json:"last_name" validate:"required"`
+	Email       string  `json:"email" validate:"required,email"`
+	Role        *string `json:"role"`
+	Status      *string `json:"status"`
+	DuesStatus  *string `json:"dues_status"`
+	InductedYear *int   `json:"inducted_year"`
+	Employer    *string `json:"employer"`
+	JobTitle    *string `json:"job_title"`
+	City        *string `json:"city"`
+	LinkedinURL *string `json:"linkedin_url"`
+	AvatarBg    *string `json:"avatar_bg"`
+	AvatarFg    *string `json:"avatar_fg"`
+}
+
+// Create handles POST /members
+func (h *Handler) Create(c echo.Context) error {
+	chapterID := auth.GetChapterID(c)
+	role := auth.GetRole(c)
+	isSysadmin := auth.IsSysadmin(c)
+
+	// Only admins can create members in the system
+	if role != "admin" && role != "sysadmin" {
+		return echo.NewHTTPError(http.StatusForbidden, "only admins can create members")
+	}
+
+	var req createRequest
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
+	}
+
+	// Sysadmin can override chapter_id via request body
+	if isSysadmin && req.ChapterID != nil {
+		chapterID = *req.ChapterID
+	}
+
+	// If still no chapter_id, error
+	if chapterID == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "chapter_id is required (provide via header for admins or request body for sysadmins)")
+	}
+
+	input := CreateInput{
+		FirstName:    req.FirstName,
+		LastName:     req.LastName,
+		Email:        req.Email,
+		Role:         req.Role,
+		Status:       req.Status,
+		DuesStatus:   req.DuesStatus,
+		InductedYear: req.InductedYear,
+		Employer:     req.Employer,
+		JobTitle:     req.JobTitle,
+		City:         req.City,
+		LinkedinURL:  req.LinkedinURL,
+		AvatarBg:     req.AvatarBg,
+		AvatarFg:     req.AvatarFg,
+	}
+
+	m, err := h.svc.Create(c.Request().Context(), chapterID, input)
+	if err != nil {
+		log.Printf("ERROR creating member: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to create member: %v", err))
+	}
+
+	return c.JSON(http.StatusCreated, map[string]interface{}{"data": m})
 }
 
 // updateRequest for PUT /members/:id
@@ -111,6 +186,7 @@ type updateRequest struct {
 // Update handles PUT /members/:id
 func (h *Handler) Update(c echo.Context) error {
 	chapterID := auth.GetChapterID(c)
+	isSysadmin := auth.IsSysadmin(c)
 	memberID := c.Param("id")
 	currentMemberID := auth.GetMemberID(c)
 	role := auth.GetRole(c)
@@ -138,9 +214,32 @@ func (h *Handler) Update(c echo.Context) error {
 		DuesStatus:   req.DuesStatus,
 	}
 
-	m, err := h.svc.Update(c.Request().Context(), chapterID, memberID, input, role)
+	m, err := h.svc.Update(c.Request().Context(), chapterID, isSysadmin, memberID, input, role)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to update member")
+	}
+	if m == nil {
+		return echo.NewHTTPError(http.StatusNotFound, "member not found")
+	}
+
+	return c.JSON(http.StatusOK, map[string]interface{}{"data": m})
+}
+
+// Reactivate handles POST /members/:id/reactivate
+func (h *Handler) Reactivate(c echo.Context) error {
+	chapterID := auth.GetChapterID(c)
+	isSysadmin := auth.IsSysadmin(c)
+	memberID := c.Param("id")
+	role := auth.GetRole(c)
+
+	// Only admins can reactivate
+	if role != "admin" && role != "sysadmin" {
+		return echo.NewHTTPError(http.StatusForbidden, "only admins can reactivate members")
+	}
+
+	m, err := h.svc.Reactivate(c.Request().Context(), chapterID, isSysadmin, memberID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to reactivate member")
 	}
 	if m == nil {
 		return echo.NewHTTPError(http.StatusNotFound, "member not found")
@@ -152,9 +251,10 @@ func (h *Handler) Update(c echo.Context) error {
 // Delete handles DELETE /members/:id
 func (h *Handler) Delete(c echo.Context) error {
 	chapterID := auth.GetChapterID(c)
+	isSysadmin := auth.IsSysadmin(c)
 	memberID := c.Param("id")
 
-	if err := h.svc.Delete(c.Request().Context(), chapterID, memberID); err != nil {
+	if err := h.svc.Delete(c.Request().Context(), chapterID, isSysadmin, memberID); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to delete member")
 	}
 
@@ -166,6 +266,7 @@ func (h *Handler) Delete(c echo.Context) error {
 // GetXPHistory handles GET /members/:id/xp-history
 func (h *Handler) GetXPHistory(c echo.Context) error {
 	chapterID := auth.GetChapterID(c)
+	isSysadmin := auth.IsSysadmin(c)
 	memberID := c.Param("id")
 	currentMemberID := auth.GetMemberID(c)
 	role := auth.GetRole(c)
@@ -178,7 +279,7 @@ func (h *Handler) GetXPHistory(c echo.Context) error {
 	page := queryInt(c, "page", 1)
 	perPage := queryInt(c, "per_page", 25)
 
-	entries, total, err := h.svc.GetXPHistory(c.Request().Context(), chapterID, memberID, page, perPage)
+	entries, total, err := h.svc.GetXPHistory(c.Request().Context(), chapterID, isSysadmin, memberID, page, perPage)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get XP history")
 	}
