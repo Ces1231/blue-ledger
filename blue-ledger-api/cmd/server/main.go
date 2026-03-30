@@ -126,9 +126,9 @@ func main() {
 	authSvc := auth.NewService(pool, tokenManager, emailClient, cfg.MagicLinkHMACSecret, cfg.MagicLinkExpiry, cfg.APIBaseURL)
 	memberRepo := members.NewRepository(pool)
 	membersSvc := members.NewService(memberRepo)
-	xpSvc := xp.NewXPService(pool)
-	eventsSvc := events.NewEventsService(pool)
 	streaksSvc := streaks.NewService(pool)
+	xpSvc := xp.NewXPService(pool, streaksSvc)
+	eventsSvc := events.NewEventsService(pool)
 	duesSvc := dues.NewDuesService(pool, cfg.StripeSecretKey, cfg.StripeWebhookSecret)
 	notifSvc := notifications.NewNotificationsService(pool)
 

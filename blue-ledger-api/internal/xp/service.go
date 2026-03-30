@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/ces1231/blue-ledger-api/internal/streaks"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -60,12 +62,16 @@ type XPService interface {
 }
 
 type xpService struct {
-	db *pgxpool.Pool
+	db               *pgxpool.Pool
+	streaksService   *streaks.Service
 }
 
 // NewXPService creates a new XP service.
-func NewXPService(db *pgxpool.Pool) XPService {
-	return &xpService{db: db}
+func NewXPService(db *pgxpool.Pool, streaksService *streaks.Service) XPService {
+	return &xpService{
+		db:             db,
+		streaksService: streaksService,
+	}
 }
 
 // GetLeaderboard returns the chapter XP leaderboard.
@@ -121,10 +127,27 @@ func (s *xpService) AwardXP(ctx context.Context, chapterID, awardedByMemberID st
 	}
 	defer tx.Rollback(ctx)
 
+	// Calculate base XP
+	totalXP := input.XPAmount
+
+	// Add streak bonus if streaksService is available
+	if s.streaksService != nil {
+		memberID, err := uuid.Parse(input.MemberID)
+		if err == nil {
+			// Get current streak info
+			streakInfo, err := s.streaksService.GetStreakInfo(ctx, memberID)
+			if err == nil && streakInfo != nil {
+				// Calculate streak bonus
+				streakBonus := s.streaksService.CalculateStreakBonus(streakInfo.CurrentStreak)
+				totalXP += streakBonus
+			}
+		}
+	}
+
 	_, err = tx.Exec(ctx, `
 		INSERT INTO engagement_log (chapter_id, member_id, activity, xp_awarded, source, awarded_by, note, semester)
 		VALUES ($1, $2, $3, $4, 'admin', $5, $6, $7)`,
-		chapterID, input.MemberID, input.Activity, input.XPAmount,
+		chapterID, input.MemberID, input.Activity, totalXP,
 		awardedByMemberID, input.Note, input.Semester,
 	)
 	if err != nil {
@@ -133,7 +156,7 @@ func (s *xpService) AwardXP(ctx context.Context, chapterID, awardedByMemberID st
 
 	_, err = tx.Exec(ctx,
 		`UPDATE members SET xp_total = xp_total + $1, xp_semester = xp_semester + $1, updated_at = NOW() WHERE id = $2`,
-		input.XPAmount, input.MemberID,
+		totalXP, input.MemberID,
 	)
 	if err != nil {
 		return fmt.Errorf("update member xp: %w", err)
