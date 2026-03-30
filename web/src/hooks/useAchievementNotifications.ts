@@ -154,6 +154,9 @@ export const useAchievementNotifications = () => {
    */
   const showXPGained = useCallback(
     (xp: number, reason: string = '') => {
+      // Play success sound for XP gain
+      soundEffects.playSuccess();
+      
       return showAchievement(`⭐ +${xp} XP`, {
         subtitle: reason || 'Activity completed',
         type: 'badge',
