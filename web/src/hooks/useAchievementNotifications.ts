@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { AchievementNotificationProps } from '../components/AchievementNotification';
-import { soundEffects } from './soundEffects';
+import { soundEffects } from '../utils/soundEffects';
 
 interface Notification extends AchievementNotificationProps {
   id: string;

@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
 import { Topbar } from '../../components/Topbar'
 import { Card } from '../../components/Card'
+import { StreakWidget } from '../../components/StreakWidget'
 import { useDashboard } from './useDashboard'
 import { useAuth } from '../../hooks/useAuth'
 import type { DuesRecord } from '../../types'
@@ -202,6 +203,11 @@ export function DashboardPage() {
               </Link>
             ))}
           </div>
+
+          {/* ── STREAK WIDGET ── */}
+          {member && (
+            <StreakWidget memberId={member.id} className="fade-in" showAnimation={true} />
+          )}
 
           {/* ── MIDDLE ROW: Achievements + Financial ── */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
