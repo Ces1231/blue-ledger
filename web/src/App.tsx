@@ -2,6 +2,7 @@ import { Routes, Route, Navigate, Outlet, useSearchParams, useNavigate } from 'r
 import { Suspense, lazy, useEffect, useState } from 'react'
 import { SidebarContext } from './context/SidebarContext'
 import { PresenceProvider } from './context/PresenceContext'
+import { NotificationProvider } from './context/NotificationContext'
 import { useMutation } from '@tanstack/react-query'
 import { Sidebar } from './components/Sidebar'
 import { ProtectedRoute } from './components/ProtectedRoute'
@@ -75,20 +76,22 @@ function AppShell() {
   return (
     <SidebarContext.Provider value={{ toggleSidebar: () => setSidebarOpen(v => !v) }}>
       <PresenceProvider>
-        <div className="app-game-theme" style={{ display: 'flex', minHeight: '100vh' }}>
-          {/* Overlay — tapping closes sidebar on mobile */}
-          <div
-            className={`sidebar-overlay${sidebarOpen ? ' visible' : ''}`}
-            onClick={closeSidebar}
-            aria-hidden="true"
-          />
-          <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
-          <div className="main-content">
-            <Suspense fallback={<PageLoader />}>
-              <Outlet />
-            </Suspense>
+        <NotificationProvider>
+          <div className="app-game-theme" style={{ display: 'flex', minHeight: '100vh' }}>
+            {/* Overlay — tapping closes sidebar on mobile */}
+            <div
+              className={`sidebar-overlay${sidebarOpen ? ' visible' : ''}`}
+              onClick={closeSidebar}
+              aria-hidden="true"
+            />
+            <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
+            <div className="main-content">
+              <Suspense fallback={<PageLoader />}>
+                <Outlet />
+              </Suspense>
+            </div>
           </div>
-        </div>
+        </NotificationProvider>
       </PresenceProvider>
     </SidebarContext.Provider>
   )
