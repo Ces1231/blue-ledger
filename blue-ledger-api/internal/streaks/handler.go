@@ -56,3 +56,12 @@ func (h *Handler) GetStreakLeaderboard(c echo.Context) error {
 		"total": len(leaderboard),
 	})
 }
+
+// RegisterRoutes registers streak routes
+func (h *Handler) RegisterRoutes(group *echo.Group, jwtMW echo.MiddlewareFunc) {
+	// Member streak info - GET /v1/streaks/members/:id
+	group.GET("/members/:id", h.GetStreakInfo, jwtMW)
+
+	// Streak leaderboard - GET /v1/streaks/chapters/:chapterId/leaderboard
+	group.GET("/chapters/:chapterId/leaderboard", h.GetStreakLeaderboard, jwtMW)
+}

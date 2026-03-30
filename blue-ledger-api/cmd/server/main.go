@@ -168,6 +168,7 @@ func main() {
 	membersHandler := members.NewHandler(membersSvc)
 	xpHandler := xp.NewHandler(xpSvc)
 	eventsHandler := events.NewHandler(eventsSvc, cfg.MagicLinkHMACSecret, streaksSvc)
+	streaksHandler := streaks.NewHandler(streaksSvc)
 	duesHandler := dues.NewHandler(duesSvc, cfg.StripeWebhookSecret)
 	notifHandler := notifications.NewHandler(notifSvc)
 
@@ -251,6 +252,7 @@ func main() {
 	membersHandler.RegisterRoutes(v1.Group("/members"), jwtMW)
 	xpHandler.RegisterRoutes(v1, jwtMW)
 	eventsHandler.RegisterRoutes(v1.Group("/events"), jwtMW)
+	streaksHandler.RegisterRoutes(v1.Group("/streaks"), jwtMW)
 	notifHandler.RegisterRoutes(v1.Group("/notifications"), jwtMW)
 
 	// New domain routes
