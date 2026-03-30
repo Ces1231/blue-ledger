@@ -6,18 +6,25 @@ import (
 	"strconv"
 
 	"github.com/ces1231/blue-ledger-api/internal/auth"
+	"github.com/ces1231/blue-ledger-api/internal/streaks"
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 )
 
 // Handler handles all events HTTP endpoints.
 type Handler struct {
-	svc      EventsService
-	qrSecret string
+	svc            EventsService
+	qrSecret       string
+	streaksService *streaks.Service
 }
 
 // NewHandler creates a new events handler.
-func NewHandler(svc EventsService, qrSecret string) *Handler {
-	return &Handler{svc: svc, qrSecret: qrSecret}
+func NewHandler(svc EventsService, qrSecret string, streaksService *streaks.Service) *Handler {
+	return &Handler{
+		svc:            svc,
+		qrSecret:       qrSecret,
+		streaksService: streaksService,
+	}
 }
 
 // RegisterRoutes mounts events routes on the given Echo group.
@@ -233,6 +240,15 @@ func (h *Handler) CheckInQR(c echo.Context) error {
 	)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	// Update streak for attendance
+	if result != nil && h.streaksService != nil {
+		// Convert string MemberID to UUID for streaks service
+		if memberID, err := uuid.Parse(result.MemberID); err == nil {
+			// Don't block response if streak update fails
+			_, _ = h.streaksService.UpdateStreakForAttendance(c.Request().Context(), memberID)
+		}
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{"data": result})

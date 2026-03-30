@@ -6,15 +6,16 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // Service handles all streak-related business logic
 type Service struct {
-	db *sql.DB
+	db *pgxpool.Pool
 }
 
 // NewService creates a new streak service
-func NewService(db *sql.DB) *Service {
+func NewService(db *pgxpool.Pool) *Service {
 	return &Service{db: db}
 }
 
@@ -32,15 +33,12 @@ func (s *Service) UpdateStreakForAttendance(ctx context.Context, memberID uuid.U
 	var lastUpdatedDate sql.NullTime
 
 	// Get current streak info
-	err := s.db.QueryRowContext(ctx, `
+	err := s.db.QueryRow(ctx, `
 		SELECT id, current_streak, longest_streak, streak_updated_at
 		FROM members
 		WHERE id = $1
 	`, memberID).Scan(&memberID, &info.CurrentStreak, &info.LongestStreak, &lastUpdatedDate)
 
-	if err == sql.ErrNoRows {
-		return nil, err
-	}
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +81,7 @@ func (s *Service) UpdateStreakForAttendance(ctx context.Context, memberID uuid.U
 
 	// Update database
 	now = time.Now()
-	_, err = s.db.ExecContext(ctx, `
+	_, err = s.db.Exec(ctx, `
 		UPDATE members
 		SET current_streak = $1, longest_streak = $2, streak_updated_at = $3
 		WHERE id = $4
@@ -101,15 +99,12 @@ func (s *Service) UpdateStreakForAttendance(ctx context.Context, memberID uuid.U
 func (s *Service) GetStreakInfo(ctx context.Context, memberID uuid.UUID) (*StreakInfo, error) {
 	var info StreakInfo
 
-	err := s.db.QueryRowContext(ctx, `
+	err := s.db.QueryRow(ctx, `
 		SELECT id, current_streak, longest_streak, streak_updated_at
 		FROM members
 		WHERE id = $1
 	`, memberID).Scan(&memberID, &info.CurrentStreak, &info.LongestStreak, &info.UpdatedAt)
 
-	if err == sql.ErrNoRows {
-		return nil, err
-	}
 	if err != nil {
 		return nil, err
 	}
@@ -130,7 +125,7 @@ type LeaderboardEntry struct {
 
 // GetStreakLeaderboard returns top members by current streak
 func (s *Service) GetStreakLeaderboard(ctx context.Context, chapterID uuid.UUID, limit int) ([]LeaderboardEntry, error) {
-	rows, err := s.db.QueryContext(ctx, `
+	rows, err := s.db.Query(ctx, `
 		SELECT 
 			ROW_NUMBER() OVER (ORDER BY m.current_streak DESC) as rank,
 			m.id,
@@ -188,7 +183,7 @@ func (s *Service) CalculateStreakBonus(streak int) int {
 func (s *Service) ResetStreakIfNeeded(ctx context.Context, memberID uuid.UUID) error {
 	var lastUpdated sql.NullTime
 
-	err := s.db.QueryRowContext(ctx, `
+	err := s.db.QueryRow(ctx, `
 		SELECT streak_updated_at FROM members WHERE id = $1
 	`, memberID).Scan(&lastUpdated)
 
@@ -212,7 +207,7 @@ func (s *Service) ResetStreakIfNeeded(ctx context.Context, memberID uuid.UUID) e
 	// If more than 1 day has passed, reset streak
 	daysSince := today.Sub(lastDay).Hours() / 24
 	if daysSince > 1 {
-		_, err := s.db.ExecContext(ctx, `
+		_, err := s.db.Exec(ctx, `
 			UPDATE members
 			SET current_streak = 0, streak_updated_at = $1
 			WHERE id = $2

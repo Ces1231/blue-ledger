@@ -36,6 +36,7 @@ import (
 	"github.com/ces1231/blue-ledger-api/internal/servicelog"
 	"github.com/ces1231/blue-ledger-api/internal/settings"
 	"github.com/ces1231/blue-ledger-api/internal/store"
+	"github.com/ces1231/blue-ledger-api/internal/streaks"
 	"github.com/ces1231/blue-ledger-api/internal/quests"
 	"github.com/ces1231/blue-ledger-api/internal/resources"
 	"github.com/ces1231/blue-ledger-api/internal/sbc"
@@ -127,6 +128,7 @@ func main() {
 	membersSvc := members.NewService(memberRepo)
 	xpSvc := xp.NewXPService(pool)
 	eventsSvc := events.NewEventsService(pool)
+	streaksSvc := streaks.NewService(pool)
 	duesSvc := dues.NewDuesService(pool, cfg.StripeSecretKey, cfg.StripeWebhookSecret)
 	notifSvc := notifications.NewNotificationsService(pool)
 
@@ -165,7 +167,7 @@ func main() {
 	authHandler := auth.NewHandler(authSvc, loginBonusRepo)
 	membersHandler := members.NewHandler(membersSvc)
 	xpHandler := xp.NewHandler(xpSvc)
-	eventsHandler := events.NewHandler(eventsSvc, cfg.MagicLinkHMACSecret)
+	eventsHandler := events.NewHandler(eventsSvc, cfg.MagicLinkHMACSecret, streaksSvc)
 	duesHandler := dues.NewHandler(duesSvc, cfg.StripeWebhookSecret)
 	notifHandler := notifications.NewHandler(notifSvc)
 
