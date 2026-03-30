@@ -6,15 +6,16 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // LoginBonusRepository handles daily login bonus logic
 type LoginBonusRepository struct {
-	db *sql.DB
+	db *pgxpool.Pool
 }
 
 // NewLoginBonusRepository creates a new login bonus repository
-func NewLoginBonusRepository(db *sql.DB) *LoginBonusRepository {
+func NewLoginBonusRepository(db *pgxpool.Pool) *LoginBonusRepository {
 	return &LoginBonusRepository{db: db}
 }
 
@@ -35,16 +36,17 @@ func (r *LoginBonusRepository) AwardDailyLoginBonus(ctx context.Context, userID 
 	var dailyStreak int
 
 	// Get current login info
-	err := r.db.QueryRowContext(ctx, `
+	err := r.db.QueryRow(ctx, `
 		SELECT last_login_at, daily_login_streak
 		FROM users
 		WHERE id = $1
 	`, userID).Scan(&lastLoginAt, &dailyStreak)
 
-	if err == sql.ErrNoRows {
-		return result, nil
-	}
 	if err != nil {
+		// User not found - this shouldn't happen after login, but handle gracefully
+		if err.Error() == "no rows in result set" {
+			return result, nil
+		}
 		return nil, err
 	}
 
@@ -93,7 +95,7 @@ func (r *LoginBonusRepository) AwardDailyLoginBonus(ctx context.Context, userID 
 	}
 
 	// Update last_login_at and daily_login_streak
-	_, err = r.db.ExecContext(ctx, `
+	_, err = r.db.Exec(ctx, `
 		UPDATE users
 		SET last_login_at = $1, daily_login_streak = $2
 		WHERE id = $3
@@ -113,7 +115,7 @@ func (r *LoginBonusRepository) AwardDailyLoginBonus(ctx context.Context, userID 
 // GetLoginStreak returns current login streak for a user
 func (r *LoginBonusRepository) GetLoginStreak(ctx context.Context, userID uuid.UUID) (int, error) {
 	var streak int
-	err := r.db.QueryRowContext(ctx, `
+	err := r.db.QueryRow(ctx, `
 		SELECT daily_login_streak FROM users WHERE id = $1
 	`, userID).Scan(&streak)
 	return streak, err

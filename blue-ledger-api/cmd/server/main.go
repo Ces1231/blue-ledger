@@ -158,8 +158,11 @@ func main() {
 	healthSvc := health.NewService(pool)
 	settingsSvc := settings.NewService(pool)
 
+	// ── Repositories ──────────────────────────────────────────────────────────
+	loginBonusRepo := auth.NewLoginBonusRepository(pool)
+
 	// ── Handlers ──────────────────────────────────────────────────────────────
-	authHandler := auth.NewHandler(authSvc)
+	authHandler := auth.NewHandler(authSvc, loginBonusRepo)
 	membersHandler := members.NewHandler(membersSvc)
 	xpHandler := xp.NewHandler(xpSvc)
 	eventsHandler := events.NewHandler(eventsSvc, cfg.MagicLinkHMACSecret)

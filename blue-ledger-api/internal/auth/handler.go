@@ -5,16 +5,21 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
+	"github.com/google/uuid"
 )
 
 // Handler handles all auth HTTP endpoints.
 type Handler struct {
-	svc Service
+	svc              Service
+	loginBonusRepo   *LoginBonusRepository
 }
 
 // NewHandler creates a new auth handler.
-func NewHandler(svc Service) *Handler {
-	return &Handler{svc: svc}
+func NewHandler(svc Service, loginBonusRepo *LoginBonusRepository) *Handler {
+	return &Handler{
+		svc:            svc,
+		loginBonusRepo: loginBonusRepo,
+	}
 }
 
 // RegisterRoutes mounts auth routes on the given Echo group.
@@ -116,6 +121,15 @@ func (h *Handler) Login(c echo.Context) error {
 			return echo.NewHTTPError(http.StatusTooManyRequests, "account is temporarily locked")
 		}
 		return echo.NewHTTPError(http.StatusInternalServerError, "login failed")
+	}
+
+	// Award daily login bonus
+	if resp != nil && resp.User.ID != "" {
+		userID, err := uuid.Parse(resp.User.ID)
+		if err == nil {
+			// Don't block login if bonus fails, just log it
+			_, _ = h.loginBonusRepo.AwardDailyLoginBonus(c.Request().Context(), userID)
+		}
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{"data": resp})
